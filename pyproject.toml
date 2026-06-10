@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "symmc-flow"
+version = "0.1.0"
+description = "Symmetric Molecular Crystal Flow Matching with Pair-Bias Attention and Rigid-Body Conformers"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = ["torch>=2.2", "numpy>=1.26", "scipy>=1.11"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+data = ["pymatgen>=2024.3", "mp-api>=0.41", "ase>=3.22"]
+
+[tool.setuptools.packages.find]
+include = ["symmc_flow*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

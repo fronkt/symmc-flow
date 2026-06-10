@@ -1,0 +1,9 @@
+torch>=2.2
+numpy>=1.26
+scipy>=1.11
+pytest>=8.0
+# --- GPU benchmark phase only (optional, not needed for the CPU reference impl) ---
+# pymatgen>=2024.3
+# mp-api>=0.41
+# ase>=3.22
+# tqdm>=4.66
