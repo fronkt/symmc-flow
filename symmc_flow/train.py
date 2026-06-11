@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from .config import ModelConfig, TrainConfig
 from .data import SyntheticCrystalDataset, collate, batch_to_state
-from .flow import sample_prior, interpolate, cfm_loss
+from .flow import sample_prior, interpolate, cfm_loss, ot_couple
 from .model import SymMCFlow
 
 
@@ -19,10 +19,12 @@ def move_batch(batch, device):
     return {k: v.to(device) for k, v in batch.items()}
 
 
-def _step_loss(model, batch, weights, device):
+def _step_loss(model, batch, weights, device, ot=False, lattice_scale=1.0):
     """One CFM forward pass. Returns (loss_tensor, parts)."""
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1)
+    z0 = sample_prior(z1, lattice_scale=lattice_scale)
+    if ot:
+        z0 = ot_couple(z0, z1)
     t = torch.rand(z1.lattice.shape[0], device=device)
     z_t, targets = interpolate(z0, z1, t)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
@@ -31,7 +33,7 @@ def _step_loss(model, batch, weights, device):
 
 
 @torch.no_grad()
-def evaluate(model, loader, weights, device, max_batches: int = 20):
+def evaluate(model, loader, weights, device, max_batches=20, ot=False, lattice_scale=1.0):
     model.eval()
     tot = 0.0
     n = 0
@@ -39,7 +41,7 @@ def evaluate(model, loader, weights, device, max_batches: int = 20):
         if n >= max_batches:
             break
         batch = move_batch(batch, device)
-        _, parts = _step_loss(model, batch, weights, device)
+        _, parts = _step_loss(model, batch, weights, device, ot, lattice_scale)
         tot += float(parts["total"])
         n += 1
     model.train()
@@ -71,7 +73,8 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
             if step >= tcfg.steps:
                 break
             batch = move_batch(batch, device)
-            loss, parts = _step_loss(model, batch, weights, device)
+            loss, parts = _step_loss(model, batch, weights, device,
+                                     tcfg.use_ot_coupling, tcfg.lattice_prior_scale)
 
             opt.zero_grad()
             loss.backward()
@@ -84,7 +87,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                        f"(L {parts['lattice']:.3f}  x {parts['centroid']:.3f}  "
                        f"R {parts['orient']:.3f})")
                 if val_dl is not None and step % (tcfg.log_every * 5) == 0 and step > 0:
-                    msg += f"  | val {evaluate(model, val_dl, weights, device):.4f}"
+                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, lattice_scale=tcfg.lattice_prior_scale):.4f}"
                 print(msg)
             step += 1
 

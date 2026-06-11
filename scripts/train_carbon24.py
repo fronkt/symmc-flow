@@ -62,7 +62,8 @@ def main():
                        egnn_hidden=96, egnn_layers=2, atom_embed_dim=64,
                        lambda_lattice=1.0, lambda_centroid=1.0, lambda_orient=0.0)
     tcfg = TrainConfig(lr=args.lr, batch_size=args.batch, steps=args.steps,
-                       log_every=200, sampler_steps=args.sampler_steps, device="auto")
+                       log_every=200, sampler_steps=args.sampler_steps, device="auto",
+                       use_ot_coupling=True, lattice_prior_scale=3.0)
 
     device = resolve_device(tcfg.device)
     print(f"device: {device}")
@@ -85,7 +86,7 @@ def main():
     n_sample = min(64, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1)
+    z0 = sample_prior(z1, lattice_scale=tcfg.lattice_prior_scale)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
     out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps)
 

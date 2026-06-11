@@ -42,3 +42,5 @@ class TrainConfig:
     max_atoms_per_mol: int = 12
     sampler_steps: int = 50
     use_group_averaging: bool = True
+    use_ot_coupling: bool = False     # optimal-transport prior<->data atom pairing
+    lattice_prior_scale: float = 1.0  # scale the lattice prior toward data length-scale
