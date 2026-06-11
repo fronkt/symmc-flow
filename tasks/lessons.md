@@ -25,6 +25,23 @@
   all angles including π. Re-orthonormalize SO(3) via SVD after long ODE integration.
 - **Context**: Riemannian flow matching / any SO(3) numerics.
 
+## 2026-06-11 — Flow matching on exchangeable point sets needs OT coupling
+- **Mistake**: Trained carbon-24 with independent random prior→data atom pairing;
+  centroid loss plateaued and generated atoms collapsed. Atoms are exchangeable, so
+  "which prior point maps to which data atom" is undefined and the target is noise.
+- **Rule**: For point-set / multi-particle flow matching, couple prior and data with
+  per-sample optimal transport (Hungarian on the manifold distance) before computing
+  the velocity target. See `flow.ot_couple`.
+- **Context**: Crystal/molecule generation, any set-valued flow/diffusion target.
+
+## 2026-06-11 — Lattice needs volume-aware parametrization
+- **Mistake**: Raw 3×3 lattice flow with isotropic prior generated cells too small
+  (~59 Å³), collapsing structures even when fractional coords were good.
+- **Rule**: Parametrize the lattice in log-volume + normalized-shape space and scale
+  the prior/target by N^(1/3) (cell volume ∝ atom count). Judge generation by sampled
+  structure quality, not the training-loss floor (which is irreducible near t=0).
+- **Context**: Crystal generative models (DiffCSP/FlowMM-style).
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.

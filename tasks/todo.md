@@ -18,7 +18,11 @@
 - [x] `scripts/train_demo.py`, `scripts/sample_demo.py` run on CPU
 - [x] README.md + LICENSE
 - [x] Init git, create GitHub repo, push
-- [ ] GPU phase: clone on vast.ai, install, add real loaders (next session)
+- [x] GPU phase setup: vast.ai RTX 5090, torch cu128, repo cloned, 28 tests pass on GPU
+- [x] GPU phase: carbon-24 loader (pymatgen) + real training run + OT-coupling fix
+- [x] Documented carbon-24 results in RESULTS.md (centroid fixed; lattice is next)
+- [ ] GPU phase next: lattice reparametrization (log-vol + N^(1/3)) + SUN/match eval
+- [ ] GPU phase later: MP-20 loader, full SUN benchmark vs diffusion baselines
 
 ## Review
 - **Completed:** 2026-06-10
