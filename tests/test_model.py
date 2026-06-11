@@ -31,7 +31,7 @@ def test_forward_shapes():
     v_L, v_x, v_R = model(mol_emb, z0.lattice, z0.centroid, z0.orient,
                           t, batch["sg"], z1.mask)
     B, Mm = z1.mask.shape
-    assert v_L.shape == (B, 3, 3)
+    assert v_L.shape == (B, 10)  # lattice velocity in (log-vol, shape) param space
     assert v_x.shape == (B, Mm, 3) and v_R.shape == (B, Mm, 3)
     # padded molecules produce zero velocity
     pad = ~z1.mask

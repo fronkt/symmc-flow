@@ -7,6 +7,7 @@
 All ops are batched over a leading (...) shape and run on CPU or CUDA.
 """
 from __future__ import annotations
+import math
 import torch
 
 _EPS = 1e-7
@@ -160,6 +161,42 @@ def lattice_velocity(L0: torch.Tensor, L1: torch.Tensor) -> torch.Tensor:
     return L1 - L0
 
 
+# ----- log-volume + shape parametrization ------------------------------------
+# The lattice is flowed in k = (s, vec(S)) in R^10 where s = log(V / n) is the
+# per-atom log volume (cell volume scales ~linearly with atom count) and
+# S = L / V^(1/3) is the det-1 shape. Decoding always yields det > 0; real
+# lattices are stored right-handed so no handedness information is lost.
+def _signed_cbrt(x: torch.Tensor) -> torch.Tensor:
+    return torch.sign(x) * x.abs().clamp_min(_EPS).pow(1.0 / 3.0)
+
+
+def lattice_to_param(L: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
+    """L:(B,3,3), n:(B,) atom count -> k:(B,10)."""
+    V = torch.linalg.det(L)
+    s = torch.log(V.abs().clamp_min(_EPS) / n.to(L.dtype).clamp_min(1.0))
+    S = L / _signed_cbrt(V)[..., None, None]
+    return torch.cat([s.unsqueeze(-1), S.reshape(*L.shape[:-2], 9)], dim=-1)
+
+
+def param_to_lattice(k: torch.Tensor, n: torch.Tensor) -> torch.Tensor:
+    """k:(B,10), n:(B,) -> L:(B,3,3) with det(L) = n * exp(s) > 0."""
+    s, K = k[..., 0], k[..., 1:].reshape(*k.shape[:-1], 3, 3)
+    S = K / _signed_cbrt(torch.linalg.det(K))[..., None, None]  # re-impose det = 1
+    V = n.to(k.dtype).clamp_min(1.0) * torch.exp(s)
+    return V.pow(1.0 / 3.0)[..., None, None] * S
+
+
+def prior_lattice_param(n: torch.Tensor, vol_per_atom: float = 10.0,
+                        logvol_std: float = 0.3, shape_std: float = 0.15) -> torch.Tensor:
+    """Lattice prior in param space: s ~ N(log v0, sigma^2), shape ~ I + noise.
+    n:(B,) -> k:(B,10)."""
+    B = n.shape[0]
+    dev = n.device
+    s = math.log(vol_per_atom) + logvol_std * torch.randn(B, device=dev)
+    K = torch.eye(3, device=dev) + shape_std * torch.randn(B, 3, 3, device=dev)
+    return torch.cat([s.unsqueeze(-1), K.reshape(B, 9)], dim=-1)
+
+
 # ===================== Priors ================================================
 def prior_centroid(shape, device=None, dtype=torch.float32):
     return torch.rand(*shape, 3, device=device, dtype=dtype)
@@ -167,9 +204,3 @@ def prior_centroid(shape, device=None, dtype=torch.float32):
 
 def prior_orientation(shape, device=None, dtype=torch.float32):
     return random_so3(tuple(shape), device=device, dtype=dtype)
-
-
-def prior_lattice(shape, device=None, dtype=torch.float32):
-    """Identity lattice + Gaussian noise (a neutral starting lattice)."""
-    I = torch.eye(3, device=device, dtype=dtype).expand(*shape, 3, 3)
-    return I + 0.1 * torch.randn(*shape, 3, 3, device=device, dtype=dtype)

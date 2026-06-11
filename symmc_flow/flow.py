@@ -21,11 +21,17 @@ class CrystalState:
     mask: torch.Tensor
 
 
-def sample_prior(like: CrystalState, lattice_scale: float = 1.0) -> CrystalState:
+def n_atoms(state: CrystalState) -> torch.Tensor:
+    return state.mask.sum(-1).clamp_min(1)
+
+
+def sample_prior(like: CrystalState, vol_per_atom: float = 10.0) -> CrystalState:
     B, Mmax = like.mask.shape
     dev, dt = like.lattice.device, like.lattice.dtype
+    n = n_atoms(like)
+    k0 = M.prior_lattice_param(n, vol_per_atom).to(dt)
     return CrystalState(
-        lattice=lattice_scale * M.prior_lattice((B,), dev, dt),
+        lattice=M.param_to_lattice(k0, n),
         centroid=M.prior_centroid((B, Mmax), dev, dt),
         orient=M.prior_orientation((B, Mmax), dev, dt),
         mask=like.mask,
@@ -64,12 +70,15 @@ def ot_couple(z0: CrystalState, z1: CrystalState) -> CrystalState:
 
 
 def interpolate(z0: CrystalState, z1: CrystalState, t: torch.Tensor):
-    """Return (z_t, targets) where targets = (u_lattice, u_centroid, u_orient).
+    """Return (z_t, targets) where targets = (u_lattice (B,10), u_centroid, u_orient).
+    The lattice path is a straight line in (log-volume, shape) param space.
     t:(B,) in [0,1]."""
-    tL = t.view(-1, 1, 1)
     tx = t.view(-1, 1, 1)
-    L_t = M.lattice_geodesic(z0.lattice, z1.lattice, tL)
-    u_L = M.lattice_velocity(z0.lattice, z1.lattice)
+    n = n_atoms(z1)
+    k0 = M.lattice_to_param(z0.lattice, n)
+    k1 = M.lattice_to_param(z1.lattice, n)
+    L_t = M.param_to_lattice((1.0 - t.view(-1, 1)) * k0 + t.view(-1, 1) * k1, n)
+    u_L = k1 - k0
 
     x_t = M.torus_geodesic(z0.centroid, z1.centroid, tx)
     u_x = M.torus_velocity(z0.centroid, z1.centroid)
@@ -82,7 +91,7 @@ def interpolate(z0: CrystalState, z1: CrystalState, t: torch.Tensor):
 
 
 def cfm_loss(pred, targets, mask, weights=(1.0, 1.0, 1.0)):
-    """pred = (v_L (B,3,3), v_x (B,M,3), v_R (B,M,3)). targets same shapes.
+    """pred = (v_L (B,10), v_x (B,M,3), v_R (B,M,3)). targets same shapes.
     Returns scalar loss and a dict of components."""
     v_L, v_x, v_R = pred
     u_L, u_x, u_R = targets

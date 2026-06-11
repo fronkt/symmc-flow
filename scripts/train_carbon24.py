@@ -40,6 +40,39 @@ def min_image_nn_distances(L, frac, mask):
     return out
 
 
+def _to_structures(state):
+    """CrystalState -> list of pymatgen Structures (carbon only)."""
+    from pymatgen.core import Structure, Lattice
+    out = []
+    for b in range(state.lattice.shape[0]):
+        idx = state.mask[b].nonzero(as_tuple=True)[0]
+        try:
+            st = Structure(Lattice(state.lattice[b].cpu().numpy()),
+                           ["C"] * len(idx), state.centroid[b, idx].cpu().numpy())
+        except Exception:
+            st = None
+        out.append(st)
+    return out
+
+
+def match_rate(gen_state, ref_state):
+    """CSP match rate: fraction of generated structures that StructureMatcher
+    (CDVAE tolerances) matches to their ground-truth counterpart."""
+    from pymatgen.analysis.structure_matcher import StructureMatcher
+    sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
+    gen, ref = _to_structures(gen_state), _to_structures(ref_state)
+    hits, total = 0, 0
+    for g, r in zip(gen, ref):
+        if r is None:
+            continue
+        total += 1
+        try:
+            hits += bool(g is not None and sm.fit(g, r))
+        except Exception:
+            pass
+    return hits / max(total, 1), total
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, default=6000)
@@ -63,7 +96,7 @@ def main():
                        lambda_lattice=1.0, lambda_centroid=1.0, lambda_orient=0.0)
     tcfg = TrainConfig(lr=args.lr, batch_size=args.batch, steps=args.steps,
                        log_every=200, sampler_steps=args.sampler_steps, device="auto",
-                       use_ot_coupling=True, lattice_prior_scale=3.0)
+                       use_ot_coupling=True, prior_vol_per_atom=9.0)  # graphite ~8.8 A^3/atom
 
     device = resolve_device(tcfg.device)
     print(f"device: {device}")
@@ -86,19 +119,24 @@ def main():
     n_sample = min(64, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1, lattice_scale=tcfg.lattice_prior_scale)
+    z0 = sample_prior(z1, vol_per_atom=tcfg.prior_vol_per_atom)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
     out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps)
 
     gen_nn = min_image_nn_distances(out.lattice, out.centroid, out.mask)
     ref_nn = min_image_nn_distances(z1.lattice, z1.centroid, z1.mask)
+    n = out.mask.sum(-1).clamp_min(1).float()
     vol = torch.linalg.det(out.lattice).abs()
+    ref_vol = torch.linalg.det(z1.lattice).abs()
     g = torch.tensor(gen_nn)
     print("\n=== generated-structure sanity (carbon-carbon nearest neighbour) ===")
     print(f"  generated mean NN dist: {g.mean():.3f} A   (ref: {torch.tensor(ref_nn).mean():.3f} A)")
     print(f"  generated in [1.2,1.8] A: {100*((g>1.2)&(g<1.8)).float().mean():.1f}%  "
           f"(graphite 1.42 / diamond 1.54)")
-    print(f"  cell volume mean {vol.mean():.1f} A^3   det>0 frac {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
+    print(f"  vol/atom  gen {(vol/n).mean():.2f} A^3  ref {(ref_vol/n).mean():.2f} A^3   "
+          f"det>0 frac {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
+    mr, total = match_rate(out, z1)
+    print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures, CDVAE tolerances)")
 
 
 if __name__ == "__main__":

@@ -49,3 +49,33 @@ def test_lattice_path():
     L1 = torch.randn(4, 3, 3)
     assert torch.allclose(M.lattice_geodesic(L0, L1, torch.zeros(4)), L0)
     assert torch.allclose(M.lattice_geodesic(L0, L1, torch.ones(4)), L1)
+
+
+def _valid_lattices(B, scale=5.0, seed=2):
+    g = torch.Generator().manual_seed(seed)
+    return torch.eye(3) * scale + 0.4 * torch.randn(B, 3, 3, generator=g)
+
+
+def test_lattice_param_roundtrip():
+    L = _valid_lattices(16)
+    n = torch.randint(1, 25, (16,))
+    k = M.lattice_to_param(L, n)
+    assert k.shape == (16, 10)
+    L2 = M.param_to_lattice(k, n)
+    assert torch.allclose(L, L2, atol=1e-4)
+    # shape part is det-1, log-volume part recovers det(L)/n
+    S = k[:, 1:].reshape(16, 3, 3)
+    assert torch.allclose(torch.linalg.det(S), torch.ones(16), atol=1e-4)
+    assert torch.allclose(k[:, 0].exp() * n, torch.linalg.det(L), rtol=1e-3)
+
+
+def test_lattice_prior_volume_scales_with_n():
+    torch.manual_seed(0)
+    v0 = 10.0
+    for n_val in (4, 24):
+        n = torch.full((512,), n_val)
+        L = M.param_to_lattice(M.prior_lattice_param(n, vol_per_atom=v0), n)
+        vol = torch.linalg.det(L)
+        assert (vol > 0).all()
+        # E[V] = n * v0 * exp(sigma^2/2); just check the per-atom volume ballpark
+        assert abs((vol / n_val).mean().item() - v0) < 2.0

@@ -19,10 +19,10 @@ def move_batch(batch, device):
     return {k: v.to(device) for k, v in batch.items()}
 
 
-def _step_loss(model, batch, weights, device, ot=False, lattice_scale=1.0):
+def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0):
     """One CFM forward pass. Returns (loss_tensor, parts)."""
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1, lattice_scale=lattice_scale)
+    z0 = sample_prior(z1, vol_per_atom=vol_per_atom)
     if ot:
         z0 = ot_couple(z0, z1)
     t = torch.rand(z1.lattice.shape[0], device=device)
@@ -33,7 +33,7 @@ def _step_loss(model, batch, weights, device, ot=False, lattice_scale=1.0):
 
 
 @torch.no_grad()
-def evaluate(model, loader, weights, device, max_batches=20, ot=False, lattice_scale=1.0):
+def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_atom=10.0):
     model.eval()
     tot = 0.0
     n = 0
@@ -41,7 +41,7 @@ def evaluate(model, loader, weights, device, max_batches=20, ot=False, lattice_s
         if n >= max_batches:
             break
         batch = move_batch(batch, device)
-        _, parts = _step_loss(model, batch, weights, device, ot, lattice_scale)
+        _, parts = _step_loss(model, batch, weights, device, ot, vol_per_atom)
         tot += float(parts["total"])
         n += 1
     model.train()
@@ -74,7 +74,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                 break
             batch = move_batch(batch, device)
             loss, parts = _step_loss(model, batch, weights, device,
-                                     tcfg.use_ot_coupling, tcfg.lattice_prior_scale)
+                                     tcfg.use_ot_coupling, tcfg.prior_vol_per_atom)
 
             opt.zero_grad()
             loss.backward()
@@ -87,7 +87,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                        f"(L {parts['lattice']:.3f}  x {parts['centroid']:.3f}  "
                        f"R {parts['orient']:.3f})")
                 if val_dl is not None and step % (tcfg.log_every * 5) == 0 and step > 0:
-                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, lattice_scale=tcfg.lattice_prior_scale):.4f}"
+                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, vol_per_atom=tcfg.prior_vol_per_atom):.4f}"
                 print(msg)
             step += 1
 

@@ -24,6 +24,34 @@
 - [ ] GPU phase next: lattice reparametrization (log-vol + N^(1/3)) + SUN/match eval
 - [ ] GPU phase later: MP-20 loader, full SUN benchmark vs diffusion baselines
 
+# Task: Lattice reparametrization (log-volume + shape) + StructureMatcher eval
+
+## Plan
+- [x] `manifolds.py`: `lattice_to_param(L, n)` / `param_to_lattice(k, n)` — k = (per-atom
+      log-volume, det-normalized 3x3 shape) in R^10; `prior_lattice_param` with
+      configurable per-atom volume (V ∝ N built in)
+- [x] `flow.py`: lattice path/velocity in param space (u_L: (B,10)); `sample_prior`
+      draws the lattice prior in param space using n = mask.sum()
+- [x] `model.py`: condition tokens on current lattice (k, 10-d) — before, forward()
+      ignored the lattice entirely, so the field couldn't depend on lattice state;
+      `head_lattice` outputs 10
+- [x] `sampler.py`: integrate k, decode to 3x3 for each field evaluation
+- [x] configs/train: replace `lattice_prior_scale` with `prior_vol_per_atom`
+- [x] `train_carbon24.py`: StructureMatcher match-rate eval (CDVAE tolerances)
+      alongside the C–C distance proxy; vol/atom reported gen vs ref
+- [x] tests: param roundtrip, volume∝N scaling, prior validity; update shape asserts
+- [x] full `pytest -q` green on CPU (32 passed, 1 data-dependent skip)
+- [x] CPU demos verified: train_demo 76% loss drop, sample_demo valid det>0 cells
+- [ ] retrain on new vast.ai box when user provides SSH details; update RESULTS.md
+
+## Review (CPU part, 2026-06-11)
+- Decode always renormalizes det(shape)=1 and yields det(L)>0 by construction —
+  the old "det>0 frac" metric is now trivially 100%.
+- Found + fixed a latent bug: the network never consumed the lattice state at all
+  (forward() ignored its `lattice` arg), so the lattice ODE field was not a
+  function of lattice state. Added `lattice_in` (10-d param) token conditioning.
+- GPU retrain pending (new vast.ai instance being provisioned).
+
 ## Review
 - **Completed:** 2026-06-10
 - **What worked:**

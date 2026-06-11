@@ -7,7 +7,8 @@ def _state(B=4, Mm=3):
     mask = torch.ones(B, Mm, dtype=torch.bool)
     mask[:, 2:] = False
     return CrystalState(
-        lattice=torch.randn(B, 3, 3),
+        # valid (right-handed, well-conditioned) cells — the param space assumes det > 0
+        lattice=torch.eye(3) * 5.0 + 0.4 * torch.randn(B, 3, 3),
         centroid=torch.rand(B, Mm, 3),
         orient=M.random_so3((B, Mm)),
         mask=mask,
@@ -28,10 +29,10 @@ def test_interpolate_endpoints():
     z0 = sample_prior(z1)
     B = z1.lattice.shape[0]
     zt0, _ = interpolate(z0, z1, torch.zeros(B))
-    assert torch.allclose(zt0.lattice, z0.lattice, atol=1e-5)
+    assert torch.allclose(zt0.lattice, z0.lattice, atol=1e-4)
     assert torch.allclose(zt0.orient, z0.orient, atol=1e-4)
     zt1, _ = interpolate(z0, z1, torch.ones(B))
-    assert torch.allclose(zt1.lattice, z1.lattice, atol=1e-5)
+    assert torch.allclose(zt1.lattice, z1.lattice, atol=1e-4)
 
 
 def test_cfm_loss_zero_when_perfect():

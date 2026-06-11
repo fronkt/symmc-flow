@@ -42,6 +42,7 @@ class SymMCFlow(nn.Module):
         self.mol_proj = nn.Linear(c.egnn_hidden, c.d_model)
         self.centroid_in = nn.Linear(3, c.d_model)
         self.orient_in = nn.Linear(9, c.d_model)
+        self.lattice_in = nn.Linear(10, c.d_model)  # current lattice in param space
         self.time_mlp = nn.Sequential(
             nn.Linear(c.time_embed_dim, c.d_model), nn.SiLU(), nn.Linear(c.d_model, c.d_model)
         )
@@ -59,7 +60,7 @@ class SymMCFlow(nn.Module):
             nn.Linear(c.d_model, 3))
         self.head_lattice = nn.Sequential(
             nn.LayerNorm(c.d_model), nn.Linear(c.d_model, c.d_model), nn.SiLU(),
-            nn.Linear(c.d_model, 9))
+            nn.Linear(c.d_model, 10))
 
     # -- molecule encoding (geometry-invariant, computed once per crystal) -----
     def encode_molecules(self, Z, local, atom_mask):
@@ -84,12 +85,15 @@ class SymMCFlow(nn.Module):
     def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask):
         """Predict velocity fields.
         mol_emb:(B,M,d) lattice:(B,3,3) centroid:(B,M,3) orient:(B,M,3,3)
-        t:(B,) sg:(B,) mol_mask:(B,M). Returns (v_L (B,3,3), v_x (B,M,3), v_R (B,M,3))."""
+        t:(B,) sg:(B,) mol_mask:(B,M). Returns (v_L (B,10) in lattice param space,
+        v_x (B,M,3), v_R (B,M,3))."""
         B, Mm, _ = centroid.shape
+        n = mol_mask.sum(-1).clamp_min(1)
+        k = M.lattice_to_param(lattice, n)                                     # (B,10)
         tok = mol_emb + self.centroid_in(centroid) + self.orient_in(orient.reshape(B, Mm, 9))
         temb = self.time_mlp(timestep_embedding(t, self.cfg.time_embed_dim))  # (B,d)
         sgemb = self.sg_embed(sg.clamp(0, self.cfg.n_space_groups))            # (B,d)
-        tok = tok + temb.unsqueeze(1) + sgemb.unsqueeze(1)
+        tok = tok + temb.unsqueeze(1) + sgemb.unsqueeze(1) + self.lattice_in(k).unsqueeze(1)
 
         pair = self._pair_features(centroid)
         h = self.attn(tok, pair, mol_mask)                                    # (B,M,d)
@@ -98,7 +102,7 @@ class SymMCFlow(nn.Module):
         v_R = self.head_orient(h)
         pooled = (h * mol_mask.unsqueeze(-1).float()).sum(1) / \
                  mol_mask.sum(1, keepdim=True).clamp_min(1.0).float()
-        v_L = self.head_lattice(pooled).reshape(B, 3, 3)
+        v_L = self.head_lattice(pooled)
         m = mol_mask.unsqueeze(-1).float()
         return v_L, v_x * m, v_R * m
 
