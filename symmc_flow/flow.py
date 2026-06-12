@@ -25,17 +25,53 @@ def n_atoms(state: CrystalState) -> torch.Tensor:
     return state.mask.sum(-1).clamp_min(1)
 
 
-def sample_prior(like: CrystalState, vol_per_atom: float = 10.0) -> CrystalState:
+def sample_prior(like: CrystalState, vol_per_atom: float = 10.0,
+                 centroid_prior_std: float | None = None) -> CrystalState:
     B, Mmax = like.mask.shape
     dev, dt = like.lattice.device, like.lattice.dtype
     n = n_atoms(like)
     k0 = M.prior_lattice_param(n, vol_per_atom).to(dt)
     return CrystalState(
         lattice=M.param_to_lattice(k0, n),
-        centroid=M.prior_centroid((B, Mmax), dev, dt),
+        centroid=M.prior_centroid((B, Mmax), dev, dt, std=centroid_prior_std),
         orient=M.prior_orientation((B, Mmax), dev, dt),
         mask=like.mask,
     )
+
+
+class PriorCache:
+    """Fixed per-structure prior. Each dataset index gets ONE prior sample (drawn
+    on first use, cached on CPU, reused every epoch), so the OT-coupled velocity
+    target for a structure is deterministic across epochs instead of re-randomized
+    each minibatch. This lowers the variance of the CFM target (the 0.09 floor).
+    The cached priors are themselves draws from the base prior, so the dataset
+    marginal still matches the test-time prior."""
+
+    def __init__(self, vol_per_atom: float = 10.0, centroid_prior_std: float | None = None):
+        self.store: dict[int, tuple] = {}
+        self.vol = vol_per_atom
+        self.std = centroid_prior_std
+
+    def _make_one(self, n: int, Mmax: int, dt):
+        k0 = M.prior_lattice_param(torch.tensor([float(n)]), self.vol).to(dt)[0]  # (10,)
+        c = M.prior_centroid((Mmax,), None, dt, std=self.std)                     # (Mmax,3)
+        R = M.prior_orientation((Mmax,), None, dt)                               # (Mmax,3,3)
+        return k0, c, R
+
+    def assemble(self, like: CrystalState, idx: torch.Tensor) -> CrystalState:
+        B, Mmax = like.mask.shape
+        dev, dt = like.lattice.device, like.lattice.dtype
+        n = n_atoms(like)
+        k0s, cs, Rs = [], [], []
+        for b in range(B):
+            key = int(idx[b])
+            if key not in self.store:
+                self.store[key] = self._make_one(int(n[b]), Mmax, dt)
+            k0, c, R = self.store[key]
+            k0s.append(k0); cs.append(c); Rs.append(R)
+        k0 = torch.stack(k0s).to(dev)
+        L = M.param_to_lattice(k0, n)
+        return CrystalState(L, torch.stack(cs).to(dev), torch.stack(Rs).to(dev), like.mask)
 
 
 def ot_couple(z0: CrystalState, z1: CrystalState) -> CrystalState:

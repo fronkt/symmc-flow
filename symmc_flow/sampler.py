@@ -18,8 +18,15 @@ from . import manifolds as M
 
 
 @torch.no_grad()
-def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50, symmetrize: bool = False):
-    """Returns a CrystalState at t=1. `model` is a SymMCFlow."""
+def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
+               symmetrize: bool = False, churn: float = 0.0):
+    """Returns a CrystalState at t=1. `model` is a SymMCFlow.
+
+    churn>0 turns the deterministic centroid ODE into a Langevin-style
+    predictor-corrector: after each step, wrapped-Gaussian noise scaled by
+    churn*(1-t) is added to the fractional centroids, decaying to 0 at t=1 so the
+    final state still lands cleanly on the data manifold. This counteracts the
+    mean-field under-dispersion that collapses atoms together."""
     mask = init.mask
     n = mask.sum(-1).clamp_min(1)
     kL = M.lattice_to_param(init.lattice, n)
@@ -59,6 +66,10 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50, symmetri
         omega = (dt / 6.0) * (k1R + 2 * k2R + 2 * k3R + k4R)
         R = R @ M.so3_exp(omega)
         R = M.project_so3(R)  # guard against numerical drift
+
+        if churn > 0 and i < steps - 1:
+            scale = churn * (1.0 - (t0 + dt)) * (dt ** 0.5)
+            x = M.wrap(x + scale * torch.randn_like(x) * mask.unsqueeze(-1).float())
 
     m = mask.unsqueeze(-1).float()
     return CrystalState(M.param_to_lattice(kL, n), x * m, R, mask)

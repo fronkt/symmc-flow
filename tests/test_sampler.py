@@ -40,3 +40,22 @@ def test_sampler_step_count_invariance_shapes():
     for steps in (10, 50):
         out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=steps)
         assert out.lattice.shape == (2, 3, 3)
+
+
+def test_churn_sampler_disperses_but_stays_valid():
+    cfg = ModelConfig(d_model=32, egnn_hidden=32, atom_embed_dim=16,
+                      n_attn_layers=1, egnn_layers=1, n_heads=4)
+    model = SymMCFlow(cfg).eval()
+    ds = SyntheticCrystalDataset(4, max_mols=4, max_atoms=8, seed=7)
+    batch = collate([ds[i] for i in range(4)])
+    z1 = batch_to_state(batch)
+    z0 = sample_prior(z1)
+    mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    torch.manual_seed(0)
+    det = rk4_sample(model, mol_emb, z0, batch["sg"], steps=50, churn=0.0)
+    chu = rk4_sample(model, mol_emb, z0, batch["sg"], steps=50, churn=0.5)
+    # churn changes the result but centroids stay wrapped and masked padding stays zero
+    assert not torch.allclose(det.centroid, chu.centroid)
+    assert (chu.centroid >= 0).all() and (chu.centroid < 1.0001).all()
+    pad = ~chu.mask
+    assert torch.allclose(chu.centroid[pad], torch.zeros_like(chu.centroid[pad]))

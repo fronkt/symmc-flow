@@ -16,6 +16,7 @@ from symmc_flow.carbon24 import Carbon24Dataset
 from symmc_flow.train import train, resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
 from symmc_flow.flow import sample_prior
+from symmc_flow.model import SymMCFlow
 from symmc_flow.sampler import rk4_sample
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -73,6 +74,33 @@ def match_rate(gen_state, ref_state):
     return hits / max(total, 1), total
 
 
+def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
+                    centroid_prior_std, churn):
+    """Sample from the prior and report NN-distance / volume / match-rate stats."""
+    model.eval()
+    n_sample = min(64, len(val_ds))
+    batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
+    z1 = batch_to_state(batch)
+    z0 = sample_prior(z1, vol_per_atom=vol_per_atom, centroid_prior_std=centroid_prior_std)
+    mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=sampler_steps, churn=churn)
+
+    gen_nn = torch.tensor(min_image_nn_distances(out.lattice, out.centroid, out.mask))
+    ref_nn = torch.tensor(min_image_nn_distances(z1.lattice, z1.centroid, z1.mask))
+    n = out.mask.sum(-1).clamp_min(1).float()
+    vol = torch.linalg.det(out.lattice).abs()
+    ref_vol = torch.linalg.det(z1.lattice).abs()
+    print("\n=== generated-structure sanity (carbon-carbon nearest neighbour) ===")
+    print(f"  gen NN dist  mean {gen_nn.mean():.3f}  median {gen_nn.median():.3f}  "
+          f"(ref mean {ref_nn.mean():.3f}  median {ref_nn.median():.3f}) A")
+    print(f"  gen in [1.2,1.8] A: {100*((gen_nn>1.2)&(gen_nn<1.8)).float().mean():.1f}%   "
+          f"overlaps <0.9 A: {100*(gen_nn<0.9).float().mean():.0f}%")
+    print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
+          f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
+    mr, total = match_rate(out, z1)
+    print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--steps", type=int, default=6000)
@@ -80,6 +108,16 @@ def main():
     ap.add_argument("--lr", type=float, default=1e-3)
     ap.add_argument("--sampler-steps", type=int, default=50)
     ap.add_argument("--max-mols", type=int, default=24)
+    # position-flow ablation levers
+    ap.add_argument("--churn", type=float, default=0.0, help="Langevin sampler noise")
+    ap.add_argument("--centroid-prior-std", type=float, default=None,
+                    help="wrapped-normal centroid prior std (default: uniform)")
+    ap.add_argument("--fixed-prior", action="store_true",
+                    help="cache one prior per structure (sharper OT target)")
+    ap.add_argument("--eval-only", action="store_true",
+                    help="skip training, load --ckpt and only sample+eval")
+    ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24.pt"))
+    ap.add_argument("--tag", default="carbon24", help="checkpoint name tag")
     args = ap.parse_args()
 
     os.makedirs(CACHE, exist_ok=True)
@@ -91,52 +129,42 @@ def main():
                              cache_path=os.path.join(CACHE, "carbon_val.pt"))
     print(f"  train {len(train_ds)}  val {len(val_ds)}  ({time.time()-t0:.1f}s)")
 
+    device = resolve_device("auto")
+    print(f"device: {device}  | churn={args.churn} centroid_prior_std="
+          f"{args.centroid_prior_std} fixed_prior={args.fixed_prior}")
+
+    if args.eval_only:
+        ck = torch.load(args.ckpt, map_location=device, weights_only=False)
+        model = SymMCFlow(ModelConfig(**ck["mcfg"])).to(device)
+        model.load_state_dict(ck["model"])
+        print(f"loaded {args.ckpt} (eval-only)")
+        sample_and_eval(model, val_ds, device, args.sampler_steps, 9.0,
+                        args.centroid_prior_std, args.churn)
+        return
+
     mcfg = ModelConfig(d_model=192, n_heads=8, n_attn_layers=6,
                        egnn_hidden=96, egnn_layers=2, atom_embed_dim=64,
                        lambda_lattice=1.0, lambda_centroid=1.0, lambda_orient=0.0)
     tcfg = TrainConfig(lr=args.lr, batch_size=args.batch, steps=args.steps,
                        log_every=200, sampler_steps=args.sampler_steps, device="auto",
-                       use_ot_coupling=True, prior_vol_per_atom=9.0)  # graphite ~8.8 A^3/atom
+                       use_ot_coupling=True, prior_vol_per_atom=9.0,  # graphite ~8.8 A^3/atom
+                       centroid_prior_std=args.centroid_prior_std,
+                       fixed_prior=args.fixed_prior, sampler_churn=args.churn)
 
-    device = resolve_device(tcfg.device)
-    print(f"device: {device}")
     t0 = time.time()
     model, hist = train(mcfg, tcfg, verbose=True, train_dataset=train_ds, val_dataset=val_ds)
     print(f"trained {args.steps} steps in {time.time()-t0:.1f}s")
-    first = sum(hist[:20]) / 20
-    last = sum(hist[-20:]) / 20
+    first, last = sum(hist[:20]) / 20, sum(hist[-20:]) / 20
     print(f"loss  first-20 {first:.4f}  ->  last-20 {last:.4f}  ({100*(1-last/first):.1f}% drop)")
 
-    # save checkpoint
     ckpt = os.path.join(ROOT, "checkpoints")
     os.makedirs(ckpt, exist_ok=True)
-    torch.save({"model": model.state_dict(), "mcfg": mcfg.__dict__},
-               os.path.join(ckpt, "carbon24.pt"))
-    print(f"saved checkpoint -> {os.path.join(ckpt, 'carbon24.pt')}")
+    out_ckpt = os.path.join(ckpt, f"{args.tag}.pt")
+    torch.save({"model": model.state_dict(), "mcfg": mcfg.__dict__}, out_ckpt)
+    print(f"saved checkpoint -> {out_ckpt}")
 
-    # sample & sanity-check generated structures
-    model.eval()
-    n_sample = min(64, len(val_ds))
-    batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
-    z1 = batch_to_state(batch)
-    z0 = sample_prior(z1, vol_per_atom=tcfg.prior_vol_per_atom)
-    mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
-    out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps)
-
-    gen_nn = min_image_nn_distances(out.lattice, out.centroid, out.mask)
-    ref_nn = min_image_nn_distances(z1.lattice, z1.centroid, z1.mask)
-    n = out.mask.sum(-1).clamp_min(1).float()
-    vol = torch.linalg.det(out.lattice).abs()
-    ref_vol = torch.linalg.det(z1.lattice).abs()
-    g = torch.tensor(gen_nn)
-    print("\n=== generated-structure sanity (carbon-carbon nearest neighbour) ===")
-    print(f"  generated mean NN dist: {g.mean():.3f} A   (ref: {torch.tensor(ref_nn).mean():.3f} A)")
-    print(f"  generated in [1.2,1.8] A: {100*((g>1.2)&(g<1.8)).float().mean():.1f}%  "
-          f"(graphite 1.42 / diamond 1.54)")
-    print(f"  vol/atom  gen {(vol/n).mean():.2f} A^3  ref {(ref_vol/n).mean():.2f} A^3   "
-          f"det>0 frac {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
-    mr, total = match_rate(out, z1)
-    print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures, CDVAE tolerances)")
+    sample_and_eval(model, val_ds, device, args.sampler_steps, tcfg.prior_vol_per_atom,
+                    args.centroid_prior_std, args.churn)
 
 
 if __name__ == "__main__":

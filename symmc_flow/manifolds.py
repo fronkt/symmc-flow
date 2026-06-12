@@ -198,8 +198,13 @@ def prior_lattice_param(n: torch.Tensor, vol_per_atom: float = 10.0,
 
 
 # ===================== Priors ================================================
-def prior_centroid(shape, device=None, dtype=torch.float32):
-    return torch.rand(*shape, 3, device=device, dtype=dtype)
+def prior_centroid(shape, device=None, dtype=torch.float32, std=None):
+    """Fractional-centroid prior. std=None -> uniform U[0,1)^3 (max-entropy torus
+    prior); std set -> wrapped normal around the cell center 0.5 (softer start that
+    asks the field to learn a smaller mean displacement)."""
+    if std is None:
+        return torch.rand(*shape, 3, device=device, dtype=dtype)
+    return wrap(0.5 + std * torch.randn(*shape, 3, device=device, dtype=dtype))
 
 
 def prior_orientation(shape, device=None, dtype=torch.float32):

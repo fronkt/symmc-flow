@@ -65,12 +65,22 @@
 - [x] Root cause: mean-field under-dispersion. Generated NN dist median 1.11 Å (ref
       1.45), whole distribution contracted, 9% have <0.9 Å overlaps.
 
-## Plan (next session — real lever is the position objective, NOT more features)
-- [ ] Wrapped-normal fractional prior centered near data (DiffCSP/FlowMM) vs uniform
-- [ ] Stochastic sampler: SDE / Langevin corrector to restore dispersion
-- [ ] Sharper coupling: fixed per-structure prior or annealed OT cost
-- [ ] Re-eval match rate; pick whichever lever moves it, then MP-20 loader + baselines
-- NOTE: these are design forks with real tradeoffs — get user steer before burning runs.
+## Plan (all three behind config flags, run as an ablation ladder for attribution)
+- [ ] Lever 1 — stochastic sampler: `sampler_churn` adds decaying wrapped-Gaussian
+      noise to the centroid each step (0 at t=1). Sampler-only, NO retrain.
+- [ ] Lever 2 — wrapped-normal centroid prior: `centroid_prior_std` (None=uniform).
+      Needs retrain.
+- [ ] Lever 3 — fixed per-structure prior coupling: `fixed_prior` + PriorCache keyed
+      by dataset `idx` so each structure's OT target is deterministic across epochs
+      (lowers the CFM floor). Needs `idx` plumbed into batches. Needs retrain.
+- [ ] Tests: std-prior validity, churn endpoint (t=1 lands clean), fixed-prior
+      determinism; full pytest green on CPU + demos
+- [ ] GPU ablation ladder:
+      A) existing ckpt + churn sampler (free)   — isolates sampler
+      B) retrain fixed_prior only               — isolates coupling/floor
+      C) retrain all three on                   — the "all of them" run
+- [ ] Eval match rate + NN-dist distribution each rung; update RESULTS.md; keep
+      whatever moves the metric, then MP-20 loader + baselines.
 
 ## Review
 - **Completed:** 2026-06-10

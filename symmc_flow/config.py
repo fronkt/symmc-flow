@@ -45,3 +45,6 @@ class TrainConfig:
     use_group_averaging: bool = True
     use_ot_coupling: bool = False     # optimal-transport prior<->data atom pairing
     prior_vol_per_atom: float = 10.0  # mean cell volume per atom (A^3) of the lattice prior
+    centroid_prior_std: float | None = None  # None -> uniform torus prior; float -> wrapped-normal
+    fixed_prior: bool = False         # cache one prior per structure (sharper OT target)
+    sampler_churn: float = 0.0        # Langevin-style noise in the sampler (0 = deterministic)

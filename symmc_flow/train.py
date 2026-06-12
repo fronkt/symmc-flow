@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from .config import ModelConfig, TrainConfig
 from .data import SyntheticCrystalDataset, collate, batch_to_state
-from .flow import sample_prior, interpolate, cfm_loss, ot_couple
+from .flow import sample_prior, interpolate, cfm_loss, ot_couple, PriorCache
 from .model import SymMCFlow
 
 
@@ -19,10 +19,14 @@ def move_batch(batch, device):
     return {k: v.to(device) for k, v in batch.items()}
 
 
-def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0):
+def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0,
+               centroid_prior_std=None, prior_cache=None):
     """One CFM forward pass. Returns (loss_tensor, parts)."""
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1, vol_per_atom=vol_per_atom)
+    if prior_cache is not None:
+        z0 = prior_cache.assemble(z1, batch["idx"])
+    else:
+        z0 = sample_prior(z1, vol_per_atom=vol_per_atom, centroid_prior_std=centroid_prior_std)
     if ot:
         z0 = ot_couple(z0, z1)
     t = torch.rand(z1.lattice.shape[0], device=device)
@@ -33,7 +37,8 @@ def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0):
 
 
 @torch.no_grad()
-def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_atom=10.0):
+def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_atom=10.0,
+             centroid_prior_std=None, prior_cache=None):
     model.eval()
     tot = 0.0
     n = 0
@@ -41,7 +46,8 @@ def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_a
         if n >= max_batches:
             break
         batch = move_batch(batch, device)
-        _, parts = _step_loss(model, batch, weights, device, ot, vol_per_atom)
+        _, parts = _step_loss(model, batch, weights, device, ot, vol_per_atom,
+                              centroid_prior_std, prior_cache)
         tot += float(parts["total"])
         n += 1
     model.train()
@@ -66,6 +72,12 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
     opt = torch.optim.AdamW(model.parameters(), lr=tcfg.lr, weight_decay=tcfg.weight_decay)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
 
+    # fixed per-structure priors: separate caches per split (idx spaces overlap)
+    train_cache = (PriorCache(tcfg.prior_vol_per_atom, tcfg.centroid_prior_std)
+                   if tcfg.fixed_prior else None)
+    val_cache = (PriorCache(tcfg.prior_vol_per_atom, tcfg.centroid_prior_std)
+                 if tcfg.fixed_prior else None)
+
     history, step = [], 0
     model.train()
     while step < tcfg.steps:
@@ -74,7 +86,8 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                 break
             batch = move_batch(batch, device)
             loss, parts = _step_loss(model, batch, weights, device,
-                                     tcfg.use_ot_coupling, tcfg.prior_vol_per_atom)
+                                     tcfg.use_ot_coupling, tcfg.prior_vol_per_atom,
+                                     tcfg.centroid_prior_std, train_cache)
 
             opt.zero_grad()
             loss.backward()
@@ -87,7 +100,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                        f"(L {parts['lattice']:.3f}  x {parts['centroid']:.3f}  "
                        f"R {parts['orient']:.3f})")
                 if val_dl is not None and step % (tcfg.log_every * 5) == 0 and step > 0:
-                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, vol_per_atom=tcfg.prior_vol_per_atom):.4f}"
+                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, vol_per_atom=tcfg.prior_vol_per_atom, centroid_prior_std=tcfg.centroid_prior_std, prior_cache=val_cache):.4f}"
                 print(msg)
             step += 1
 

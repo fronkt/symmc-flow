@@ -90,7 +90,7 @@ class SyntheticCrystalDataset(Dataset):
         return len(self.items)
 
     def __getitem__(self, i):
-        return self.items[i]
+        return {**self.items[i], "idx": torch.tensor(i, dtype=torch.long)}
 
 
 def collate(batch):
