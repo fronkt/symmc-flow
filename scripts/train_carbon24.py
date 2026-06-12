@@ -120,6 +120,9 @@ def main():
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24.pt"))
     ap.add_argument("--tag", default="carbon24", help="checkpoint name tag")
     ap.add_argument("--eval-n", type=int, default=64, help="# val structures to evaluate")
+    ap.add_argument("--d-model", type=int, default=192)
+    ap.add_argument("--attn-layers", type=int, default=6)
+    ap.add_argument("--egnn-hidden", type=int, default=96)
     args = ap.parse_args()
     if args.centroid_prior_std is not None and args.centroid_prior_std < 0:
         args.centroid_prior_std = None  # negative -> uniform prior
@@ -146,8 +149,8 @@ def main():
                         args.centroid_prior_std, args.churn, args.eval_n)
         return
 
-    mcfg = ModelConfig(d_model=192, n_heads=8, n_attn_layers=6,
-                       egnn_hidden=96, egnn_layers=2, atom_embed_dim=64,
+    mcfg = ModelConfig(d_model=args.d_model, n_heads=8, n_attn_layers=args.attn_layers,
+                       egnn_hidden=args.egnn_hidden, egnn_layers=2, atom_embed_dim=64,
                        lambda_lattice=1.0, lambda_centroid=1.0, lambda_orient=0.0)
     tcfg = TrainConfig(lr=args.lr, batch_size=args.batch, steps=args.steps,
                        log_every=200, sampler_steps=args.sampler_steps, device="auto",
