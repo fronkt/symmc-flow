@@ -42,7 +42,10 @@
 - [x] tests: param roundtrip, volume∝N scaling, prior validity; update shape asserts
 - [x] full `pytest -q` green on CPU (32 passed, 1 data-dependent skip)
 - [x] CPU demos verified: train_demo 76% loss drop, sample_demo valid det>0 cells
-- [ ] retrain on new vast.ai box when user provides SSH details; update RESULTS.md
+- [x] retrain on new vast.ai box (142.171.48.138:44563); RESULTS.md updated —
+      vol/atom now 6.57 vs 6.30 ref (volume problem solved); C–C still 1.05 Å,
+      match rate 0% → next bottleneck is the coordinate field (lattice-aware
+      pair features / Fourier features)
 
 ## Review (CPU part, 2026-06-11)
 - Decode always renormalizes det(shape)=1 and yields det(L)>0 by construction —

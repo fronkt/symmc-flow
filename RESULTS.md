@@ -11,14 +11,20 @@ Hardware: vast.ai RTX 5090 (32 GB), torch 2.11.0+cu128. Model: d_model=192,
 
 ## Runs
 
-| Metric | Baseline (random pairing) | + OT coupling | Reference (real) |
-|---|---|---|---|
-| Centroid (fractional) loss | 0.25 (plateau) | **0.09** | — |
-| Lattice loss | 0.80 | 0.85 | — |
-| Generated mean C–C distance | 1.01 Å | 1.01 Å | 1.45 Å |
-| Generated in [1.2, 1.8] Å | 11% | 14% | 100% |
-| Generated cell volume | 59.6 Å³ | 58.9 Å³ | (larger) |
-| det(L) > 0 | 100% | 100% | — |
+| Metric | Baseline (random pairing) | + OT coupling | + lattice reparam | Reference (real) |
+|---|---|---|---|---|
+| Centroid (fractional) loss | 0.25 (plateau) | **0.09** | 0.09 | — |
+| Lattice loss | 0.80 | 0.85 | 0.04 (param space) | — |
+| Generated mean C–C distance | 1.01 Å | 1.01 Å | 1.05 Å | 1.45 Å |
+| Generated in [1.2, 1.8] Å | 11% | 14% | **17%** | 100% |
+| Generated volume / atom | — | — | **6.57 Å³** | 6.30 Å³ |
+| StructureMatcher match rate | — | — | 0% | — |
+| det(L) > 0 | 100% | 100% | 100% (by construction) | — |
+
+Lattice-reparam run (2026-06-11, new RTX 5090 box): lattice flowed in
+(per-atom log-volume, det-1 shape) ∈ R^10, prior at 9 Å³/atom, network newly
+conditioned on the current lattice state (it was ignored before — the lattice
+field was not a function of the lattice). 6000 steps, batch 128, ~21 min.
 
 ## Findings
 
@@ -39,13 +45,26 @@ Hardware: vast.ai RTX 5090 (32 GB), torch 2.11.0+cu128. Model: d_model=192,
    near t=0 the noisy state cannot reveal the target lattice, so part of the loss
    is irreducible. Sampling quality (above) is the real metric.
 
-## Next steps (lattice reparametrization)
+## Findings (lattice-reparam run)
 
-- Flow the lattice in **log-volume + normalized-shape** space instead of raw 3×3.
-- Scale the lattice prior by **N^(1/3)** and condition cell size on atom count.
-- Add a proper SUN/match-rate evaluation (StructureMatcher against the test set)
-  rather than the C–C distance proxy used here.
-- Then re-run the baseline / OT / reparametrized comparison.
+4. **The volume problem is solved.** Generated cells now sit at 6.57 Å³/atom vs
+   6.30 reference (was ~59 Å³ total regardless of atom count). Volume scaling
+   with N plus lattice-state conditioning fixed the cell-size collapse.
+
+5. **The bottleneck moved to atom placement.** With correct cell volumes the
+   mean C–C distance is still ~1.05 Å — atoms clump instead of spreading into
+   the (now correctly sized) cell, and the StructureMatcher match rate is 0%.
+   The centroid field only sees *fractional* pair offsets; it has no notion of
+   Cartesian geometry, so it cannot resolve sub-Å packing.
+
+## Next steps (coordinate field)
+
+- Make the pair features lattice-aware: feed Cartesian minimum-image distances
+  (frac diff @ L) alongside the fractional offsets, so the field knows real
+  interatomic geometry at the current lattice.
+- Consider Fourier features of fractional offsets (DiffCSP-style) for sharper
+  short-range resolution, and more sampler steps at low t.
+- Re-evaluate match rate; then MP-20 loader + diffusion baselines.
 
 ## Reproduce
 
