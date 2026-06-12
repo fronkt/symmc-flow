@@ -104,7 +104,11 @@
   so generates *a* polymorph not *the* reference.
 
 ## Open next (architectural — not more of the same)
-- [ ] Best-of-k match metric (standard CSP eval) — one-to-one understates us
+- [x] Best-of-k match metric (standard CSP eval) — one-to-one understates us.
+      `--match-k K` in train_carbon24.py: draws K gens/ref, hit if any matches.
+      Implemented + unit-tested on CPU (tests/test_match_topk.py, 35 pass).
+      NUMBER PENDING: vast.ai box recycled (checkpoints gone) — needs a fresh box
+      retrain + `--eval-only --match-k 20`.
 - [ ] DiffCSP-style diffusion baseline; head-to-head vs the flow objective
 - [ ] MP-20 loader, full SUN + match-rate benchmark vs CDVAE/DiffCSP
 

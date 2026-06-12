@@ -74,16 +74,49 @@ def match_rate(gen_state, ref_state):
     return hits / max(total, 1), total
 
 
+def match_rate_topk(gen_states, ref_state):
+    """Best-of-k CSP match rate (the standard CSP eval; DiffCSP/CDVAE report this).
+    `gen_states` is a list of k independently-sampled generations for the SAME
+    references. A reference counts as matched if ANY of its k candidates matches
+    it under StructureMatcher (CDVAE tolerances)."""
+    from pymatgen.analysis.structure_matcher import StructureMatcher
+    sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
+    ref = _to_structures(ref_state)
+    gens = [_to_structures(g) for g in gen_states]            # k x (n_struct)
+    hits, total = 0, 0
+    for i, r in enumerate(ref):
+        if r is None:
+            continue
+        total += 1
+        for draw in gens:
+            g = draw[i]
+            try:
+                if g is not None and sm.fit(g, r):
+                    hits += 1
+                    break
+            except Exception:
+                pass
+    return hits / max(total, 1), total
+
+
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
-                    centroid_prior_std, churn, n_eval=64):
-    """Sample from the prior and report NN-distance / volume / match-rate stats."""
+                    centroid_prior_std, churn, n_eval=64, match_k=1):
+    """Sample from the prior and report NN-distance / volume / match-rate stats.
+    With match_k>1, draws k independent generations per reference and reports the
+    best-of-k (match@k) rate; sanity stats use the first draw."""
     model.eval()
     n_sample = min(n_eval, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
     z1 = batch_to_state(batch)
-    z0 = sample_prior(z1, vol_per_atom=vol_per_atom, centroid_prior_std=centroid_prior_std)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
-    out = rk4_sample(model, mol_emb, z0, batch["sg"], steps=sampler_steps, churn=churn)
+    draws = []
+    with torch.no_grad():
+        for _ in range(max(match_k, 1)):
+            z0 = sample_prior(z1, vol_per_atom=vol_per_atom,
+                              centroid_prior_std=centroid_prior_std)
+            draws.append(rk4_sample(model, mol_emb, z0, batch["sg"],
+                                    steps=sampler_steps, churn=churn))
+    out = draws[0]
 
     gen_nn = torch.tensor(min_image_nn_distances(out.lattice, out.centroid, out.mask))
     ref_nn = torch.tensor(min_image_nn_distances(z1.lattice, z1.centroid, z1.mask))
@@ -97,8 +130,13 @@ def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
           f"overlaps <0.9 A: {100*(gen_nn<0.9).float().mean():.0f}%")
     print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
           f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
-    mr, total = match_rate(out, z1)
-    print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)")
+    if match_k <= 1:
+        mr, total = match_rate(out, z1)
+        print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)")
+    else:
+        mr, total = match_rate_topk(draws, z1)
+        print(f"  StructureMatcher match rate @{match_k} (best-of-{match_k}): "
+              f"{100*mr:.1f}%  ({total} structures)")
 
 
 def main():
@@ -120,6 +158,9 @@ def main():
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24.pt"))
     ap.add_argument("--tag", default="carbon24", help="checkpoint name tag")
     ap.add_argument("--eval-n", type=int, default=64, help="# val structures to evaluate")
+    ap.add_argument("--match-k", type=int, default=1,
+                    help="best-of-k CSP match rate: draw k generations per reference "
+                         "and count a hit if any matches (standard CSP eval; 1 = match@1)")
     ap.add_argument("--d-model", type=int, default=192)
     ap.add_argument("--attn-layers", type=int, default=6)
     ap.add_argument("--egnn-hidden", type=int, default=96)
@@ -146,7 +187,7 @@ def main():
         model.load_state_dict(ck["model"])
         print(f"loaded {args.ckpt} (eval-only)")
         sample_and_eval(model, val_ds, device, args.sampler_steps, 9.0,
-                        args.centroid_prior_std, args.churn, args.eval_n)
+                        args.centroid_prior_std, args.churn, args.eval_n, args.match_k)
         return
 
     mcfg = ModelConfig(d_model=args.d_model, n_heads=8, n_attn_layers=args.attn_layers,
@@ -171,7 +212,7 @@ def main():
     print(f"saved checkpoint -> {out_ckpt}")
 
     sample_and_eval(model, val_ds, device, args.sampler_steps, tcfg.prior_vol_per_atom,
-                    args.centroid_prior_std, args.churn, args.eval_n)
+                    args.centroid_prior_std, args.churn, args.eval_n, args.match_k)
 
 
 if __name__ == "__main__":

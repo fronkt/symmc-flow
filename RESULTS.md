@@ -143,11 +143,25 @@ space group), so it generates *a* plausible carbon polymorph, rarely *the* speci
 reference. (DiffCSP reports ~17% on carbon-24 with a diffusion objective + richer
 coupling.) Best checkpoint: `carbon24_big.pt`.
 
+## Best-of-k match metric (match@k)
+
+`--match-k K` draws K independent generations per reference and counts a hit if
+*any* candidate matches (StructureMatcher, CDVAE tolerances). This is the standard
+CSP eval (DiffCSP/CDVAE report match@1 and match@20); the one-to-one number above is
+match@1 and understates a generator that produces valid-but-different polymorphs.
+Sanity stats (NN distance, volume) still use the first draw. Run on a fresh box:
+
+```bash
+python scripts/train_carbon24.py --eval-only --ckpt checkpoints/carbon24_big.pt \
+    --eval-n 256 --match-k 20
+```
+
+(Number pending — the vast.ai box that held the checkpoints was recycled; needs a
+retrain on a fresh box. The metric itself is implemented + unit-tested on CPU,
+`tests/test_match_topk.py`.)
+
 ## Next steps (architectural, not more of the same)
 
-- Best-of-k match-rate metric (generate k per composition, match if any) — the
-  standard CSP eval; our one-to-one number understates a generator that produces
-  valid-but-different polymorphs.
 - Diffusion baseline (DiffCSP-style score model) to compare objectives head-to-head.
 - MP-20 loader + full SUN + match-rate benchmark vs CDVAE/DiffCSP.
 
