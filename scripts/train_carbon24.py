@@ -110,7 +110,7 @@ def main():
     ap.add_argument("--max-mols", type=int, default=24)
     # position-flow ablation levers
     ap.add_argument("--churn", type=float, default=0.0, help="Langevin sampler noise")
-    ap.add_argument("--centroid-prior-std", type=float, default=0.25,
+    ap.add_argument("--centroid-prior-std", type=float, default=0.30,
                     help="wrapped-normal centroid prior std (the dispersion fix; "
                          "pass a negative value to use the uniform prior instead)")
     ap.add_argument("--fixed-prior", action="store_true",

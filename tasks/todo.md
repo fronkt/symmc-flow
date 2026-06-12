@@ -85,18 +85,28 @@
 - Remaining: absolute match rate ~5% on a hard CSP benchmark. Next levers are
   capacity/steps/std-tuning, NOT collapse — see RESULTS "Next steps".
 
-# Task: Push carbon-24 match rate (std sweep + sampler steps + scale)
+# Task: Push carbon-24 match rate (std sweep + sampler steps + scale) — DONE
 
 ## Plan
-- [ ] Phase 1: centroid_prior_std sweep {0.15, 0.20, 0.30, 0.35} @ 6000 steps
-      (0.25 already known: 4.7%). Pick best by match rate / valid-bond %.
-- [ ] Phase 2: sampler-steps sweep {50,100,200} on best ckpt via --eval-only (free)
-- [ ] Phase 3: final scaled run at best std+steps — longer (18k steps) + larger
-      d_model (256) — and report match/SUN proxy.
-- [ ] Update RESULTS.md with the sweep; keep best ckpt.
+- [x] Phase 1: centroid_prior_std sweep {0.15–0.35} @ 6k steps. 64-struct peak at
+      0.30 (7.8%) was small-sample noise.
+- [x] Phase 2: re-eval on 256 structures — std 0.25 ≈ 0.30 (both 3.1%); sampler
+      steps 50/100/200 → no gain (ODE converged by 50). Added --eval-n.
+- [x] Phase 3: scaled run (d_model 256, 8 layers, 15k steps) → 4.7%, ~82% valid.
+      Scaling did NOT improve match rate. Exposed model size as CLI args.
+- [x] RESULTS.md updated with full sweep + scaling. Default std 0.30. Best ckpt
+      carbon24_big.pt.
 
-## Open after
-- [ ] MP-20 loader, full SUN + match-rate benchmark vs CDVAE/DiffCSP baselines
+## Conclusion
+- Collapse SOLVED (valid bonds 17%→~82%, overlaps→2%, vol on ref). Match rate
+  plateaus ~5%, NOT limited by prior std / sampler steps / model capacity (all
+  ruled out). Gap is the modelling approach: conditions only on (n, space group),
+  so generates *a* polymorph not *the* reference.
+
+## Open next (architectural — not more of the same)
+- [ ] Best-of-k match metric (standard CSP eval) — one-to-one understates us
+- [ ] DiffCSP-style diffusion baseline; head-to-head vs the flow objective
+- [ ] MP-20 loader, full SUN + match-rate benchmark vs CDVAE/DiffCSP
 
 ## Review
 - **Completed:** 2026-06-10

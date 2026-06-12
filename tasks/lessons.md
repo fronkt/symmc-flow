@@ -89,6 +89,27 @@
   assume stacking all fixes is best: here all-three was worse than the prior alone.
 - **Context**: Flow-matching / diffusion generative models that collapse to a barycenter.
 
+## 2026-06-12 — Small-sample match rate is noisy; confirm before acting
+- **Mistake**: A centroid_prior_std sweep on 64 eval structures showed a clean peak at
+  0.30 (7.8%) vs 0.25 (4.7%). Re-evaluating both on 256 structures gave 3.1% each — the
+  peak was sampling noise (64 structures quantizes match rate to ±1.6% per hit, plus the
+  random prior varies run-to-run).
+- **Rule**: For a noisy rate metric, fix the evaluation set size large enough that the
+  quantization is well below the effect you're chasing, and re-confirm a "best" config on
+  the larger set before tuning further or scaling. Don't pick hyperparameters off a metric
+  whose noise floor exceeds the differences between candidates.
+- **Context**: Any sweep ranked by a low-count rate (match rate, hit rate, pass@k).
+
+## 2026-06-12 — Know when to stop scaling and change approach
+- **Insight**: After fixing carbon-24 collapse, match rate plateaued ~5%. Ruled it out
+  as prior-std, sampler-steps, and model-capacity limited (2× size + 2.5× steps gave no
+  gain). The cap was the modelling setup (weak conditioning + one-to-one match metric),
+  not under-training.
+- **Rule**: When a metric is flat across the cheap knobs AND a capacity/steps bump doesn't
+  move it, stop burning equivalent runs — the bottleneck is architectural/metric. Report
+  the negative, switch approach (here: best-of-k eval, diffusion baseline), don't scale more.
+- **Context**: Diminishing-returns calls on paid GPU.
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.

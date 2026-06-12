@@ -116,13 +116,40 @@ Reference NN median 1.45 Å, vol/atom 6.30 Å³ (C1 matches volume exactly).
 Winning config baked into the carbon-24 recipe: `--centroid-prior-std 0.25`
 (default), other levers off. Checkpoint: `checkpoints/carbon24_wn.pt`.
 
-## Next steps
+## Tuning + scaling sweep (2026-06-12) — match rate plateaus at ~5%
 
-The structural pathology (collapse) is fixed; absolute match rate (~5%) is still
-low on this hard CSP benchmark. Remaining gap is capacity/sampling, not collapse:
-- Tune `centroid_prior_std` (sweep 0.15–0.35) and more sampler steps.
-- Bigger model / more training steps; report SUN + match rate vs CDVAE/DiffCSP.
-- Then MP-20 loader + diffusion baselines.
+With the collapse fixed, swept the remaining knobs to push match rate. Match rate
+on 64 structures is noisy (±1.6%/hit); decisions below use 256-structure eval.
+
+**centroid_prior_std** (6000 steps, 64-struct eval): 0.15→1.6%, 0.20→1.6%,
+0.25→4.7%, 0.30→7.8%, 0.35→4.7%. Re-evaluated 0.25 vs 0.30 on **256** structures:
+both **3.1%** — the 0.30 peak was small-sample noise. Optimum is a flat plateau
+0.25–0.30 (valid-bond ~78–84%, overlaps ≤2%). Default set to 0.30.
+
+**Sampler steps** (std 0.30 ckpt, 256-struct eval): 50→5.1%, 100→5.5%, 200→3.1%.
+The deterministic ODE is converged by 50 steps; more steps don't help.
+
+**Model scale** (std 0.30, 256-struct eval): the d_model=192 / 6-layer / 6k-step
+model and a d_model=256 / 8-layer / 15k-step model (`carbon24_big.pt`, 2× size,
+2.5× steps) both give ~5% match (4.7%) and ~80% valid bonds. **Scaling did not
+improve match rate.**
+
+**Conclusion:** the structural pathology is solved (valid bonds 17% → ~82%,
+overlaps → ~2%, cell volume on reference). One-to-one StructureMatcher match rate
+plateaus at ~5% and is NOT limited by the prior std, sampler steps, or model
+capacity — every one of those was ruled out. The remaining gap is the modelling
+approach itself on a hard CSP benchmark: the model conditions only on (atom count,
+space group), so it generates *a* plausible carbon polymorph, rarely *the* specific
+reference. (DiffCSP reports ~17% on carbon-24 with a diffusion objective + richer
+coupling.) Best checkpoint: `carbon24_big.pt`.
+
+## Next steps (architectural, not more of the same)
+
+- Best-of-k match-rate metric (generate k per composition, match if any) — the
+  standard CSP eval; our one-to-one number understates a generator that produces
+  valid-but-different polymorphs.
+- Diffusion baseline (DiffCSP-style score model) to compare objectives head-to-head.
+- MP-20 loader + full SUN + match-rate benchmark vs CDVAE/DiffCSP.
 
 ## Reproduce
 
