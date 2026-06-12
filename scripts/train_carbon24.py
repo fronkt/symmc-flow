@@ -75,10 +75,10 @@ def match_rate(gen_state, ref_state):
 
 
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
-                    centroid_prior_std, churn):
+                    centroid_prior_std, churn, n_eval=64):
     """Sample from the prior and report NN-distance / volume / match-rate stats."""
     model.eval()
-    n_sample = min(64, len(val_ds))
+    n_sample = min(n_eval, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
     z1 = batch_to_state(batch)
     z0 = sample_prior(z1, vol_per_atom=vol_per_atom, centroid_prior_std=centroid_prior_std)
@@ -119,6 +119,7 @@ def main():
                     help="skip training, load --ckpt and only sample+eval")
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24.pt"))
     ap.add_argument("--tag", default="carbon24", help="checkpoint name tag")
+    ap.add_argument("--eval-n", type=int, default=64, help="# val structures to evaluate")
     args = ap.parse_args()
     if args.centroid_prior_std is not None and args.centroid_prior_std < 0:
         args.centroid_prior_std = None  # negative -> uniform prior
@@ -142,7 +143,7 @@ def main():
         model.load_state_dict(ck["model"])
         print(f"loaded {args.ckpt} (eval-only)")
         sample_and_eval(model, val_ds, device, args.sampler_steps, 9.0,
-                        args.centroid_prior_std, args.churn)
+                        args.centroid_prior_std, args.churn, args.eval_n)
         return
 
     mcfg = ModelConfig(d_model=192, n_heads=8, n_attn_layers=6,
@@ -167,7 +168,7 @@ def main():
     print(f"saved checkpoint -> {out_ckpt}")
 
     sample_and_eval(model, val_ds, device, args.sampler_steps, tcfg.prior_vol_per_atom,
-                    args.centroid_prior_std, args.churn)
+                    args.centroid_prior_std, args.churn, args.eval_n)
 
 
 if __name__ == "__main__":

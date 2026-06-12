@@ -85,8 +85,17 @@
 - Remaining: absolute match rate ~5% on a hard CSP benchmark. Next levers are
   capacity/steps/std-tuning, NOT collapse — see RESULTS "Next steps".
 
-## Open next
-- [ ] Sweep centroid_prior_std 0.15–0.35 + more sampler steps; scale model/steps
+# Task: Push carbon-24 match rate (std sweep + sampler steps + scale)
+
+## Plan
+- [ ] Phase 1: centroid_prior_std sweep {0.15, 0.20, 0.30, 0.35} @ 6000 steps
+      (0.25 already known: 4.7%). Pick best by match rate / valid-bond %.
+- [ ] Phase 2: sampler-steps sweep {50,100,200} on best ckpt via --eval-only (free)
+- [ ] Phase 3: final scaled run at best std+steps — longer (18k steps) + larger
+      d_model (256) — and report match/SUN proxy.
+- [ ] Update RESULTS.md with the sweep; keep best ckpt.
+
+## Open after
 - [ ] MP-20 loader, full SUN + match-rate benchmark vs CDVAE/DiffCSP baselines
 
 ## Review
