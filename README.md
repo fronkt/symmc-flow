@@ -14,10 +14,14 @@ unifies three recent ideas:
 
 See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protocol.
 
-> **Status:** CPU-runnable **reference implementation** with a synthetic data harness.
-> Every component is unit-tested and the train→sample loop runs end-to-end without a
-> GPU or external datasets. Real MP-20 / carbon / WBM benchmarking is the GPU phase
-> (loaders stubbed in `symmc_flow/data.py`, protocol in `PLAN.md §7`).
+> **Status (2026-06-12):** CPU reference implementation **plus** a real GPU benchmark
+> on the CDVAE **carbon-24** dataset (RTX 5090). 34 unit tests green; train→sample runs
+> end-to-end on CPU and GPU. Key result: the lattice was reparametrized in
+> (log-volume, shape) space and a **concentrated wrapped-normal fractional prior** fixes
+> the atom-collapse failure mode — valid C–C bonds went from 17% → ~82%. One-to-one
+> StructureMatcher match rate currently plateaus at ~5% (an architecture/metric limit,
+> not a tuning one). Full experiment log in [`RESULTS.md`](RESULTS.md). MP-20 / WBM and
+> diffusion baselines are the next phase.
 
 ## Install
 
@@ -29,13 +33,26 @@ pip install -r requirements.txt   # torch, numpy, scipy, pytest
 ## Quick start
 
 ```bash
-python -m pytest -q              # 28 unit tests
+python -m pytest -q              # 34 unit tests
 python scripts/train_demo.py     # synthetic training; loss drops ~80%
 python scripts/sample_demo.py    # 50-step RK4 sampling -> valid crystals
 ```
 
 The training loop (`symmc_flow/train.py`) is CUDA-aware: it auto-selects `cuda`
 when available (set `TrainConfig.device`).
+
+### Carbon-24 benchmark (GPU)
+
+```bash
+pip install pymatgen pandas scipy
+# place CDVAE carbon-24 CSVs at data/raw/carbon_{train,val,test}.csv
+python scripts/train_carbon24.py --steps 6000 --batch 128   # default std=0.30
+```
+
+Key flags (see [`RESULTS.md`](RESULTS.md) for the ablation behind them):
+`--centroid-prior-std` (the dispersion fix; negative ⇒ uniform prior),
+`--fixed-prior`, `--churn`, `--eval-n`, `--d-model/--attn-layers`, and
+`--eval-only --ckpt <path>` to sample a saved checkpoint without retraining.
 
 ## Architecture
 
@@ -59,11 +76,23 @@ atoms ─2D periodic-table embed─► EGNN (invariant per-molecule emb)
 | `sampler.py` | manifold RK4 ODE integrator |
 | `data.py` | synthetic dataset + real-data loader stubs |
 
-## GPU benchmark phase
+## Results so far (carbon-24)
 
-1. `git clone` on the GPU box, `pip install -r requirements.txt`.
-2. Implement the real loaders in `data.py` (`pymatgen` + `mp-api`).
-3. Train experimental + control configs; report SUN rate (target > 75%),
+| Milestone | Outcome |
+|---|---|
+| Lattice reparam (log-vol + shape) | cell volume fixed: 6.3 Å³/atom vs 6.3 ref (was ~59 Å³) |
+| Concentrated wrapped-normal prior | **atom collapse fixed: valid C–C bonds 17% → ~82%**, overlaps → ~2% |
+| Position-flow ablation | churn (no help) / fixed-coupling (overfits) / **prior (the fix)**; combo worse than prior alone |
+| Tuning + scaling | match rate plateaus ~5%; not limited by prior std, sampler steps, or model size |
+
+See [`RESULTS.md`](RESULTS.md) for the full ablation tables, diagnostics, and reproduce steps.
+
+## Next phase
+
+1. Best-of-`k` match-rate metric (standard CSP eval) — one-to-one understates a
+   generator that produces valid-but-different polymorphs.
+2. DiffCSP-style diffusion baseline for a head-to-head objective comparison.
+3. MP-20 / WBM loaders (`pymatgen` + `mp-api`); report SUN rate (target > 75%),
    match rate, RMSD, and sampling-step / wall-clock vs diffusion baselines.
 
 ## License
