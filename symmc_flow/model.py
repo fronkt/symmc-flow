@@ -48,7 +48,12 @@ class SymMCFlow(nn.Module):
         )
         self.sg_embed = nn.Embedding(c.n_space_groups + 1, c.d_model)
 
-        self.pair_dim = 4  # torus diff (3) + distance (1)
+        # pair features: frac diff (3) + frac dist (1) + Cartesian diff (3) +
+        # Cartesian dist (1) + Fourier(frac diff) (3*2*n_freq). Cartesian terms give
+        # the field real interatomic geometry at the current lattice; Fourier terms
+        # (DiffCSP-style) sharpen short-range fractional resolution.
+        self.pair_freqs = torch.arange(1, c.pair_n_freq + 1, dtype=torch.float32)
+        self.pair_dim = 4 + 4 + 3 * 2 * c.pair_n_freq
         self.attn = PairBiasStack(c.d_model, c.n_heads, self.pair_dim,
                                   c.n_attn_layers, c.ffn_mult, c.dropout)
 
@@ -77,10 +82,16 @@ class SymMCFlow(nn.Module):
         pooled = pooled.reshape(B, Mm, -1)
         return self.mol_proj(pooled)
 
-    def _pair_features(self, centroid):
-        d = M.torus_diff(centroid.unsqueeze(2), centroid.unsqueeze(1))  # (B,M,M,3)
+    def _pair_features(self, centroid, lattice):
+        d = M.torus_diff(centroid.unsqueeze(2), centroid.unsqueeze(1))  # (B,M,M,3) frac
         dist = torch.linalg.norm(d, dim=-1, keepdim=True)
-        return torch.cat([d, dist], dim=-1)
+        cart = torch.einsum("bijc,bcd->bijd", d, lattice)              # (B,M,M,3) Angstrom
+        cart_dist = torch.linalg.norm(cart, dim=-1, keepdim=True)
+        freqs = self.pair_freqs.to(d.device, d.dtype)                  # (F,)
+        ang = 2.0 * math.pi * d.unsqueeze(-1) * freqs                  # (B,M,M,3,F)
+        fourier = torch.cat([ang.sin(), ang.cos()], dim=-1)           # (B,M,M,3,2F)
+        fourier = fourier.flatten(-2)                                  # (B,M,M,3*2F)
+        return torch.cat([d, dist, cart, cart_dist, fourier], dim=-1)
 
     def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask):
         """Predict velocity fields.
@@ -95,7 +106,7 @@ class SymMCFlow(nn.Module):
         sgemb = self.sg_embed(sg.clamp(0, self.cfg.n_space_groups))            # (B,d)
         tok = tok + temb.unsqueeze(1) + sgemb.unsqueeze(1) + self.lattice_in(k).unsqueeze(1)
 
-        pair = self._pair_features(centroid)
+        pair = self._pair_features(centroid, lattice)
         h = self.attn(tok, pair, mol_mask)                                    # (B,M,d)
 
         v_x = self.head_centroid(h)

@@ -16,6 +16,7 @@ class ModelConfig:
     n_attn_layers: int = 4
     ffn_mult: int = 4
     dropout: float = 0.0
+    pair_n_freq: int = 2  # Fourier frequencies on fractional pair offsets (DiffCSP-style)
     # conditioning
     n_space_groups: int = 230
     sg_embed_dim: int = 64
