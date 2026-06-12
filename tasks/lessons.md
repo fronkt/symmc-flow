@@ -74,6 +74,21 @@
   use a PID file, or check `kill -0 $PID`. Prefer launching detached and tailing the log.
 - **Context**: Monitoring long GPU jobs over ssh.
 
+## 2026-06-11 — Mean-field collapse is fixed by the prior, not the sampler or floor
+- **Mistake/insight**: Generated carbon structures collapsed (atoms ~1.0 Å apart).
+  Natural guesses — add stochastic sampling (churn) or lower the CFM loss floor via
+  sharper coupling — BOTH failed in an ablation. Churn just jitters a collapsed mean;
+  fixed-prior coupling drove the loss floor to 0.024 but overfit trajectories and still
+  collapsed at a fresh test prior. The fix was a **concentrated wrapped-normal prior**
+  (std 0.25 around cell-center) instead of uniform: it forces the deterministic field to
+  learn *expansion*, cancelling the barycenter contraction (valid bonds 17%→84%).
+- **Rule**: For deterministic flow matching that under-disperses multimodal/exchangeable
+  targets, change what the *mean field must do* (via the prior geometry) before reaching
+  for stochastic samplers or coupling tricks. A lower training-loss floor is NOT evidence
+  of better samples — fixed coupling can lower loss while worsening generation. And don't
+  assume stacking all fixes is best: here all-three was worse than the prior alone.
+- **Context**: Flow-matching / diffusion generative models that collapse to a barycenter.
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.

@@ -81,15 +81,47 @@ fractional offset to the pair-bias input (pair_dim 4 → 20; verified active).
    over exchangeable, multimodal position targets: integrating the mean field
    from a maximally-spread uniform prior over-contracts every structure.
 
-## Next steps (position objective — the actual lever)
+## Position-flow ablation (2026-06-11) — the concentrated prior is the fix
 
-The fix is in the coupling/prior/sampler, not more conditioning features:
-- **Wrapped-normal prior centered near data** (DiffCSP/FlowMM) instead of a
-  uniform fractional prior, so the field need not learn a large mean contraction.
-- **Stochastic sampling** (SDE / Langevin corrector steps) to inject the
-  dispersion that the deterministic mean ODE removes.
-- **Sharper coupling**: cache a fixed prior per structure (or anneal the OT cost)
-  so the per-state target is less multimodal across minibatches.
+Three levers were implemented behind config flags and run as an ablation ladder
+to attribute the under-dispersion fix:
+
+| Rung | Config | Loss floor | NN median | in [1.2,1.8] Å | overlaps <0.9 Å | match |
+|---|---|---|---|---|---|---|
+| — | clumped baseline | 0.130 | 1.05 Å | 17% | 11% | 0% |
+| A | churn sampler only (no retrain) | — | ~1.05 Å | 11–25% | 11–17% | 0–3% |
+| B | fixed_prior coupling only | **0.052** | 1.08 Å | 22% | 12% | 1.6% |
+| **C1** | **wrapped-normal prior only (std 0.25)** | 0.116 | **1.31 Å** | **84%** | **2%** | **4.7%** |
+| C2 | all three combined | **0.024** | 1.12 Å | 33% | 6% | 3.1% |
+
+Reference NN median 1.45 Å, vol/atom 6.30 Å³ (C1 matches volume exactly).
+
+**Findings:**
+1. **The concentrated fractional prior is the fix (lever 2).** A wrapped-normal
+   prior at cell-center (std 0.25) instead of uniform forces the field to learn
+   *expansion* rather than contraction, cancelling the mean-field barycenter
+   collapse: valid-bond fraction 17% → 84%, overlaps 11% → 2%, cell volume exactly
+   on reference. This is the single change that breaks the clumping.
+2. **Stochastic sampling does not help (lever 1).** Churn 0→1.0 on the collapsed
+   model stays in the 0–3% match noise band — adding noise around an already-
+   contracted mean field cannot recover the right spacing.
+3. **Lowering the loss floor does not help generation (lever 3).** fixed_prior
+   coupling drives the floor lowest (0.024–0.052) by making the per-structure
+   target deterministic, but the model overfits those trajectories and a fresh
+   test prior still collapses. *The floor was never the cause.*
+4. **The combination is worse than the prior alone.** C2 (all three) underperforms
+   C1: fixed_prior's overfitting plus churn's re-injected overlaps degrade the
+   clean win from the prior. Attribution only visible via the ablation.
+
+Winning config baked into the carbon-24 recipe: `--centroid-prior-std 0.25`
+(default), other levers off. Checkpoint: `checkpoints/carbon24_wn.pt`.
+
+## Next steps
+
+The structural pathology (collapse) is fixed; absolute match rate (~5%) is still
+low on this hard CSP benchmark. Remaining gap is capacity/sampling, not collapse:
+- Tune `centroid_prior_std` (sweep 0.15–0.35) and more sampler steps.
+- Bigger model / more training steps; report SUN + match rate vs CDVAE/DiffCSP.
 - Then MP-20 loader + diffusion baselines.
 
 ## Reproduce

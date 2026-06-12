@@ -66,21 +66,28 @@
       1.45), whole distribution contracted, 9% have <0.9 Å overlaps.
 
 ## Plan (all three behind config flags, run as an ablation ladder for attribution)
-- [ ] Lever 1 — stochastic sampler: `sampler_churn` adds decaying wrapped-Gaussian
-      noise to the centroid each step (0 at t=1). Sampler-only, NO retrain.
-- [ ] Lever 2 — wrapped-normal centroid prior: `centroid_prior_std` (None=uniform).
-      Needs retrain.
-- [ ] Lever 3 — fixed per-structure prior coupling: `fixed_prior` + PriorCache keyed
-      by dataset `idx` so each structure's OT target is deterministic across epochs
-      (lowers the CFM floor). Needs `idx` plumbed into batches. Needs retrain.
-- [ ] Tests: std-prior validity, churn endpoint (t=1 lands clean), fixed-prior
-      determinism; full pytest green on CPU + demos
-- [ ] GPU ablation ladder:
-      A) existing ckpt + churn sampler (free)   — isolates sampler
-      B) retrain fixed_prior only               — isolates coupling/floor
-      C) retrain all three on                   — the "all of them" run
-- [ ] Eval match rate + NN-dist distribution each rung; update RESULTS.md; keep
-      whatever moves the metric, then MP-20 loader + baselines.
+- [x] Lever 1 — stochastic sampler (`sampler_churn`). Implemented + tested.
+- [x] Lever 2 — wrapped-normal centroid prior (`centroid_prior_std`). Implemented.
+- [x] Lever 3 — fixed per-structure prior coupling (`fixed_prior` + PriorCache, idx
+      plumbed into batches). Implemented + tested.
+- [x] Tests: std-prior validity, churn dispersion+validity, fixed-prior determinism;
+      34 pytest green on CPU + smoke through every training path.
+- [x] GPU ablation ladder run (A churn / B fixed_prior / C1 prior / C2 all-three).
+- [x] WINNER: lever 2 (wrapped-normal prior std=0.25). valid bonds 17%→84%, overlaps
+      11%→2%, vol exactly on ref, match 0%→4.7%. Churn null; fixed_prior overfits;
+      all-three worse than prior alone. Baked `--centroid-prior-std 0.25` as default.
+      Best ckpt: checkpoints/carbon24_wn.pt. RESULTS.md updated.
+
+## Review (2026-06-11, position-flow ablation)
+- "Do all three" → ablation showed they are NOT additive: the concentrated prior alone
+  is the fix; stochastic sampling does nothing; sharper coupling lowers the loss floor
+  but overfits and even degrades the combination. Attribution was the whole value.
+- Remaining: absolute match rate ~5% on a hard CSP benchmark. Next levers are
+  capacity/steps/std-tuning, NOT collapse — see RESULTS "Next steps".
+
+## Open next
+- [ ] Sweep centroid_prior_std 0.15–0.35 + more sampler steps; scale model/steps
+- [ ] MP-20 loader, full SUN + match-rate benchmark vs CDVAE/DiffCSP baselines
 
 ## Review
 - **Completed:** 2026-06-10

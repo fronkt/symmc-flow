@@ -110,8 +110,9 @@ def main():
     ap.add_argument("--max-mols", type=int, default=24)
     # position-flow ablation levers
     ap.add_argument("--churn", type=float, default=0.0, help="Langevin sampler noise")
-    ap.add_argument("--centroid-prior-std", type=float, default=None,
-                    help="wrapped-normal centroid prior std (default: uniform)")
+    ap.add_argument("--centroid-prior-std", type=float, default=0.25,
+                    help="wrapped-normal centroid prior std (the dispersion fix; "
+                         "pass a negative value to use the uniform prior instead)")
     ap.add_argument("--fixed-prior", action="store_true",
                     help="cache one prior per structure (sharper OT target)")
     ap.add_argument("--eval-only", action="store_true",
@@ -119,6 +120,8 @@ def main():
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24.pt"))
     ap.add_argument("--tag", default="carbon24", help="checkpoint name tag")
     args = ap.parse_args()
+    if args.centroid_prior_std is not None and args.centroid_prior_std < 0:
+        args.centroid_prior_std = None  # negative -> uniform prior
 
     os.makedirs(CACHE, exist_ok=True)
     print("loading carbon-24 (parse + cache) ...")
