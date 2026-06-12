@@ -42,6 +42,38 @@
   structure quality, not the training-loss floor (which is irreducible near t=0).
 - **Context**: Crystal generative models (DiffCSP/FlowMM-style).
 
+## 2026-06-11 — Don't add features to lower a loss that's at its irreducible floor
+- **Mistake**: When carbon-24 structures clumped despite a low centroid loss (0.09),
+  I added lattice-aware Cartesian + Fourier pair features to give the field "real
+  geometry." Null result: loss and generation unchanged. The 0.09 was the irreducible
+  floor of the OT-coupled CFM target (residual target stochasticity), not a capacity
+  limit — so no amount of conditioning could move it.
+- **Rule**: Before adding model capacity/features to improve a metric, check whether
+  the training loss is already at its data-imposed floor. If loss won't drop, the lever
+  is the objective/coupling/prior/sampler, not the network. Diagnose the *generated
+  distribution* (here: NN distances uniformly contracted → mean-field under-dispersion)
+  before choosing the fix. Also: always sanity-check the eval (ref-vs-ref must score
+  ~100%) before trusting a 0% metric.
+- **Context**: Flow matching / diffusion where a loss plateaus but samples are poor.
+
+## 2026-06-11 — PowerShell -> ssh quoting mangles inner quotes
+- **Mistake**: Inline `ssh host "python3 -c '...'"` and `export VAR=...` repeatedly
+  broke (unterminated string, `expot`) because PowerShell rewrites the quoting before
+  ssh sees it.
+- **Rule**: For any remote command with inner quotes, `$`, or heredocs, write the
+  script locally and `scp` it over (strip CRs: `tr -d '\r'`), then run the file. Don't
+  fight the quoting inline.
+- **Context**: Driving the vast.ai box from this Windows/PowerShell session.
+
+## 2026-06-11 — pgrep -f watcher loops match themselves
+- **Mistake**: A `while pgrep -f train_carbon24.py; do sleep; done` watcher never
+  exited because `pgrep -f` also matched the watcher's own command line (and sibling
+  watchers), so the loop saw a "running" process forever.
+- **Rule**: Don't poll a job with `pgrep -f <script>` from a wrapper whose own command
+  line contains that string. Match the actual `python3` proc (`pgrep -f 'python3.*train'`),
+  use a PID file, or check `kill -0 $PID`. Prefer launching detached and tailing the log.
+- **Context**: Monitoring long GPU jobs over ssh.
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.

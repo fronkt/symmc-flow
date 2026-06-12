@@ -47,13 +47,30 @@
       match rate 0% → next bottleneck is the coordinate field (lattice-aware
       pair features / Fourier features)
 
-## Review (CPU part, 2026-06-11)
+## Review (2026-06-11)
 - Decode always renormalizes det(shape)=1 and yields det(L)>0 by construction —
   the old "det>0 frac" metric is now trivially 100%.
 - Found + fixed a latent bug: the network never consumed the lattice state at all
   (forward() ignored its `lattice` arg), so the lattice ODE field was not a
   function of lattice state. Added `lattice_in` (10-d param) token conditioning.
-- GPU retrain pending (new vast.ai instance being provisioned).
+- GPU retrain DONE: volume problem solved (gen 6.5 vs ref 6.3 Å³/atom).
+
+# Task: Fix position-flow under-dispersion (carbon-24 match rate still 0%)
+
+## Findings (no code beyond diagnostics this round)
+- [x] Lattice-aware pair features (Cartesian Δfrac@L + Fourier) — committed 99c4c98,
+      verified active (pair_dim=20). NULL RESULT: centroid loss stays 0.09, C–C 1.05 Å,
+      match 0%. The loss is at its OT-coupled irreducible floor — features can't help.
+- [x] Eval sanity-checked: ref-vs-ref match 100%, ref-vs-shuffled 4.7% → 0% is real.
+- [x] Root cause: mean-field under-dispersion. Generated NN dist median 1.11 Å (ref
+      1.45), whole distribution contracted, 9% have <0.9 Å overlaps.
+
+## Plan (next session — real lever is the position objective, NOT more features)
+- [ ] Wrapped-normal fractional prior centered near data (DiffCSP/FlowMM) vs uniform
+- [ ] Stochastic sampler: SDE / Langevin corrector to restore dispersion
+- [ ] Sharper coupling: fixed per-structure prior or annealed OT cost
+- [ ] Re-eval match rate; pick whichever lever moves it, then MP-20 loader + baselines
+- NOTE: these are design forks with real tradeoffs — get user steer before burning runs.
 
 ## Review
 - **Completed:** 2026-06-10
