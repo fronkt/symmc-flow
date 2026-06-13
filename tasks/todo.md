@@ -101,6 +101,16 @@
       ~51% match@1; our match@1 ~half DiffCSP (headroom = more train/capacity, not collapse).
 - [x] RESULTS.md MP-20 numbers vs CDVAE/DiffCSP. ckpt checkpoints/mp20.pt on box.
 
+## Added RMSE metric (2026-06-13) + matcher discrepancy to resolve
+- [x] match functions now also return mean matched RMSD (RMSE) — the 2nd standard CSP
+      metric (DiffCSP reports match-rate AND RMSE). Wired into carbon/MP-20/diffusion,
+      tests updated. MP-20 RMSE@20 = 0.1506 (DiffCSP ~0.06).
+- [ ] RESOLVE NEXT SESSION: switching match test sm.fit -> get_rms_dist changed MP-20
+      match@20 59.8% -> 80.5% (~20pp). Lock one matcher (get_rms_dist, break_on_match=False
+      is more thorough) and re-run match@1/@20 for carbon24_big + mp20 to get canonical
+      numbers. Did NOT overwrite the 59.8% headline until reconciled.
+- [ ] carbon-24 RMSE eval not yet run (carbon24_big.pt) — quick eval-only next session.
+
 ## Note — diffusion follow-up deferred (not a quick fix)
 A FAIR diffusion baseline can't be a knob-turn: VE diffusion needs a uniform prior at
 t=T to be sampleable (can't init near f0 without knowing f0), so the flow's "concentrate

@@ -221,9 +221,19 @@ per-atom species (`symmc_flow/mp20.py`, `scripts/train_mp20.py`). 30k steps, bat
 | metric | flow (mp20.pt) | reference |
 |---|---|---|
 | match@1  | **26.2%** | DiffCSP ~51% (match@1) |
-| match@20 | **59.8%** | — |
+| match@20 | **59.8%** (sm.fit) / 80.5% (get_rms_dist) | — |
+| RMSE (match@20) | **0.1506** | DiffCSP ~0.06 (match@1) |
 
-96.8% loss drop; **0% overlaps**, vol/atom 19.9 vs 20.8 Å³ on ref. Notes:
+96.8% loss drop; **0% overlaps**, vol/atom 19.9 vs 20.8 Å³ on ref.
+
+⚠️ **Matcher discrepancy to reconcile (next session):** match@1/@20 above (59.8%) were
+computed with `StructureMatcher.fit`. Adding RMSE switched the match test to
+`get_rms_dist` (needed for the RMS value), which reported **match@20 80.5%** on a re-eval —
+a ~20-point gap (part RNG over the 20 random draws, part a real `fit` vs `get_rms_dist`
+matching difference; `get_rms_dist` with `break_on_match=False` is the more thorough
+search). Lock ONE matcher (likely `get_rms_dist`) and re-run match@1/@20 for both carbon-24
+and MP-20 before trusting absolute numbers. RMSE 0.15 is higher than DiffCSP's ~0.06 — our
+matched structures are looser, consistent with less training. Notes:
 - **MP-20 is far more identifiable than carbon-24** (match@1 26.2% vs 3.9%): the
   composition conditions the structure heavily, so the flow generates *the* reference much
   more often. Same method, ~7× the match@1 — the carbon-24 difficulty was the weak
