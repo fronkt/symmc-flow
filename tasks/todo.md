@@ -111,6 +111,20 @@
       numbers. Did NOT overwrite the 59.8% headline until reconciled.
 - [ ] carbon-24 RMSE eval not yet run (carbon24_big.pt) — quick eval-only next session.
 
+# Task: Reconcile matcher + canonical match@1/@20/RMSE (2026-06-13, new box)
+
+## Plan
+- [x] New box 192.3.91.246:26436 (RTX 5090). Old box recycled; carbon24_big.pt restored
+      from local copy; mp20.pt gone -> retrain.
+- [x] Matcher already locked: both scripts use sm.get_rms_dist (pymatgen internally uses
+      break_on_match=False -> thorough). Confirmed identical in carbon + mp20.
+- [x] Added --seed to both train scripts (prior draws are the only RNG in eval).
+- [ ] Box setup (clone + torch cu128 + deps + carbon24/mp20 CSVs).
+- [ ] Retrain mp20.pt (30k steps, d_model 256/8-layer).
+- [ ] Canonical eval (fixed seed): carbon24_big + mp20, match@1 + match@20 + RMSE.
+- [ ] Reconcile the 26.2%/59.8% (sm.fit) headline -> overwrite RESULTS.md with get_rms_dist
+      canonical numbers. Update memory.
+
 ## Note — diffusion follow-up deferred (not a quick fix)
 A FAIR diffusion baseline can't be a knob-turn: VE diffusion needs a uniform prior at
 t=T to be sampleable (can't init near f0 without knowing f0), so the flow's "concentrate
