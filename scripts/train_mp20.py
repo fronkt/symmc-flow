@@ -139,9 +139,14 @@ def main():
     ap.add_argument("--d-model", type=int, default=256)
     ap.add_argument("--attn-layers", type=int, default=8)
     ap.add_argument("--egnn-hidden", type=int, default=96)
+    ap.add_argument("--seed", type=int, default=0,
+                    help="seed prior draws for reproducible match@k (RNG over k draws "
+                         "otherwise jitters the rate)")
     args = ap.parse_args()
     if args.centroid_prior_std is not None and args.centroid_prior_std < 0:
         args.centroid_prior_std = None
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
     os.makedirs(CACHE, exist_ok=True)
     print("loading MP-20 (parse + cache) ...")
