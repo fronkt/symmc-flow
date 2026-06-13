@@ -88,21 +88,26 @@
 # Task: DiffCSP-style diffusion baseline (objective head-to-head vs flow)
 
 ## Plan
-- [ ] `diffusion.py`: DiffCSP two-process diffusion REUSING the SymMCFlow net unchanged.
-      * lattice k∈R^10: variance-preserving DDPM (cosine ᾱ), net lattice head = ε-pred.
-      * fractional f: variance-exploding wrapped-normal (geometric σ 0.005→0.5), net
-        centroid head = scaled score (σ·s); torus-correct score via truncated image sum.
-      * orient not diffused (carbon single-atom, λ_orient=0).
-      * sampler: lattice DDIM (deterministic) + fractional ancestral SMLD reverse
-        (tuning-free, no Langevin step-size to fit). Prior: k~N(0,I), f~Uniform.
-- [ ] `tests/test_diffusion.py`: wrapped-normal score sanity (small-σ → -δ/σ², zero net
-      drift at δ=0), q_sample shapes, loss runs + decreases on a toy fit, sampler yields
-      valid CrystalState (det>0, frac wrapped).
-- [ ] `scripts/train_carbon24_diffusion.py`: same data + same match@k eval as the flow
-      script (import match_rate / match_rate_topk), diffusion loss + sampler.
-- [ ] full pytest green on CPU; CPU smoke of train+sample.
-- [ ] train on the RTX 5090 box, eval match@1 + match@20 head-to-head vs the flow.
-- [ ] RESULTS.md table: flow vs diffusion at match@1 / match@20.
+- [x] `diffusion.py`: DiffCSP two-process diffusion REUSING the SymMCFlow net unchanged
+      (VP-DDPM lattice + wrapped-normal VE fractional score). Sampler: lattice DDIM
+      (x0-clamped) + fractional predictor-corrector (ancestral SMLD + Langevin).
+- [x] `tests/test_diffusion.py` (6 tests): wrapped-normal score correctness, q_sample
+      validity, learnable toy fit, valid samples. Full suite 42 pass.
+- [x] `scripts/train_carbon24_diffusion.py`: same data + same match@k eval as the flow.
+- [x] trained on RTX 5090 (same config as flow: d_model 256, 8 layers, 15k steps).
+- [x] RESULTS.md flow-vs-diffusion table.
+
+## Review (2026-06-13) — NEGATIVE RESULT, well-diagnosed
+- Flow wins decisively: match@1 3.9% vs ~1.6%, match@20 35.5% vs 14.1%, valid bonds
+  82% vs 26–30%, overlaps 0% vs 10–13%.
+- The diffusion COORDINATE field never learned: predict-zero DSM loss 2.538 == trained
+  frac loss 2.54 (diag_diffusion_floor.py). Lattice head trained fine (vol on ref).
+- Root cause = same under-dispersion the flow had: carbon frac marginal ~uniform, plain
+  DSM has ~no learnable coordinate signal. Flow fixed it with OT coupling + concentrated
+  prior; vanilla diffusion has neither. Langevin corrector lifted match@1 0%→1.6% but
+  can't create unlearned signal. Not a code bug (unit-tested; lattice side works).
+- STOPPED per "objective at its floor → change approach, don't scale": a fair diffusion
+  baseline needs the structural levers ported into the noising (DiffCSP's full design).
 
 # Task: Push carbon-24 match rate (std sweep + sampler steps + scale) — DONE
 

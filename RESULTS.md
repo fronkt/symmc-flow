@@ -173,9 +173,46 @@ python scripts/train_carbon24.py --eval-only --ckpt checkpoints/carbon24_big.pt 
 
 (Metric implemented + unit-tested on CPU, `tests/test_match_topk.py`.)
 
+## Diffusion baseline — flow vs diffusion head-to-head (2026-06-13)
+
+DiffCSP-style diffusion baseline (`symmc_flow/diffusion.py`,
+`scripts/train_carbon24_diffusion.py`) **reusing the SymMCFlow network unchanged** so the
+comparison isolates the objective, not the architecture: lattice head → DDPM ε over the
+R¹⁰ param space (VP, cosine ᾱ); centroid head → scaled score of a wrapped-normal VE
+diffusion on the fractional torus (σ 0.005→0.5). Sampler: lattice DDIM + fractional
+predictor-corrector (ancestral SMLD + Langevin). Same config as the flow (d_model 256,
+8 layers, 15k steps), 256 val structures.
+
+| objective | match@1 | match@20 | valid bonds | overlaps | frac loss |
+|---|---|---|---|---|---|
+| **flow** (carbon24_big) | **3.9%** | **35.5%** | **82%** | **0%** | 0.08 (centroid) |
+| diffusion (carbon24_diff) | ~1.6% | 14.1% | 26–30% | 10–13% | 2.54 |
+
+**The flow wins decisively, and the diffusion coordinate field never learned.** Decisive
+diagnostic (`scripts/diag_diffusion_floor.py`): the predict-zero DSM loss E‖σ·s‖² = 2.538
+**equals** the trained frac loss (~2.54), i.e. the score net explains ~0 variance on the
+fractional coordinates. The lattice head trained fine (volume on ref), so this is specific
+to the coordinate objective.
+
+**Why:** carbon fractional coordinates have a near-uniform dataset marginal, so plain
+denoising-score-matching has almost no learnable signal — the same under-dispersion that
+collapsed the *flow* until it was fixed by **OT coupling + a concentrated wrapped-normal
+prior**. Diffusion's forward process has neither, so its coordinate score stays at the
+floor and samples collapse (the Langevin corrector lifts match@1 0%→1.6% but can't create
+signal that wasn't learned). This is a genuine objective finding, not a code defect — the
+implementation is unit-tested (`tests/test_diffusion.py`, 6 tests) and the lattice side
+works.
+
+**Takeaway:** a fair diffusion competitor needs the flow's structural levers ported into
+the diffusion target (OT-aligned / concentrated coordinate noising, à la DiffCSP's full
+design), not just the vanilla VP+VE scheme. Logged as the next step; not worth more GPU
+on the vanilla version (objective is at its floor — same "stop scaling, change approach"
+call as the match-rate plateau).
+
 ## Next steps (architectural, not more of the same)
 
-- Diffusion baseline (DiffCSP-style score model) to compare objectives head-to-head.
+- Port OT-coupling / concentrated-noise ideas into the diffusion coordinate target so the
+  baseline is a fair competitor (current vanilla DSM coordinate score is unlearnable here).
 - MP-20 loader + full SUN + match-rate benchmark vs CDVAE/DiffCSP.
 
 ## Reproduce
