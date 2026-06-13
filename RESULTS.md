@@ -135,13 +135,12 @@ model and a d_model=256 / 8-layer / 15k-step model (`carbon24_big.pt`, 2× size,
 improve match rate.**
 
 **Conclusion:** the structural pathology is solved (valid bonds 17% → ~82%,
-overlaps → ~2%, cell volume on reference). One-to-one StructureMatcher match rate
-plateaus at ~5% and is NOT limited by the prior std, sampler steps, or model
-capacity — every one of those was ruled out. The remaining gap is the modelling
-approach itself on a hard CSP benchmark: the model conditions only on (atom count,
-space group), so it generates *a* plausible carbon polymorph, rarely *the* specific
-reference. (DiffCSP reports ~17% on carbon-24 with a diffusion objective + richer
-coupling.) Best checkpoint: `carbon24_big.pt`.
+overlaps → ~2%, cell volume on reference). The prior std, sampler steps, and model
+capacity were each ruled out as limiters here. **NOTE (superseded below):** the "~5%
+plateau" cited in this section was computed with `StructureMatcher.fit` and a match@1
+metric; with the CSP-standard `get_rms_dist` matcher the canonical match@1 is **26.7%**
+(match@20 79.7%), above DiffCSP's ~17%. See "Matcher reconciliation" below. Best
+checkpoint: `carbon24_big.pt`.
 
 ## Best-of-k match metric (match@k)
 
@@ -151,27 +150,54 @@ CSP eval (DiffCSP/CDVAE report match@1 and match@20); the one-to-one number abov
 match@1 and understates a generator that produces valid-but-different polymorphs.
 Sanity stats (NN distance, volume) still use the first draw.
 
-Result on `carbon24_big.pt` (d_model 256, 8 layers, 15k steps, std 0.30), 256 val
-structures, RTX 5090:
+## Matcher reconciliation — canonical numbers (2026-06-13)
 
-| metric | match rate |
-|---|---|
-| match@1  | 3.9%  |
-| match@20 | **35.5%** |
+The earlier carbon/MP-20 numbers used `StructureMatcher.fit()` (which runs with
+`break_on_match=True`: it early-exits on the first candidate lattice that yields a
+mapping and so misses better mappings under a different supercell/origin). The **CSP
+literature standard is `StructureMatcher.get_rms_dist()`** — verified against DiffCSP's
+official `scripts/compute_metrics.py`, which constructs `StructureMatcher(ltol=0.3,
+stol=0.5, angle_tol=10)` and scores a match as `get_rms_dist(...) is not None` (RMSE =
+the returned distance). `get_rms_dist` runs `break_on_match=False` (exhaustive lattice
+search). Our match code (`match_rate`, `match_rate_topk`) already uses exactly this; the
+stale headline numbers simply predated it. The matcher is now locked to `get_rms_dist`.
 
-A ~9× lift from best-of-20 confirms the diagnosis: the flow generates valid-but-
-different carbon polymorphs (83.6% valid C–C bonds, 0% overlaps, vol 6.2 vs 6.4 Å³/atom
-on ref), and the one-to-one match@1 understated it heavily. match@20 is in the same
-regime as published diffusion CSP baselines, so the flow objective is competitive here
-once evaluated with the standard metric — the earlier ~5% "plateau" was a metric
-artifact, not a capability ceiling.
+Same `carbon24_big.pt` generations scored both ways (eval-n 256, seed 0) make the gap
+matcher-only:
+
+| carbon24_big | `fit` (non-standard) | `get_rms_dist` (DiffCSP standard) |
+|---|---|---|
+| match@1  | 5.1% | **26.6%** |
+| match@20 | 38.3% | **79.3%** |
+
+(`get_rms_dist` is not looser — it returns `None` for genuinely non-matching pairs, same
+as `fit`; it is just a more thorough lattice search. Probe: `scripts/diag_matcher.py`.)
+
+### Canonical carbon-24 result
+
+`carbon24_big.pt` (d_model 256, 8 layers, 15k steps, std 0.30), 256 val structures,
+RTX 5090, `get_rms_dist`, mean over seeds 0/1/2 (range in parens):
+
+| metric | flow (carbon24_big) | DiffCSP (carbon-24) |
+|---|---|---|
+| match@1  | **26.7%** (26.2–27.3) | ~17% |
+| match@20 | **79.7%** (79.3–80.5) | — |
+| RMSE (match@20) | **0.350** (0.348–0.353) | ~0.06 (match@1) |
+
+RNG over the prior draws is small (±0.6 pp). **The flow's carbon-24 match@1 (26.7%)
+exceeds DiffCSP's ~17%** when both are scored with the standard matcher — the prior
+"~5% plateau" was a *double* artifact: the match@1-vs-match@k effect **and** the
+non-standard `fit` matcher. There was never a 5% capability ceiling. (RMSE 0.35 is
+looser than DiffCSP's ~0.06: our matched cells are correct topology but less tightly
+relaxed, consistent with no post-hoc relaxation and less training.)
 
 ```bash
 python scripts/train_carbon24.py --eval-only --ckpt checkpoints/carbon24_big.pt \
-    --eval-n 256 --match-k 20
+    --eval-n 256 --match-k 20 --seed 0
 ```
 
-(Metric implemented + unit-tested on CPU, `tests/test_match_topk.py`.)
+(match@k implemented + unit-tested on CPU, `tests/test_match_topk.py`; matcher
+reconciliation in `scripts/diag_matcher.py`.)
 
 ## Diffusion baseline — flow vs diffusion head-to-head (2026-06-13)
 

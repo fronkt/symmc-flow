@@ -14,14 +14,16 @@ unifies three recent ideas:
 
 See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protocol.
 
-> **Status (2026-06-12):** CPU reference implementation **plus** a real GPU benchmark
-> on the CDVAE **carbon-24** dataset (RTX 5090). 34 unit tests green; train→sample runs
-> end-to-end on CPU and GPU. Key result: the lattice was reparametrized in
-> (log-volume, shape) space and a **concentrated wrapped-normal fractional prior** fixes
-> the atom-collapse failure mode — valid C–C bonds went from 17% → ~82%. One-to-one
-> StructureMatcher match rate currently plateaus at ~5% (an architecture/metric limit,
-> not a tuning one). Full experiment log in [`RESULTS.md`](RESULTS.md). MP-20 / WBM and
-> diffusion baselines are the next phase.
+> **Status (2026-06-13):** CPU reference implementation **plus** real GPU benchmarks on
+> the CDVAE **carbon-24** and **MP-20** datasets (RTX 5090). Full unit-test suite green;
+> train→sample runs end-to-end on CPU and GPU. Key results: the lattice was reparametrized
+> in (log-volume, shape) space and a **concentrated wrapped-normal fractional prior** fixes
+> the atom-collapse failure mode (valid C–C bonds 17% → ~82%). Scored with the CSP-standard
+> `StructureMatcher.get_rms_dist` matcher (as in DiffCSP), **carbon-24 match@1 = 26.7%
+> (match@20 79.7%), above DiffCSP's ~17%** — the earlier "~5% plateau" was a matcher/metric
+> artifact (`fit` + match@1), not a real ceiling. Full experiment log in
+> [`RESULTS.md`](RESULTS.md). A DiffCSP-style diffusion baseline is implemented and loses
+> head-to-head (objective finding, see RESULTS).
 
 ## Install
 
