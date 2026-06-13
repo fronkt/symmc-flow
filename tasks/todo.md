@@ -85,6 +85,25 @@
 - Remaining: absolute match rate ~5% on a hard CSP benchmark. Next levers are
   capacity/steps/std-tuning, NOT collapse — see RESULTS "Next steps".
 
+# Task: DiffCSP-style diffusion baseline (objective head-to-head vs flow)
+
+## Plan
+- [ ] `diffusion.py`: DiffCSP two-process diffusion REUSING the SymMCFlow net unchanged.
+      * lattice k∈R^10: variance-preserving DDPM (cosine ᾱ), net lattice head = ε-pred.
+      * fractional f: variance-exploding wrapped-normal (geometric σ 0.005→0.5), net
+        centroid head = scaled score (σ·s); torus-correct score via truncated image sum.
+      * orient not diffused (carbon single-atom, λ_orient=0).
+      * sampler: lattice DDIM (deterministic) + fractional ancestral SMLD reverse
+        (tuning-free, no Langevin step-size to fit). Prior: k~N(0,I), f~Uniform.
+- [ ] `tests/test_diffusion.py`: wrapped-normal score sanity (small-σ → -δ/σ², zero net
+      drift at δ=0), q_sample shapes, loss runs + decreases on a toy fit, sampler yields
+      valid CrystalState (det>0, frac wrapped).
+- [ ] `scripts/train_carbon24_diffusion.py`: same data + same match@k eval as the flow
+      script (import match_rate / match_rate_topk), diffusion loss + sampler.
+- [ ] full pytest green on CPU; CPU smoke of train+sample.
+- [ ] train on the RTX 5090 box, eval match@1 + match@20 head-to-head vs the flow.
+- [ ] RESULTS.md table: flow vs diffusion at match@1 / match@20.
+
 # Task: Push carbon-24 match rate (std sweep + sampler steps + scale) — DONE
 
 ## Plan
