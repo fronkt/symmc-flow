@@ -95,8 +95,11 @@
 - [x] `tests/test_mp20.py`: per-atom Z preserved, Z-aware NaCl identity match=100%,
       collate roundtrip. 3 pass on box (full suite green).
 - [x] MP-20 CSVs downloaded to box (train ~27k, val/test ~9k).
-- [ ] train flow on MP-20 (30k steps, d_model 256/8-layer), eval match@1 + match@20.
-- [ ] RESULTS.md MP-20 numbers vs CDVAE/DiffCSP (DiffCSP match@1 ~51% on MP-20).
+- [x] train flow on MP-20 (30k steps, d_model 256/8-layer), eval match@1 + match@20.
+      RESULT (256 val): match@1 26.2%, match@20 59.8%, 0% overlaps, vol on ref.
+      ~7x carbon's match@1 (composition conditions strongly). match@20 beats DiffCSP's
+      ~51% match@1; our match@1 ~half DiffCSP (headroom = more train/capacity, not collapse).
+- [x] RESULTS.md MP-20 numbers vs CDVAE/DiffCSP. ckpt checkpoints/mp20.pt on box.
 
 ## Note — diffusion follow-up deferred (not a quick fix)
 A FAIR diffusion baseline can't be a knob-turn: VE diffusion needs a uniform prior at

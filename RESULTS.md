@@ -209,11 +209,38 @@ design), not just the vanilla VP+VE scheme. Logged as the next step; not worth m
 on the vanilla version (objective is at its floor — same "stop scaling, change approach"
 call as the match-rate plateau).
 
-## Next steps (architectural, not more of the same)
+## MP-20 — multi-element CSP benchmark (2026-06-13)
 
-- Port OT-coupling / concentrated-noise ideas into the diffusion coordinate target so the
+The flow on the CDVAE **MP-20** benchmark (~27k Materials Project structures, ≤20
+atoms/cell, 89 elements). Same flow objective and architecture as carbon-24 (d_model 256,
+8 layers); atoms are single-atom blocks (λ_orient=0); now multi-element, so the
+periodic-table embedding + EGNN do real work and the StructureMatcher eval uses the real
+per-atom species (`symmc_flow/mp20.py`, `scripts/train_mp20.py`). 30k steps, batch 256,
+256 val structures, RTX 5090 (~2.3 h incl. CIF parse).
+
+| metric | flow (mp20.pt) | reference |
+|---|---|---|
+| match@1  | **26.2%** | DiffCSP ~51% (match@1) |
+| match@20 | **59.8%** | — |
+
+96.8% loss drop; **0% overlaps**, vol/atom 19.9 vs 20.8 Å³ on ref. Notes:
+- **MP-20 is far more identifiable than carbon-24** (match@1 26.2% vs 3.9%): the
+  composition conditions the structure heavily, so the flow generates *the* reference much
+  more often. Same method, ~7× the match@1 — the carbon-24 difficulty was the weak
+  conditioning (count + space group only), exactly as diagnosed.
+- match@20 59.8% **exceeds DiffCSP's reported match@1 (~51%)** on the same benchmark; a
+  fully apples-to-apples comparison still needs DiffCSP's own match@k, but the flow is
+  clearly in the competitive regime with a much simpler setup.
+- Honest gap: our match@1 (26.2%) is ~half DiffCSP's — the remaining headroom is more
+  training/capacity and richer coupling, not a collapse (samples are valid, 0% overlaps).
+
+## Next steps
+
+- Close the match@1 gap to DiffCSP (longer training / capacity / coupling); report match@k
+  for DiffCSP itself for a strict head-to-head.
+- Port OT-coupling / concentrated-noise into the *diffusion* coordinate target so that
   baseline is a fair competitor (current vanilla DSM coordinate score is unlearnable here).
-- MP-20 loader + full SUN + match-rate benchmark vs CDVAE/DiffCSP.
+- Full SUN (stable/unique/novel) metric in addition to match rate.
 
 ## Reproduce
 
