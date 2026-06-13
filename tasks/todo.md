@@ -85,6 +85,26 @@
 - Remaining: absolute match rate ~5% on a hard CSP benchmark. Next levers are
   capacity/steps/std-tuning, NOT collapse — see RESULTS "Next steps".
 
+# Task: MP-20 loader + flow benchmark (multi-element CSP) — IN PROGRESS
+
+## Plan
+- [x] `symmc_flow/mp20.py`: MP20Dataset reads per-atom Z (carbon hardcoded C); same
+      batch schema so model/training unchanged. Single-atom blocks, λ_orient=0.
+- [x] `scripts/train_mp20.py`: flow objective (reuses train()) + match@k eval that
+      builds StructureMatcher inputs from the REAL per-atom species (not "C").
+- [x] `tests/test_mp20.py`: per-atom Z preserved, Z-aware NaCl identity match=100%,
+      collate roundtrip. 3 pass on box (full suite green).
+- [x] MP-20 CSVs downloaded to box (train ~27k, val/test ~9k).
+- [ ] train flow on MP-20 (30k steps, d_model 256/8-layer), eval match@1 + match@20.
+- [ ] RESULTS.md MP-20 numbers vs CDVAE/DiffCSP (DiffCSP match@1 ~51% on MP-20).
+
+## Note — diffusion follow-up deferred (not a quick fix)
+A FAIR diffusion baseline can't be a knob-turn: VE diffusion needs a uniform prior at
+t=T to be sampleable (can't init near f0 without knowing f0), so the flow's "concentrate
+the prior" trick has no drop-in analog. Making it fair needs a bridge/stochastic-
+interpolant reformulation WITH OT coupling (≈ flow-matching-with-noise) — real research,
+uncertain payoff. Chose MP-20 (concrete, standard benchmark) over it for the warm box.
+
 # Task: DiffCSP-style diffusion baseline (objective head-to-head vs flow)
 
 ## Plan
