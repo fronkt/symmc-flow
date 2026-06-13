@@ -110,6 +110,18 @@
   the negative, switch approach (here: best-of-k eval, diffusion baseline), don't scale more.
 - **Context**: Diminishing-returns calls on paid GPU.
 
+## 2026-06-12 — Evaluate generative CSP with match@k, not match@1
+- **Insight**: carbon-24 match@1 sat at ~3.9–5% and looked like a hard ceiling across
+  std/steps/capacity sweeps. Implementing best-of-k (draw k gens/ref, hit if any matches)
+  gave match@20 = 35.5% — a ~9× lift — from the SAME checkpoint. The "plateau" was a
+  metric artifact: a generator that makes valid-but-different polymorphs is penalized by a
+  one-to-one metric.
+- **Rule**: For one-to-many generative tasks (CSP, molecule/conformer generation), the
+  one-to-one (k=1) metric measures the wrong thing. Report the standard best-of-k the field
+  uses (match@20 here) before concluding a model is capacity- or objective-limited. A flat
+  k=1 number with good per-sample validity is a signal to check k, not to scale.
+- **Context**: Any generative model evaluated against a single reference per input.
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.
