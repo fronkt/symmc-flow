@@ -27,7 +27,8 @@ RAW = os.path.join(ROOT, "data", "raw")
 CACHE = os.path.join(ROOT, "data", "cache")
 
 
-def sample_and_eval(model, val_ds, device, proc, sampler_steps, n_eval=64, match_k=1):
+def sample_and_eval(model, val_ds, device, proc, sampler_steps, n_eval=64, match_k=1,
+                    corrector_steps=0, snr=0.16):
     model.eval()
     n_sample = min(n_eval, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
@@ -37,7 +38,8 @@ def sample_and_eval(model, val_ds, device, proc, sampler_steps, n_eval=64, match
     with torch.no_grad():
         for _ in range(max(match_k, 1)):
             draws.append(diffusion_sample(model, mol_emb, z1, batch["sg"], proc,
-                                          steps=sampler_steps))
+                                          steps=sampler_steps,
+                                          corrector_steps=corrector_steps, snr=snr))
     out = draws[0]
 
     gen_nn = torch.tensor(min_image_nn_distances(out.lattice, out.centroid, out.mask))
@@ -69,6 +71,9 @@ def main():
     ap.add_argument("--max-mols", type=int, default=24)
     ap.add_argument("--diffusion-T", type=int, default=1000)
     ap.add_argument("--sampler-steps", type=int, default=250)
+    ap.add_argument("--corrector-steps", type=int, default=0,
+                    help="Langevin corrector steps per level (PC sampler; 0 = predictor-only)")
+    ap.add_argument("--snr", type=float, default=0.16, help="corrector signal-to-noise ratio")
     ap.add_argument("--eval-only", action="store_true")
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "checkpoints", "carbon24_diff.pt"))
     ap.add_argument("--tag", default="carbon24_diff")
@@ -98,7 +103,7 @@ def main():
         model.load_state_dict(ck["model"])
         print(f"loaded {args.ckpt} (eval-only)")
         sample_and_eval(model, val_ds, device, proc, args.sampler_steps,
-                        args.eval_n, args.match_k)
+                        args.eval_n, args.match_k, args.corrector_steps, args.snr)
         return
 
     mcfg = ModelConfig(d_model=args.d_model, n_heads=8, n_attn_layers=args.attn_layers,
@@ -135,7 +140,7 @@ def main():
     print(f"saved checkpoint -> {out_ckpt}")
 
     sample_and_eval(model, val_ds, device, proc, args.sampler_steps,
-                    args.eval_n, args.match_k)
+                    args.eval_n, args.match_k, args.corrector_steps, args.snr)
 
 
 if __name__ == "__main__":

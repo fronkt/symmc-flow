@@ -109,9 +109,12 @@ def diffusion_loss(model, batch, proc: DiffusionProcess, device,
 
 @torch.no_grad()
 def diffusion_sample(model, mol_emb, init: CrystalState, sg, proc: DiffusionProcess,
-                     steps: int = 250) -> CrystalState:
+                     steps: int = 250, corrector_steps: int = 0,
+                     snr: float = 0.16) -> CrystalState:
     """Reverse diffusion to a clean CrystalState. `init` supplies n / mask / orient.
-    Lattice: deterministic DDIM. Fractional: ancestral SMLD reverse chain on the torus."""
+    Lattice: deterministic DDIM. Fractional: predictor-corrector on the torus — an
+    ancestral SMLD predictor plus `corrector_steps` Langevin corrector steps per level
+    (DiffCSP-style; score models under-converge / collapse without the corrector)."""
     dev, dtype = init.lattice.device, init.lattice.dtype
     n = n_atoms(init)
     mask = init.mask
@@ -135,6 +138,14 @@ def diffusion_sample(model, mol_emb, init: CrystalState, sg, proc: DiffusionProc
         abar_next = abar[t_next] if t_next > 0 else torch.ones((), device=dev, dtype=dtype)
         sig_next = sig[t_next] if t_next > 0 else proc.sigma_min
 
+        # --- Langevin corrector on the fractional coords at the current level ----
+        for _ in range(corrector_steps):
+            L = M.param_to_lattice(k, n)
+            _, score_scaled, _ = model(mol_emb, L, f, R, t_cont, sg, mask)
+            g = score_scaled / sig_t
+            step = 2.0 * (snr * sig_t) ** 2
+            f = M.wrap(f + step * g + (2.0 * step) ** 0.5 * torch.randn_like(f) * m) * m
+
         L = M.param_to_lattice(k, n)
         eps_pred, score_scaled, _ = model(mol_emb, L, f, R, t_cont, sg, mask)
 
@@ -146,7 +157,7 @@ def diffusion_sample(model, mol_emb, init: CrystalState, sg, proc: DiffusionProc
         k0[..., 0] = k0[..., 0].clamp(-2.0, 6.0)  # per-atom log-volume stays physical
         k = abar_next.sqrt() * k0 + (1 - abar_next).sqrt() * eps_pred
 
-        # fractional: ancestral SMLD reverse step on the torus
+        # fractional: ancestral SMLD reverse (predictor) step on the torus
         score = score_scaled / sig_t
         drift = (sig_t ** 2 - sig_next ** 2) * score
         if t_next > 0:
