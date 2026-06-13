@@ -37,8 +37,9 @@ def test_z_aware_structures_use_real_species():
     assert structs[0] is not None
     assert {str(s) for s in structs[0].species} == {"Na", "Cl"}
     # a NaCl-vs-NaCl identity match should score a hit under the topk metric
-    mr, total = tm.match_rate_topk([state], state, Z, mask)
+    mr, total, rmsd = tm.match_rate_topk([state], state, Z, mask)
     assert total == 1 and mr == 1.0
+    assert rmsd < 1e-6   # identity match -> ~zero RMSD
 
 
 def test_dataset_collate_roundtrip(tmp_path):

@@ -55,12 +55,13 @@ def sample_and_eval(model, val_ds, device, proc, sampler_steps, n_eval=64, match
     print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
           f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
     if match_k <= 1:
-        mr, total = match_rate(out, z1)
-        print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)")
+        mr, total, rmsd = match_rate(out, z1)
+        print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)  "
+              f"RMSE {rmsd:.4f}")
     else:
-        mr, total = match_rate_topk(draws, z1)
+        mr, total, rmsd = match_rate_topk(draws, z1)
         print(f"  StructureMatcher match rate @{match_k} (best-of-{match_k}): "
-              f"{100*mr:.1f}%  ({total} structures)")
+              f"{100*mr:.1f}%  ({total} structures)  RMSE {rmsd:.4f}")
 
 
 def main():

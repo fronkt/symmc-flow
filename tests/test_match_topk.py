@@ -39,13 +39,13 @@ def test_match_topk_ors_across_draws():
     collapsed = _state(L.clone(), torch.zeros_like(frac))   # all atoms overlap -> miss
 
     # k=1 with only the miss draw -> 0%
-    mr1, total = tc.match_rate_topk([collapsed], ref)
+    mr1, total, _ = tc.match_rate_topk([collapsed], ref)
     assert total == 1 and mr1 == 0.0
 
-    # best-of-3 where the matching candidate is the LAST draw -> hit
-    mr3, total = tc.match_rate_topk([collapsed, collapsed, exact], ref)
-    assert total == 1 and mr3 == 1.0
+    # best-of-3 where the matching candidate is the LAST draw -> hit, ~zero RMSD
+    mr3, total, rmsd3 = tc.match_rate_topk([collapsed, collapsed, exact], ref)
+    assert total == 1 and mr3 == 1.0 and rmsd3 < 1e-6
 
     # sanity: the exact copy matches under the one-shot metric too
-    mr_one, _ = tc.match_rate(exact, ref)
-    assert mr_one == 1.0
+    mr_one, _, rmsd_one = tc.match_rate(exact, ref)
+    assert mr_one == 1.0 and rmsd_one < 1e-6

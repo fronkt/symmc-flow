@@ -58,25 +58,33 @@ def _to_structures(state, Z, mask):
 
 
 def match_rate_topk(gen_states, ref_state, Z, mask):
-    """Best-of-k CSP match rate with real species (k=1 -> standard match@1)."""
+    """Best-of-k CSP match rate + RMSE (the two standard CSP metrics; DiffCSP reports
+    both). For each reference the best (lowest-RMSD) matching candidate among the k draws
+    counts as the hit; RMSE is the mean of those StructureMatcher RMS distances (length-
+    scale normalized) over matched references. Returns (rate, total, mean_rmsd)."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     ref = _to_structures(ref_state, Z, mask)
     gens = [_to_structures(g, Z, mask) for g in gen_states]
-    hits, total = 0, 0
+    hits, total, rmsds = 0, 0, []
     for i, r in enumerate(ref):
         if r is None:
             continue
         total += 1
+        best = None
         for draw in gens:
             g = draw[i]
             try:
-                if g is not None and sm.fit(g, r):
-                    hits += 1
-                    break
+                rms = sm.get_rms_dist(g, r) if g is not None else None
             except Exception:
-                pass
-    return hits / max(total, 1), total
+                rms = None
+            if rms is not None and (best is None or rms[0] < best):
+                best = rms[0]
+        if best is not None:
+            hits += 1
+            rmsds.append(best)
+    mean_rmsd = sum(rmsds) / len(rmsds) if rmsds else float("nan")
+    return hits / max(total, 1), total, mean_rmsd
 
 
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
@@ -106,9 +114,10 @@ def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
     print(f"  overlaps <0.9 A: {100*(gen_nn<0.9).float().mean():.0f}%")
     print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
           f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
-    mr, total = match_rate_topk(draws if match_k > 1 else [out], z1, Z, out.mask)
+    mr, total, rmsd = match_rate_topk(draws if match_k > 1 else [out], z1, Z, out.mask)
     tag = f"@{match_k} (best-of-{match_k})" if match_k > 1 else ""
-    print(f"  StructureMatcher match rate{tag}: {100*mr:.1f}%  ({total} structures)")
+    print(f"  StructureMatcher match rate{tag}: {100*mr:.1f}%  ({total} structures)  "
+          f"RMSE {rmsd:.4f}")
 
 
 def main():

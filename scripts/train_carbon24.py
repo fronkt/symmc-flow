@@ -57,46 +57,56 @@ def _to_structures(state):
 
 
 def match_rate(gen_state, ref_state):
-    """CSP match rate: fraction of generated structures that StructureMatcher
-    (CDVAE tolerances) matches to their ground-truth counterpart."""
+    """CSP match rate + RMSE: fraction of generated structures that StructureMatcher
+    (CDVAE tolerances) matches to their ground truth, and the mean RMS distance over
+    matched pairs (length-scale normalized). Returns (rate, total, mean_rmsd)."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     gen, ref = _to_structures(gen_state), _to_structures(ref_state)
-    hits, total = 0, 0
+    hits, total, rmsds = 0, 0, []
     for g, r in zip(gen, ref):
         if r is None:
             continue
         total += 1
         try:
-            hits += bool(g is not None and sm.fit(g, r))
+            rms = sm.get_rms_dist(g, r) if g is not None else None
         except Exception:
-            pass
-    return hits / max(total, 1), total
+            rms = None
+        if rms is not None:
+            hits += 1
+            rmsds.append(rms[0])
+    mean_rmsd = sum(rmsds) / len(rmsds) if rmsds else float("nan")
+    return hits / max(total, 1), total, mean_rmsd
 
 
 def match_rate_topk(gen_states, ref_state):
-    """Best-of-k CSP match rate (the standard CSP eval; DiffCSP/CDVAE report this).
-    `gen_states` is a list of k independently-sampled generations for the SAME
-    references. A reference counts as matched if ANY of its k candidates matches
-    it under StructureMatcher (CDVAE tolerances)."""
+    """Best-of-k CSP match rate + RMSE (the two standard CSP metrics; DiffCSP/CDVAE
+    report both). `gen_states` is a list of k independent generations for the SAME
+    references; a reference is matched if any candidate matches, and RMSE averages the
+    best (lowest) matching RMS distance per reference. Returns (rate, total, mean_rmsd)."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     ref = _to_structures(ref_state)
     gens = [_to_structures(g) for g in gen_states]            # k x (n_struct)
-    hits, total = 0, 0
+    hits, total, rmsds = 0, 0, []
     for i, r in enumerate(ref):
         if r is None:
             continue
         total += 1
+        best = None
         for draw in gens:
             g = draw[i]
             try:
-                if g is not None and sm.fit(g, r):
-                    hits += 1
-                    break
+                rms = sm.get_rms_dist(g, r) if g is not None else None
             except Exception:
-                pass
-    return hits / max(total, 1), total
+                rms = None
+            if rms is not None and (best is None or rms[0] < best):
+                best = rms[0]
+        if best is not None:
+            hits += 1
+            rmsds.append(best)
+    mean_rmsd = sum(rmsds) / len(rmsds) if rmsds else float("nan")
+    return hits / max(total, 1), total, mean_rmsd
 
 
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
@@ -131,12 +141,13 @@ def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
     print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
           f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
     if match_k <= 1:
-        mr, total = match_rate(out, z1)
-        print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)")
+        mr, total, rmsd = match_rate(out, z1)
+        print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)  "
+              f"RMSE {rmsd:.4f}")
     else:
-        mr, total = match_rate_topk(draws, z1)
+        mr, total, rmsd = match_rate_topk(draws, z1)
         print(f"  StructureMatcher match rate @{match_k} (best-of-{match_k}): "
-              f"{100*mr:.1f}%  ({total} structures)")
+              f"{100*mr:.1f}%  ({total} structures)  RMSE {rmsd:.4f}")
 
 
 def main():
