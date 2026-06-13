@@ -122,6 +122,23 @@
   k=1 number with good per-sample validity is a signal to check k, not to scale.
 - **Context**: Any generative model evaluated against a single reference per input.
 
+## 2026-06-13 — Check the predict-zero floor before blaming the sampler
+- **Insight**: The diffusion baseline's fractional coords collapsed (10–13% overlaps,
+  match@1 ~0%). Tempting to blame the sampler (added a Langevin corrector — it lifted
+  match@1 only 0%→1.6%). The decisive test was a 10-line diagnostic: compute the
+  predict-zero loss E‖target‖² and compare to the trained loss. They were equal (2.538
+  vs 2.54) → the score net had learned ~nothing; the objective, not the sampler, was the
+  problem. Root cause: carbon fractional marginal is ~uniform, so plain DSM has almost no
+  learnable coordinate signal (the same under-dispersion the FLOW only beat via OT
+  coupling + a concentrated prior — diffusion's fixed forward process has neither).
+- **Rule**: When generated samples are bad, first decide *training vs sampling* with a
+  cheap floor check — compare the trained loss to the loss of the trivial predictor
+  (predict-zero / predict-mean). If they match, the network learned nothing and no
+  sampler change will help; fix the objective/target/coupling. Don't tune the sampler to
+  rescue an unlearned field. (Mirror of the earlier "is the loss at its irreducible
+  floor?" lesson, but here applied to detect the *opposite* failure: floor == learned-nothing.)
+- **Context**: Diffusion/score models, or any regression-trained generator with poor samples.
+
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.
