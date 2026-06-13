@@ -119,11 +119,29 @@
 - [x] Matcher already locked: both scripts use sm.get_rms_dist (pymatgen internally uses
       break_on_match=False -> thorough). Confirmed identical in carbon + mp20.
 - [x] Added --seed to both train scripts (prior draws are the only RNG in eval).
-- [ ] Box setup (clone + torch cu128 + deps + carbon24/mp20 CSVs).
-- [ ] Retrain mp20.pt (30k steps, d_model 256/8-layer).
-- [ ] Canonical eval (fixed seed): carbon24_big + mp20, match@1 + match@20 + RMSE.
-- [ ] Reconcile the 26.2%/59.8% (sm.fit) headline -> overwrite RESULTS.md with get_rms_dist
-      canonical numbers. Update memory.
+- [x] Box setup (clone + torch cu128 + deps + carbon24/mp20 CSVs). Full test suite ran clean.
+- [x] Retrain mp20.pt (30k steps, d_model 256/8-layer). Backed up to LOCAL repo (recycle-safe).
+- [x] Canonical eval (seeds 0/1/2): carbon24_big + mp20, match@1 + match@20 + RMSE.
+- [x] Reconcile -> overwrote RESULTS.md + README with get_rms_dist canonical numbers. Memory updated.
+
+## Review (2026-06-13)
+- **Root cause:** "matcher discrepancy" was not a bug — `StructureMatcher.fit` (break_on_match=
+  True, early-exit) vs `get_rms_dist` (break_on_match=False, exhaustive). VERIFIED via DiffCSP's
+  official compute_metrics.py that the CSP-standard matcher is `get_rms_dist` (match = non-None,
+  ltol .3/stol .5/angle_tol 10) — exactly what our code already used. Old headlines just predated it.
+- **Canonical (get_rms_dist, 256 val, seeds 0/1/2):**
+  - carbon24_big: match@1 **26.7%** (26.2–27.3), match@20 **79.7%**, RMSE@20 **0.350**.
+  - mp20: match@1 **41.4%** (40.6–42.2), match@20 **80.5%**, RMSE@1 ~0.20, RMSE@20 **0.145**.
+- **Impact:** the "~5% carbon plateau" was a DOUBLE artifact (match@1-vs-k + non-standard fit).
+  Carbon match@1 26.7% > DiffCSP ~17%. MP-20 41.4% vs DiffCSP ~51% (now apples-to-apples = ~81%,
+  not the old "half"). No capability ceiling; remaining gap = train/capacity + post-hoc relaxation.
+- **Shipped:** --seed on both train scripts; scripts/diag_matcher.py (fit-vs-rms reconciliation);
+  RESULTS.md + README corrected; mp20.pt + carbon24_big.pt backed up locally.
+- **Lesson captured:** checkpoints are not committed (too large) — scp every new ckpt to the local
+  repo immediately; the old box recycle lost mp20.pt + carbon24_diff.pt (carbon24_big survived only
+  via a stale local copy).
+- **Deferred:** diffusion row (carbon24_diff) get_rms_dist re-eval — ckpt lost with old box;
+  relative flow≫diffusion conclusion unaffected. DiffCSP's own match@20; SUN metric.
 
 ## Note — diffusion follow-up deferred (not a quick fix)
 A FAIR diffusion baseline can't be a knob-turn: VE diffusion needs a uniform prior at

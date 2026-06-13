@@ -214,6 +214,12 @@ predictor-corrector (ancestral SMLD + Langevin). Same config as the flow (d_mode
 | **flow** (carbon24_big) | **3.9%** | **35.5%** | **82%** | **0%** | 0.08 (centroid) |
 | diffusion (carbon24_diff) | ~1.6% | 14.1% | 26–30% | 10–13% | 2.54 |
 
+> Note: the match rates in this table are the older `StructureMatcher.fit` numbers (both
+> rows scored identically, so the head-to-head conclusion is unaffected). With the standard
+> `get_rms_dist` matcher the flow row is 26.7% / 79.7% (see Canonical carbon-24 above); a
+> matched re-eval of the diffusion row is deferred because `carbon24_diff.pt` was lost when
+> the old box was recycled. The relative result — flow ≫ diffusion — is robust regardless.
+
 **The flow wins decisively, and the diffusion coordinate field never learned.** Decisive
 diagnostic (`scripts/diag_diffusion_floor.py`): the predict-zero DSM loss E‖σ·s‖² = 2.538
 **equals** the trained frac loss (~2.54), i.e. the score net explains ~0 variance on the
@@ -244,31 +250,30 @@ periodic-table embedding + EGNN do real work and the StructureMatcher eval uses 
 per-atom species (`symmc_flow/mp20.py`, `scripts/train_mp20.py`). 30k steps, batch 256,
 256 val structures, RTX 5090 (~2.3 h incl. CIF parse).
 
-| metric | flow (mp20.pt) | reference |
+Canonical numbers below use the DiffCSP-standard `get_rms_dist` matcher (see "Matcher
+reconciliation"); match@1 is the mean over seeds 0/1/2 (range in parens), match@20 a
+single seed-0 run. DiffCSP's reference numbers also use `get_rms_dist`, so this is finally
+apples-to-apples.
+
+| metric | flow (mp20.pt) | DiffCSP (MP-20) |
 |---|---|---|
-| match@1  | **26.2%** | DiffCSP ~51% (match@1) |
-| match@20 | **59.8%** (sm.fit) / 80.5% (get_rms_dist) | — |
-| RMSE (match@20) | **0.1506** | DiffCSP ~0.06 (match@1) |
+| match@1  | **41.4%** (40.6–42.2) | ~51% (match@1) |
+| match@20 | **80.5%** | — |
+| RMSE (match@1) | ~0.20 | ~0.06 |
+| RMSE (match@20) | **0.145** | — |
 
-96.8% loss drop; **0% overlaps**, vol/atom 19.9 vs 20.8 Å³ on ref.
-
-⚠️ **Matcher discrepancy to reconcile (next session):** match@1/@20 above (59.8%) were
-computed with `StructureMatcher.fit`. Adding RMSE switched the match test to
-`get_rms_dist` (needed for the RMS value), which reported **match@20 80.5%** on a re-eval —
-a ~20-point gap (part RNG over the 20 random draws, part a real `fit` vs `get_rms_dist`
-matching difference; `get_rms_dist` with `break_on_match=False` is the more thorough
-search). Lock ONE matcher (likely `get_rms_dist`) and re-run match@1/@20 for both carbon-24
-and MP-20 before trusting absolute numbers. RMSE 0.15 is higher than DiffCSP's ~0.06 — our
-matched structures are looser, consistent with less training. Notes:
-- **MP-20 is far more identifiable than carbon-24** (match@1 26.2% vs 3.9%): the
-  composition conditions the structure heavily, so the flow generates *the* reference much
-  more often. Same method, ~7× the match@1 — the carbon-24 difficulty was the weak
-  conditioning (count + space group only), exactly as diagnosed.
-- match@20 59.8% **exceeds DiffCSP's reported match@1 (~51%)** on the same benchmark; a
-  fully apples-to-apples comparison still needs DiffCSP's own match@k, but the flow is
-  clearly in the competitive regime with a much simpler setup.
-- Honest gap: our match@1 (26.2%) is ~half DiffCSP's — the remaining headroom is more
-  training/capacity and richer coupling, not a collapse (samples are valid, 0% overlaps).
+96.8% loss drop; **0% overlaps**, vol/atom 19.85 vs 20.84 Å³ on ref. Notes:
+- **MP-20 is far more identifiable than carbon-24** (match@1 41.4% vs 26.7%): composition
+  conditions the structure heavily, so the flow hits *the* reference more often. (Carbon-24
+  conditions only on count + space group — that weaker conditioning, not a collapse, is its
+  lower rate.)
+- match@20 (80.5%) **exceeds DiffCSP's reported match@1 (~51%)**; the flow is in the
+  competitive regime with a much simpler setup. A fully apples-to-apples match@20 still needs
+  DiffCSP's own best-of-k.
+- Honest gap: our match@1 (41.4%) is ~81% of DiffCSP's ~51% (NOT "half" — that framing came
+  from the old `fit`-vs-`get_rms_dist` mismatch, now corrected). Remaining headroom is more
+  training/capacity + post-hoc relaxation, not a collapse (samples valid, 0% overlaps). Our
+  RMSE 0.20 vs DiffCSP's 0.06 reflects looser matched cells (no relaxation step, less training).
 
 ## Next steps
 
