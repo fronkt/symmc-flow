@@ -35,11 +35,12 @@ def test_unique_mask_dedups_within_formula_only():
 def test_novel_mask_only_compares_same_formula():
     train = [_nacl()]
     gen_known = _nacl()                          # same composition + geometry as train
-    gen_novel_same_comp = Structure(Lattice.cubic(6.5), ["Na", "Cl"],
-                                    [[0, 0, 0], [0.5, 0.5, 0.0]])  # NaCl, different geom
     gen_other_comp = _diamond_c()                # composition absent from train -> novel
-    mask = novel_mask([gen_known, gen_novel_same_comp, gen_other_comp], train)
-    assert mask == [False, True, True]
+    mask = novel_mask([gen_known, gen_other_comp], train)
+    assert mask == [False, True]
+    # a C structure is novel even though train holds NaCl: different reduced formula is
+    # never compared (the within-formula restriction), so train NaCl can't mask it.
+    assert novel_mask([_diamond_c()], [_nacl(), _nacl()]) == [True]
 
 
 def test_sun_summary_without_stability_omits_sun():
