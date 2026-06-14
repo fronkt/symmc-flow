@@ -275,13 +275,50 @@ apples-to-apples.
   training/capacity + post-hoc relaxation, not a collapse (samples valid, 0% overlaps). Our
   RMSE 0.20 vs DiffCSP's 0.06 reflects looser matched cells (no relaxation step, less training).
 
+## SUN — Stable / Unique / Novel (2026-06-13)
+
+Beyond conditional match rate, the standard generative-quality metric. One structure
+generated per MP-20 val composition (`scripts/eval_sun.py`, `mp20.pt`, 256, seed 0):
+
+| component | rate | definition |
+|---|---|---|
+| valid   | 92.2% | CDVAE structural validity (no pair < 0.5 Å) |
+| unique  | 100%  | distinct under StructureMatcher (within-formula dedup) |
+| novel   | 98.0% | no StructureMatcher hit vs any train structure of the same composition |
+| **stable** | **58.6%** | CHGNet E_above_hull < 0.1 eV/atom (metastable) |
+| **SUN** | **56.6%** | stable ∩ unique ∩ novel |
+
+Stability scored on 252/256 (4 chemical systems had no usable MP reference); median
+E_above_hull 0.074 eV/atom. **Stability method** (`symmc_flow/stability.py`): each
+candidate is CHGNet-relaxed, then placed on a convex hull built from CHGNet energies of
+the Materials Project reference structures in its chemical system. Using one energy model
+for both the candidate and every hull anchor keeps a single energy reference and avoids
+the GGA/GGA+U DFT-correction handling an ML-energy-vs-DFT-hull comparison would need
+(E_above_hull is therefore *CHGNet-relative*, not absolute MP-DFT).
+
+**Caveat — this is conditional SUN.** The generator is composition-conditioned, so it is
+evaluated on *known, valid* val compositions; this is easier than the unconditional
+de-novo-generation SUN (CDVAE/FlowMM) that also samples compositions, and the numbers are
+NOT directly comparable to those papers' DNG-SUN. What it does show: when handed a real
+composition, the flow produces a structurally valid (92%), distinct, training-set-novel,
+and CHGNet-metastable cell a majority of the time. Uniqueness is ~1.0 because val
+compositions are near-distinct (one draw each); novelty is high because the generated cell
+usually differs from the specific training polymorph (consistent with match@1 < 1).
+
+```bash
+MP_API_KEY=... python scripts/eval_sun.py --ckpt checkpoints/mp20.pt --eval-n 256 \
+    --seed 0 --stability        # omit --stability for U/N/validity only (no CHGNet/MP)
+```
+
+(U/N/validity unit-tested in `tests/test_sun.py`.)
+
 ## Next steps
 
 - Close the match@1 gap to DiffCSP (longer training / capacity / coupling); report match@k
   for DiffCSP itself for a strict head-to-head.
 - Port OT-coupling / concentrated-noise into the *diffusion* coordinate target so that
   baseline is a fair competitor (current vanilla DSM coordinate score is unlearnable here).
-- Full SUN (stable/unique/novel) metric in addition to match rate.
+- Unconditional de-novo SUN (sample compositions too) for direct CDVAE/FlowMM comparison.
 
 ## Reproduce
 

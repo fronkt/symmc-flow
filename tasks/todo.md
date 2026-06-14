@@ -124,7 +124,28 @@
 - [x] Canonical eval (seeds 0/1/2): carbon24_big + mp20, match@1 + match@20 + RMSE.
 - [x] Reconcile -> overwrote RESULTS.md + README with get_rms_dist canonical numbers. Memory updated.
 
-## Review (2026-06-13)
+# Task: SUN metric (Stable / Unique / Novel) (2026-06-13)
+
+## Plan
+- [x] symmc_flow/sun.py: validity + within-formula unique + novel (vs train). 5 tests green.
+- [x] symmc_flow/stability.py: CHGNet relax + CHGNet-consistent MP-chemsys convex hull ->
+      E_above_hull (one energy model for candidate + hull anchors; sidesteps GGA/GGA+U
+      DFT-correction mismatch). MP key via env, not committed.
+- [x] scripts/eval_sun.py: generate per val composition, U/N/validity (+ --stability for S+SUN).
+- [x] U/N/validity on mp20.pt (256, seed 0): valid 92.2%, unique 100%, novel 98.0%,
+      valid∩unique∩novel 90.2%.
+- [x] Full SUN with stability (CHGNet+MP, 252/256 scored, ~81min): stable 58.6%, **SUN 56.6%**,
+      median E_hull 0.074 eV/atom. RESULTS.md SUN section + README + memory updated, pushed.
+
+## Review (2026-06-13) — SUN
+- mp20 SUN (256, seed 0): valid 92.2%, unique 100%, novel 98.0%, stable 58.6%, **SUN 56.6%**.
+- Stability = CHGNet-relative E_above_hull on a CHGNet-energy MP-chemsys hull (one energy model
+  for candidate + anchors -> no GGA/GGA+U correction mismatch). Caveat: this is COMPOSITION-
+  CONDITIONED SUN (eval on known val compositions), NOT unconditional DNG-SUN — not directly
+  comparable to CDVAE/FlowMM. Next: unconditional SUN (sample compositions) for that comparison.
+- chgnet + mp-api installed on box; MP key passed via env (never committed).
+
+## Review (2026-06-13) — matcher reconciliation task
 - **Root cause:** "matcher discrepancy" was not a bug — `StructureMatcher.fit` (break_on_match=
   True, early-exit) vs `get_rms_dist` (break_on_match=False, exhaustive). VERIFIED via DiffCSP's
   official compute_metrics.py that the CSP-standard matcher is `get_rms_dist` (match = non-None,
