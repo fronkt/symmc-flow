@@ -144,6 +144,12 @@
   CONDITIONED SUN (eval on known val compositions), NOT unconditional DNG-SUN — not directly
   comparable to CDVAE/FlowMM. Next: unconditional SUN (sample compositions) for that comparison.
 - chgnet + mp-api installed on box; MP key passed via env (never committed).
+- UNCONDITIONAL SUN DONE (--from-train, sample comps from train marginal; commit pending):
+  valid 93.8%, unique 100%, novel 72.7%, stable 61.3%, **SUN 35.2%** (255/256, median E_hull
+  0.071). Only novelty moves vs conditional (98%->73%) = honest de-novo signal (regenerates
+  known structure ~27%). Caveats (NOT comparable to CDVAE/FlowMM DNG-SUN, optimistic): comps
+  from train marginal (no novel-composition test), unique~1 is small-sample, CHGNet-relative
+  metastability. RESULTS.md now has a 2-column conditional-vs-unconditional table.
 
 ## Review (2026-06-13) — matcher reconciliation task
 - **Root cause:** "matcher discrepancy" was not a bug — `StructureMatcher.fit` (break_on_match=

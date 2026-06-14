@@ -22,8 +22,8 @@ See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protoco
 > `StructureMatcher.get_rms_dist` matcher (as in DiffCSP), **carbon-24 match@1 = 26.7%
 > (match@20 79.7%), above DiffCSP's ~17%** — the earlier "~5% plateau" was a matcher/metric
 > artifact (`fit` + match@1), not a real ceiling. On MP-20 the flow reaches match@1 41.4% /
-> match@20 80.5%, and a composition-conditioned **SUN = 56.6%** (stable 58.6% via CHGNet
-> E_above_hull, unique 100%, novel 98%). Full experiment log in [`RESULTS.md`](RESULTS.md).
+> match@20 80.5%, and **SUN = 56.6%** conditional / 35.2% unconditional (train-sampled comps;
+> stable ~60% via CHGNet E_above_hull). Full experiment log in [`RESULTS.md`](RESULTS.md).
 > A DiffCSP-style diffusion baseline is implemented and loses head-to-head (objective finding).
 
 ## Install

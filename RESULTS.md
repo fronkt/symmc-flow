@@ -277,37 +277,44 @@ apples-to-apples.
 
 ## SUN — Stable / Unique / Novel (2026-06-13)
 
-Beyond conditional match rate, the standard generative-quality metric. One structure
-generated per MP-20 val composition (`scripts/eval_sun.py`, `mp20.pt`, 256, seed 0):
+Beyond conditional match rate, the standard generative-quality metric. Two protocols
+(`scripts/eval_sun.py`, `mp20.pt`, 256, seed 0): **conditional** (one structure per held-out
+MP-20 *val* composition) and **unconditional** (`--from-train`: composition + space group + N
+drawn from the *train* marginal, then a fresh structure generated — the closest de-novo
+protocol this composition-conditioned model supports).
 
-| component | rate | definition |
-|---|---|---|
-| valid   | 92.2% | CDVAE structural validity (no pair < 0.5 Å) |
-| unique  | 100%  | distinct under StructureMatcher (within-formula dedup) |
-| novel   | 98.0% | no StructureMatcher hit vs any train structure of the same composition |
-| **stable** | **58.6%** | CHGNet E_above_hull < 0.1 eV/atom (metastable) |
-| **SUN** | **56.6%** | stable ∩ unique ∩ novel |
+| component | conditional (val comps) | unconditional (train-sampled) | definition |
+|---|---|---|---|
+| valid   | 92.2% | 93.8% | CDVAE structural validity (no pair < 0.5 Å) |
+| unique  | 100%  | 100%  | distinct under StructureMatcher (within-formula dedup) |
+| novel   | 98.0% | 72.7% | no StructureMatcher hit vs any train structure of same composition |
+| **stable** | **58.6%** | **61.3%** | CHGNet E_above_hull < 0.1 eV/atom (metastable) |
+| **SUN** | **56.6%** | **35.2%** | stable ∩ unique ∩ novel |
 
-Stability scored on 252/256 (4 chemical systems had no usable MP reference); median
-E_above_hull 0.074 eV/atom. **Stability method** (`symmc_flow/stability.py`): each
-candidate is CHGNet-relaxed, then placed on a convex hull built from CHGNet energies of
-the Materials Project reference structures in its chemical system. Using one energy model
-for both the candidate and every hull anchor keeps a single energy reference and avoids
-the GGA/GGA+U DFT-correction handling an ML-energy-vs-DFT-hull comparison would need
-(E_above_hull is therefore *CHGNet-relative*, not absolute MP-DFT).
+Stability scored on 252/256 (conditional) and 255/256 (unconditional); median E_above_hull
+0.074 / 0.071 eV/atom; ~80–90 min each (sequential per-chemsys MP queries dominate).
+**Stability method** (`symmc_flow/stability.py`): each candidate is CHGNet-relaxed, then
+placed on a convex hull built from CHGNet energies of the Materials Project reference
+structures in its chemical system. One energy model for both the candidate and every hull
+anchor keeps a single energy reference and avoids the GGA/GGA+U DFT-correction handling an
+ML-energy-vs-DFT-hull comparison would need (E_above_hull is *CHGNet-relative*, not MP-DFT).
 
-**Caveat — this is conditional SUN.** The generator is composition-conditioned, so it is
-evaluated on *known, valid* val compositions; this is easier than the unconditional
-de-novo-generation SUN (CDVAE/FlowMM) that also samples compositions, and the numbers are
-NOT directly comparable to those papers' DNG-SUN. What it does show: when handed a real
-composition, the flow produces a structurally valid (92%), distinct, training-set-novel,
-and CHGNet-metastable cell a majority of the time. Uniqueness is ~1.0 because val
-compositions are near-distinct (one draw each); novelty is high because the generated cell
-usually differs from the specific training polymorph (consistent with match@1 < 1).
+The only number that moves between protocols is **novelty (98% → 73%)**: when conditioned on
+training compositions the flow regenerates the known structure ~27% of the time, which is the
+honest de-novo signal (and consistent with stability being unchanged — same structural
+quality, just less novel). Validity, uniqueness, and stability are protocol-independent.
+
+**Caveats on the unconditional number (why it is NOT directly comparable to CDVAE/FlowMM
+DNG-SUN, and is optimistic):** (1) compositions are sampled from the *training marginal*, so
+novel-composition generation is not tested (this model cannot generate compositions); (2)
+uniqueness is ~1.0 only because 256 draws rarely collide — a 10k-sample dedup would lower it;
+(3) stability is CHGNet-relative metastability (< 0.1 eV/atom), looser than a strict DFT
+E_hull < 0. It is a within-method, honestly-bounded result: handed a realistic composition,
+the flow yields a valid, metastable, training-novel cell ~35% of the time.
 
 ```bash
-MP_API_KEY=... python scripts/eval_sun.py --ckpt checkpoints/mp20.pt --eval-n 256 \
-    --seed 0 --stability        # omit --stability for U/N/validity only (no CHGNet/MP)
+MP_API_KEY=... python scripts/eval_sun.py --ckpt checkpoints/mp20.pt --eval-n 256 --seed 0 \
+    --stability [--from-train]   # omit --stability for U/N/validity only (no CHGNet/MP)
 ```
 
 (U/N/validity unit-tested in `tests/test_sun.py`.)
