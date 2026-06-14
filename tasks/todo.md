@@ -124,6 +124,17 @@
 - [x] Canonical eval (seeds 0/1/2): carbon24_big + mp20, match@1 + match@20 + RMSE.
 - [x] Reconcile -> overwrote RESULTS.md + README with get_rms_dist canonical numbers. Memory updated.
 
+# Task: Close MP-20 match@1 gap to DiffCSP — capacity scaling (2026-06-13)
+
+## Diagnosis
+mp20 (d_model 256/8L/30k) val loss plateaus after ~20k (0.033->0.029) while TRAIN loss keeps
+dropping -> capacity-bound, not steps-bound. (Carbon was conditioning-bound; MP-20 is not.)
+
+## Plan
+- [ ] Train mp20_big: d_model 384, 8 layers, egnn_hidden 128, 40k steps, batch 256, seed 0.
+- [ ] Canonical eval (get_rms_dist): match@1 (seeds 0/1/2) + match@20 vs baseline 41.4%/80.5%.
+- [ ] If it helps, scp mp20_big.pt local + update RESULTS/README/memory. If not, record null result.
+
 # Task: SUN metric (Stable / Unique / Novel) (2026-06-13)
 
 ## Plan
