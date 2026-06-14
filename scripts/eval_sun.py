@@ -65,6 +65,10 @@ def main():
     ap.add_argument("--stability", action="store_true", help="run CHGNet + MP E_above_hull")
     ap.add_argument("--ehull-threshold", type=float, default=0.1)
     ap.add_argument("--relax-steps", type=int, default=200)
+    ap.add_argument("--from-train", action="store_true",
+                    help="unconditional/de-novo mode: draw the conditioning (composition, "
+                         "space group, N) by sampling random TRAIN items (the training "
+                         "composition marginal) instead of iterating val compositions")
     args = ap.parse_args()
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -81,8 +85,16 @@ def main():
     model.eval()
     print(f"loaded {args.ckpt}  device {device}")
 
-    n = min(args.eval_n, len(val_ds))
-    batch = move_batch(collate([val_ds[i] for i in range(n)]), device)
+    if args.from_train:
+        n = min(args.eval_n, len(train_ds))
+        g = torch.Generator().manual_seed(args.seed)
+        idx = torch.randperm(len(train_ds), generator=g)[:n].tolist()
+        src_items = [train_ds[i] for i in idx]
+        print(f"unconditional mode: sampled {n} compositions from the train marginal")
+    else:
+        n = min(args.eval_n, len(val_ds))
+        src_items = [val_ds[i] for i in range(n)]
+    batch = move_batch(collate(src_items), device)
     z1 = batch_to_state(batch)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
     with torch.no_grad():
