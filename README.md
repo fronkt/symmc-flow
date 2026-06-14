@@ -23,7 +23,9 @@ See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protoco
 > (match@20 79.7%), above DiffCSP's ~17%** — the earlier "~5% plateau" was a matcher/metric
 > artifact (`fit` + match@1), not a real ceiling. On MP-20 the flow reaches match@1 41.4% /
 > match@20 80.5%, and **SUN = 56.6%** conditional / 35.2% unconditional (train-sampled comps;
-> stable ~60% via CHGNet E_above_hull). Full experiment log in [`RESULTS.md`](RESULTS.md).
+> stable ~60% via CHGNet E_above_hull). Capacity scaling (d_model 384, ~3× compute) adds only
+> ~+2 pp match@1 — near the objective floor, so the gap to DiffCSP is method, not scale. Full
+> experiment log in [`RESULTS.md`](RESULTS.md).
 > A DiffCSP-style diffusion baseline is implemented and loses head-to-head (objective finding).
 
 ## Install

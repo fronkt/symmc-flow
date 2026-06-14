@@ -131,9 +131,18 @@ mp20 (d_model 256/8L/30k) val loss plateaus after ~20k (0.033->0.029) while TRAI
 dropping -> capacity-bound, not steps-bound. (Carbon was conditioning-bound; MP-20 is not.)
 
 ## Plan
-- [ ] Train mp20_big: d_model 384, 8 layers, egnn_hidden 128, 40k steps, batch 256, seed 0.
-- [ ] Canonical eval (get_rms_dist): match@1 (seeds 0/1/2) + match@20 vs baseline 41.4%/80.5%.
-- [ ] If it helps, scp mp20_big.pt local + update RESULTS/README/memory. If not, record null result.
+- [x] Train mp20_big: d_model 384, 8 layers, egnn_hidden 128, 40k steps, batch 256, seed 0.
+      (~4.4h; box was degraded/bursty — same noisy-neighbor cause as the SSH flakiness.)
+- [x] Canonical eval (get_rms_dist): match@1 43.4% (41.8–44.5, seeds 0/1/2), match@20 80.9%,
+      RMSE@1 ~0.19, RMSE@20 0.141. Baseline was 41.4% / 80.5% / 0.20 / 0.145.
+- [x] scp mp20_big.pt local; RESULTS/README/memory updated.
+
+## Review (2026-06-13/14) — capacity scaling = diminishing returns
+- ~3× compute (1.5× width × 1.33× steps) bought ~+2 pp match@1, flat match@20. Wider model's
+  val loss tracked baseline's at every step (~0.0286 vs 0.0288 floor) -> near capacity/objective
+  floor, like carbon-24. Scaling will NOT close the ~8 pp gap to DiffCSP (51%). Conclusion: the
+  remaining gap is the MODELLING APPROACH (OT-coupling depth, post-hoc relaxation), not size.
+  Next lever is method, not scale.
 
 # Task: SUN metric (Stable / Unique / Novel) (2026-06-13)
 

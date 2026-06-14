@@ -271,9 +271,29 @@ apples-to-apples.
   competitive regime with a much simpler setup. A fully apples-to-apples match@20 still needs
   DiffCSP's own best-of-k.
 - Honest gap: our match@1 (41.4%) is ~81% of DiffCSP's ~51% (NOT "half" — that framing came
-  from the old `fit`-vs-`get_rms_dist` mismatch, now corrected). Remaining headroom is more
-  training/capacity + post-hoc relaxation, not a collapse (samples valid, 0% overlaps). Our
-  RMSE 0.20 vs DiffCSP's 0.06 reflects looser matched cells (no relaxation step, less training).
+  from the old `fit`-vs-`get_rms_dist` mismatch, now corrected). Remaining headroom is the
+  modelling approach (coupling / post-hoc relaxation), not a collapse (samples valid, 0%
+  overlaps). Our RMSE 0.20 vs DiffCSP's 0.06 reflects looser matched cells (no relaxation step).
+
+### Capacity scaling — diminishing returns (mp20_big)
+
+Tested whether scale closes the DiffCSP gap. MP-20 val loss plateaus at ~0.029 after ~20k
+steps while train loss keeps falling, so the lever is width, not steps. `mp20_big.pt`
+(d_model 384, 8 layers, egnn_hidden 128, 40k steps ≈ 3× the baseline compute), get_rms_dist,
+256 val, match@1 mean over seeds 0/1/2:
+
+| metric | mp20 (256/8L/30k) | mp20_big (384/8L/40k) |
+|---|---|---|
+| match@1  | 41.4% | **43.4%** (41.8–44.5) |
+| match@20 | 80.5% | 80.9% |
+| RMSE@1   | ~0.20 | ~0.19 |
+| RMSE@20  | 0.145 | 0.141 |
+
+**~3× compute bought ~+2 pp match@1** (and flat match@20). The wider model's val loss tracked
+the baseline's at every step (~0.0286 vs ~0.0288 floor), so this is steep diminishing returns:
+scaling will not close the remaining ~8 pp to DiffCSP. MP-20 is near its capacity/objective
+floor (as carbon-24 was), confirming the gap is the modelling approach — OT-coupling depth and
+post-hoc relaxation — not raw scale. Next lever is method, not size.
 
 ## SUN — Stable / Unique / Novel (2026-06-13)
 
