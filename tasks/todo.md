@@ -299,3 +299,19 @@ data; both real benchmarks use single-atom blocks with lambda_orient=0. Gated on
 ## Deferred (real research, uncertain payoff)
 - [ ] Fair stochastic-interpolant diffusion baseline (OT-coupled / concentrated coordinate noising).
 - [ ] Unconditional de-novo SUN with composition sampling (model can't generate compositions yet).
+
+## Review (2026-06-17) — GPU runs DONE
+- Checkpoints carbon24_big.pt + mp20.pt were LOST (not local, boxes recycled) -> RETRAINED on
+  vast.ai RTX 5090 (108.240.82.27). Reproduced canonical: carbon match@20 78.9% (rec 79.7),
+  mp20 match@20 82.4% (rec 80.5). Both scp'd to LOCAL repo checkpoints/ (recycle-safe this time).
+- **Relaxed match@1 (mean seeds 0/1/2, --relax):** MP-20 41.8->44.7% (HELPS, RMSE 0.21->0.16);
+  carbon 29.4->21.2% (HURTS - CHGNet drifts allotropes to graphite/diamond, RMSE 0.41->0.33).
+  Consistent across all 3 seeds. RESULTS.md "Post-hoc relaxation" section added.
+- **DiffCSP head-to-head DONE** (2x RTX 3090 box, torch-1.9 env, released ckpts, num_evals=20,
+  256 test, get_rms_dist; recipe in scripts/diffcsp_headtohead.md):
+  - carbon: DiffCSP m@1 18.8% (<ours 26.7), m@20 89.1% (>ours 79.7).
+  - mp20:   DiffCSP m@1 48.0% (>ours 41.4), m@20 76.2% (<ours 80.5).
+  - **MIXED - each wins 2 of 4 cells.** DiffCSP RMSE much tighter (0.06-0.21 vs 0.15-0.35).
+    Old "match@20 beats DiffCSP match@1" framing WITHDRAWN (metric mismatch). Honest takeaway:
+    competitive at ~50x fewer sampling steps, not a uniform win. RESULTS + README corrected.
+- Still TODO: molecular-crystal benchmark (orientation ON) gated on CSD access (user reached out).

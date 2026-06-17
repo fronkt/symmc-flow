@@ -180,16 +180,18 @@ RTX 5090, `get_rms_dist`, mean over seeds 0/1/2 (range in parens):
 
 | metric | flow (carbon24_big) | DiffCSP (carbon-24) |
 |---|---|---|
-| match@1  | **26.7%** (26.2–27.3) | ~17% |
-| match@20 | **79.7%** (79.3–80.5) | — |
-| RMSE (match@20) | **0.350** (0.348–0.353) | ~0.06 (match@1) |
+| match@1  | **26.7%** (26.2–27.3) | 18.8% (our run) / ~17% reported |
+| match@20 | 79.7% (79.3–80.5) | **89.1%** (our run, num_evals=20) |
+| RMSE (match@20) | 0.350 (0.348–0.353) | **0.211** (our run); 0.282 @1 |
 
 RNG over the prior draws is small (±0.6 pp). **The flow's carbon-24 match@1 (26.7%)
-exceeds DiffCSP's ~17%** when both are scored with the standard matcher — the prior
-"~5% plateau" was a *double* artifact: the match@1-vs-match@k effect **and** the
-non-standard `fit` matcher. There was never a 5% capability ceiling. (RMSE 0.35 is
-looser than DiffCSP's ~0.06: our matched cells are correct topology but less tightly
-relaxed, consistent with no post-hoc relaxation and less training.)
+exceeds DiffCSP's (18.8% measured, ~17% reported)** when both are scored with the standard
+matcher — the prior "~5% plateau" was a *double* artifact: the match@1-vs-match@k effect
+**and** the non-standard `fit` matcher. **But the strict head-to-head reverses at match@20:
+DiffCSP's best-of-20 (89.1%) beats ours (79.7%)** — see "DiffCSP head-to-head" below. The
+flow is better single-shot on carbon; DiffCSP covers more references across 20 draws. (Our
+RMSE 0.35 is looser than DiffCSP's 0.21: our matched cells are correct topology but less
+tightly relaxed — post-hoc CHGNet relaxation closes part of this; see "Post-hoc relaxation".)
 
 ```bash
 python scripts/train_carbon24.py --eval-only --ckpt checkpoints/carbon24_big.pt \
@@ -257,23 +259,23 @@ apples-to-apples.
 
 | metric | flow (mp20.pt) | DiffCSP (MP-20) |
 |---|---|---|
-| match@1  | **41.4%** (40.6–42.2) | ~51% (match@1) |
-| match@20 | **80.5%** | — |
-| RMSE (match@1) | ~0.20 | ~0.06 |
-| RMSE (match@20) | **0.145** | — |
+| match@1  | 41.4% (40.6–42.2) | **48.0%** (our run) / ~51% reported |
+| match@20 | **80.5%** | 76.2% (our run, num_evals=20) |
+| RMSE (match@1) | ~0.20 | **0.073** (our run) |
+| RMSE (match@20) | 0.145 | **0.060** (our run) |
 
 96.8% loss drop; **0% overlaps**, vol/atom 19.85 vs 20.84 Å³ on ref. Notes:
 - **MP-20 is far more identifiable than carbon-24** (match@1 41.4% vs 26.7%): composition
   conditions the structure heavily, so the flow hits *the* reference more often. (Carbon-24
   conditions only on count + space group — that weaker conditioning, not a collapse, is its
   lower rate.)
-- match@20 (80.5%) **exceeds DiffCSP's reported match@1 (~51%)**; the flow is in the
-  competitive regime with a much simpler setup. A fully apples-to-apples match@20 still needs
-  DiffCSP's own best-of-k.
-- Honest gap: our match@1 (41.4%) is ~81% of DiffCSP's ~51% (NOT "half" — that framing came
-  from the old `fit`-vs-`get_rms_dist` mismatch, now corrected). Remaining headroom is the
-  modelling approach (coupling / post-hoc relaxation), not a collapse (samples valid, 0%
-  overlaps). Our RMSE 0.20 vs DiffCSP's 0.06 reflects looser matched cells (no relaxation step).
+- **Strict head-to-head (our num_evals=20 run of DiffCSP's released model, same matcher):**
+  DiffCSP wins MP-20 match@1 (48.0% vs 41.4%) but **the flow wins MP-20 match@20 (80.5% vs
+  76.2%)** — the reverse of carbon-24. See "DiffCSP head-to-head" below. The earlier framing
+  ("match@20 beats DiffCSP's match@1 ~51%") compared incomparable metrics and is retired.
+- DiffCSP's RMSE is much tighter (0.06–0.07 vs our 0.15–0.20) — its cells are far more
+  relaxed. Post-hoc CHGNet relaxation closes part of this (MP-20 RMSE 0.20→0.16) and *raises*
+  our MP-20 match@1; see "Post-hoc relaxation".
 
 ### Capacity scaling — diminishing returns (mp20_big)
 
@@ -338,6 +340,67 @@ MP_API_KEY=... python scripts/eval_sun.py --ckpt checkpoints/mp20.pt --eval-n 25
 ```
 
 (U/N/validity unit-tested in `tests/test_sun.py`.)
+
+## DiffCSP head-to-head — strict same-matcher match@1/@20 (2026-06-17)
+
+Ran DiffCSP's **released** checkpoints (`mp_csp`, `carbon_csp_and_gen`) ourselves at
+`num_evals=20` on a 256-structure test subset (to match our eval-n 256), scored with the
+**identical** `StructureMatcher(ltol .3/stol .5/angle_tol 10)` / `get_rms_dist` matcher used
+for our model (DiffCSP's own `compute_metrics.py` uses exactly this). This replaces the prior
+apples-to-oranges comparison (our match@20 vs DiffCSP's *reported* match@1) with a true
+best-of-k vs best-of-k. Reproduction is faithful: DiffCSP carbon match@1 = 18.8% (256) ≈ its
+published ~17%; MP-20 match@1 = 48.0% (256) ≈ its published ~51%. (3090 box, torch-1.9 env;
+see `scripts/diffcsp_headtohead.md`.)
+
+| dataset | metric | flow (ours) | DiffCSP (our run) | winner |
+|---|---|---|---|---|
+| carbon-24 | match@1  | **26.7%** | 18.8% | flow |
+| carbon-24 | match@20 | 79.7% | **89.1%** | DiffCSP |
+| MP-20     | match@1  | 41.4% | **48.0%** | DiffCSP |
+| MP-20     | match@20 | **80.5%** | 76.2% | flow |
+| carbon-24 | RMSE (matched) | 0.35 @20 | **0.21** @20 / 0.28 @1 | DiffCSP |
+| MP-20     | RMSE (matched) | 0.20 @1 / 0.15 @20 | **0.07** @1 / **0.06** @20 | DiffCSP |
+
+**The result is genuinely mixed — each method wins two of the four match cells.** The flow is
+better *single-shot* on carbon-24 (match@1) and better at *coverage* on MP-20 (match@20);
+DiffCSP is better single-shot on MP-20 and better at coverage on carbon-24. There is **no
+clean dominance either way**, and DiffCSP's matched cells are consistently tighter (lower RMSE)
+— it produces more relaxed structures (consistent with its longer 1000-step diffusion and the
+extra modelling machinery the flow omits). The honest headline: **SymMC-Flow is competitive
+with DiffCSP at ~50× fewer sampling steps (50 RK4 vs ~1000), trading per-structure RMSE for
+sampling efficiency, and wins/loses depending on dataset × metric** — not a uniform win. The
+old "match@20 beats DiffCSP's match@1" claim is withdrawn as a metric-mismatch artifact.
+
+> Caveat: our numbers are on 256 *val* structures, DiffCSP's on 256 *test* (its eval protocol
+> uses the test split); both are held-out, same distribution, ±~3 pp small-sample CI. A
+> full-test num_evals=20 DiffCSP run (~6–20 h) would tighten the CI but not change the
+> qualitative mixed-result picture.
+
+## Post-hoc relaxation — when it helps vs hurts (2026-06-17)
+
+`--relax` CHGNet-relaxes the generated structures before matching (references never relaxed),
+reported as a **separate** metric (the canonical numbers above stay unrelaxed; DiffCSP's
+headline is also unrelaxed). match@1, mean over seeds 0/1/2, 256 structures:
+
+| dataset | unrelaxed match@1 | relaxed match@1 | unrelaxed RMSE | relaxed RMSE |
+|---|---|---|---|---|
+| MP-20     | 41.8% | **44.7%** (↑) | 0.209 | **0.162** (↓) |
+| carbon-24 | 29.4% | **21.2%** (↓) | 0.405 | **0.334** (↓) |
+
+**Relaxation tightens RMSE in both cases but moves match rate in opposite directions, and the
+direction is consistent across all three seeds:**
+- **MP-20: relaxation *helps* match (+2.9 pp).** Multi-element compositions relax toward their
+  true (DFT-like) ground state, so near-miss structures fall into matching tolerance and RMSE
+  drops toward DiffCSP's regime (0.16, from 0.06's neighbourhood).
+- **carbon-24: relaxation *hurts* match (−8.2 pp).** A generated metastable carbon allotrope,
+  CHGNet-relaxed, drifts down-hill toward graphite/diamond — *away* from the specific target
+  polymorph — so structures that matched the reference no longer do. RMSE of the survivors
+  still tightens.
+
+This is a clean, dataset-dependent finding: post-hoc relaxation is only a free win when the
+target is the thermodynamic ground state (MP-20), not when the benchmark rewards specific
+metastable polymorphs (carbon-24). Reproduce:
+`python scripts/train_mp20.py --eval-only --ckpt checkpoints/mp20.pt --eval-n 256 --match-k 1 --relax --seed 0`.
 
 ## Next steps (journal hardening)
 

@@ -19,13 +19,18 @@ See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protoco
 > train→sample runs end-to-end on CPU and GPU. Key results: the lattice was reparametrized
 > in (log-volume, shape) space and a **concentrated wrapped-normal fractional prior** fixes
 > the atom-collapse failure mode (valid C–C bonds 17% → ~82%). Scored with the CSP-standard
-> `StructureMatcher.get_rms_dist` matcher (as in DiffCSP), **carbon-24 match@1 = 26.7%
-> (match@20 79.7%), above DiffCSP's ~17%** — the earlier "~5% plateau" was a matcher/metric
-> artifact (`fit` + match@1), not a real ceiling. On MP-20 the flow reaches match@1 41.4% /
-> match@20 80.5%, and **SUN = 56.6%** conditional / 35.2% unconditional (train-sampled comps;
-> stable ~60% via CHGNet E_above_hull). Capacity scaling (d_model 384, ~3× compute) adds only
-> ~+2 pp match@1 — near the objective floor, so the gap to DiffCSP is method, not scale. Full
-> experiment log in [`RESULTS.md`](RESULTS.md).
+> `StructureMatcher.get_rms_dist` matcher (as in DiffCSP): **carbon-24 match@1 = 26.7%
+> (match@20 79.7%); MP-20 match@1 41.4% (match@20 80.5%)**; the earlier "~5% plateau" was a
+> matcher/metric artifact (`fit` + match@1), not a real ceiling. **SUN = 56.6%** conditional /
+> 35.2% unconditional (CHGNet E_above_hull). A **strict same-matcher head-to-head against
+> DiffCSP's released models** (our num_evals=20 runs) is **genuinely mixed — each method wins
+> two of four match cells**: the flow leads carbon-24 match@1 (26.7% vs 18.8%) and MP-20
+> match@20 (80.5% vs 76.2%); DiffCSP leads MP-20 match@1 (48.0% vs 41.4%) and carbon-24
+> match@20 (89.1% vs 79.7%), with consistently tighter RMSE. The takeaway is **competitive at
+> ~50× fewer sampling steps (50 RK4 vs ~1000)**, not a uniform win — the old "match@20 beats
+> DiffCSP's match@1" claim was a metric mismatch and is withdrawn. Post-hoc CHGNet relaxation
+> *raises* MP-20 match@1 (41.8→44.7%) but *lowers* carbon-24's (29.4→21.2%, topology drift to
+> graphite/diamond). Full experiment log in [`RESULTS.md`](RESULTS.md).
 > A DiffCSP-style diffusion baseline is implemented and loses head-to-head (objective finding).
 
 ## Install

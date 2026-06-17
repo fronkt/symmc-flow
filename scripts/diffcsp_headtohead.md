@@ -53,3 +53,33 @@ Add DiffCSP's `match@1` / `match@20` / RMSE to the comparison tables in `RESULTS
 carbon-24 sections), replacing the "~51% (match@1)" / "~17%" placeholders that were lifted from the
 papers. Keep the provenance line: "DiffCSP numbers from our run of the released checkpoint,
 num_evals=20, get_rms_dist, N=___".
+
+## Actual run (2026-06-17) — recipe that worked + results
+
+Ran on a vast.ai **2× RTX 3090** box (Ampere sm_86; torch 1.9 cu111 does NOT run on Ada/Blackwell).
+The torch-1.9 env needs several non-obvious fixes (uv venv, python 3.8):
+
+- `torch==1.9.0+cu111` (`-f https://download.pytorch.org/whl/torch_stable.html`); pin
+  `torch-scatter==2.0.9` `torch-sparse==0.6.12` (`-f https://data.pyg.org/whl/torch-1.9.0+cu111.html`).
+- **Pin `torch` in the SAME install as the rest**, else the resolver upgrades it to 2.x (torchmetrics
+  pulls torch≥2). Pin `torchmetrics==0.5.1`, `numpy==1.24.4`, `pymatgen==2023.8.10`.
+- `libcusparse.so.11` is missing → `uv pip install nvidia-cusparse-cu11 nvidia-cublas-cu11` and add
+  their `…/nvidia/{cusparse,cublas}/lib` to `LD_LIBRARY_PATH`.
+- `pyxtal`: install `--no-deps` (its `pyshtools` dep needs a Fortran compiler; `pyxtal.symmetry` works
+  without it). `setuptools==59.5.0` (torch-1.9 tensorboard `distutils.version`). `ruamel.yaml<0.18`
+  (matminer's `yaml.safe_load`).
+- Checkpoints: `gdown --folder` the released drive folder (`11WOc9lTZN4hkIY7SKLCIrbsTMGy9TsoW`) →
+  `mp_csp/last.ckpt`, `carbon_csp_and_gen/…ckpt`. Set `PROJECT_ROOT=/root/DiffCSP`.
+- **Cost control:** full-test `num_evals=20` is ~6 h (carbon, 2030 test) / ~20 h (MP-20, 9046). We
+  capped `data/<ds>/test.csv` to **256 structures** (pandas `head(256)`, back up to `test_full.csv`,
+  delete cached `test_ori.pt`) to match our eval-n 256 — ~1.5–2.5 h each, parallel on the 2 GPUs.
+
+Results (256 test, num_evals=20, get_rms_dist):
+
+| dataset | DiffCSP match@1 | DiffCSP match@20 | RMSE@1 | RMSE@20 |
+|---|---|---|---|---|
+| carbon-24 | 18.8% | 89.1% | 0.282 | 0.211 |
+| MP-20     | 48.0% | 76.2% | 0.073 | 0.060 |
+
+match@1 reproduces published (~17% / ~51%). Full head-to-head + interpretation now in `RESULTS.md`
+"DiffCSP head-to-head". **Mixed result — each method wins 2 of 4 match cells.**
