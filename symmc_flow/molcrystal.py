@@ -157,6 +157,12 @@ def _parse_structure(structure, registry, max_mols, max_atoms, symprec, conf_tol
     from pymatgen.core import Lattice
     from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 
+    # Disordered / partial-occupancy sites have ambiguous geometry (and break the JmolNN
+    # bond detector). They don't belong in a rigid-body benchmark, so reject them with a
+    # clean reason -- same philosophy as the non-rigid conformer gate.
+    if not structure.is_ordered:
+        return None, "disordered (partial occupancy)"
+
     a, b, c, al, be, ga = structure.lattice.parameters
     L = np.array(Lattice.from_parameters(a, b, c, al, be, ga).matrix)   # canonical frame
     Linv = np.linalg.inv(L)

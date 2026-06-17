@@ -11,4 +11,5 @@ dist/
 checkpoints/
 data/raw/
 data/cache/
+data/cod_mol/
 .DS_Store

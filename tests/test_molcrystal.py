@@ -160,6 +160,19 @@ def test_nonrigid_copy_is_skipped():
     assert len(ds.skipped) == 1 and "non-rigid" in ds.skipped[0][1], ds.skipped
 
 
+def test_disordered_structure_is_skipped():
+    # A site with fractional occupancy (C/N split) makes the crystal disordered: ambiguous
+    # geometry, no rigid factorization. The loader must skip it with a clean reason rather
+    # than choke in the bond detector (real COD CIFs have many such partial-occupancy sites).
+    L = _BIG
+    st = Structure(Lattice(L), [{"C": 0.5, "N": 0.5}, "O"],
+                   [[0.2, 0.2, 0.2], [0.7, 0.7, 0.7]])
+    assert not st.is_ordered
+    ds = MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8)
+    assert len(ds) == 0
+    assert len(ds.skipped) == 1 and "disordered" in ds.skipped[0][1], ds.skipped
+
+
 def test_symmetric_molecule_automorphism_guard():
     # bent H-O-H (water): the two H are interchangeable (one automorphism). The min-RMSD
     # mapping must still give a clean round-trip despite the symmetry.
