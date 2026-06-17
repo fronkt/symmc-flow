@@ -266,3 +266,36 @@ uncertain payoff. Chose MP-20 (concrete, standard benchmark) over it for the war
     GPU phase pulls full ops from pymatgen.
   - SGFM averaging is implemented for the centroid field; lattice/orient use the
     plain field (full joint averaging is a GPU-phase extension).
+
+# Task: Journal hardening — relaxed match + strict DiffCSP head-to-head + mol-crystal (2026-06-16)
+
+Target: npj Computational Materials (fallback Digital Discovery). Addresses the two reviewer-facing
+weaknesses (apples-to-oranges DiffCSP baseline; loose matched cells / no relaxation) and the central
+thesis gap (orientation off on both real benchmarks).
+
+## P0 — done in repo (CPU), GPU runs pending
+- [x] `--relax` / `--relax-steps` on train_carbon24.py + train_mp20.py: CHGNet-relaxes GENERATED
+      structures (refs never relaxed) and prints a relaxed match rate + RMSE as a SEPARATE line,
+      never replacing the canonical unrelaxed numbers. Reuses symmc_flow.stability.relax_structures
+      (lazy chgnet import). Added `relax=`/`relax_steps=` kwargs to match_rate/match_rate_topk.
+- [x] tests/test_match_topk.py: identity-relax monkeypatch test (relaxed score == unrelaxed when
+      relaxation is identity; relax hook invoked). Skips if no pymatgen; no chgnet import. py_compile OK.
+- [x] scripts/diffcsp_headtohead.md: runbook to run DiffCSP's released models at num_evals=20 and
+      report match@1/@20 + RMSE with the same get_rms_dist matcher (no repo code; GPU-box task).
+- [ ] GPU: scp carbon24_big.pt + mp20.pt to box; `pip install chgnet`; run --relax (seeds 0/1/2)
+      on both; add relaxed match@1/@20 + RMSE as NEW columns in RESULTS.md (with carbon-topology caveat).
+- [ ] GPU: run scripts/diffcsp_headtohead.md; replace the "~51% (match@1)"/"~17%" placeholders in
+      RESULTS.md/README with DiffCSP's own match@20 from our run of the released checkpoint.
+
+## P0-strategic — molecular-crystal benchmark (orientation ON) — SCOPED, not built
+The thesis (rigid-body conformers + SO(3) orientation flow + SGFM) is validated only on synthetic
+data; both real benchmarks use single-atom blocks with lambda_orient=0. Gated on data access.
+- [ ] Confirm Purdue CCDC/CSD license access (Libraries / CCDC academic program).
+- [ ] Choose a CSD-derived molecular-crystal benchmark set (align with MolCrystalFlow's protocol if
+      available) so numbers are comparable.
+- [ ] Then design symmc_flow/molcrystal.py — analog of mp20.py but multi-atom rigid blocks (PCA
+      framing) with orientation ON (lambda_orient>0), exercising the SO(3) flow + SGFM on real data.
+
+## Deferred (real research, uncertain payoff)
+- [ ] Fair stochastic-interpolant diffusion baseline (OT-coupled / concentrated coordinate noising).
+- [ ] Unconditional de-novo SUN with composition sampling (model can't generate compositions yet).

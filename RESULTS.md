@@ -339,13 +339,29 @@ MP_API_KEY=... python scripts/eval_sun.py --ckpt checkpoints/mp20.pt --eval-n 25
 
 (U/N/validity unit-tested in `tests/test_sun.py`.)
 
-## Next steps
+## Next steps (journal hardening)
 
-- Close the match@1 gap to DiffCSP (longer training / capacity / coupling); report match@k
-  for DiffCSP itself for a strict head-to-head.
-- Port OT-coupling / concentrated-noise into the *diffusion* coordinate target so that
-  baseline is a fair competitor (current vanilla DSM coordinate score is unlearnable here).
-- Unconditional de-novo SUN (sample compositions too) for direct CDVAE/FlowMM comparison.
+Prioritized for a journal submission (npj Computational Materials; fallback Digital Discovery):
+
+- **Post-hoc relaxation (in repo, opt-in).** `--relax` on `train_carbon24.py`/`train_mp20.py`
+  CHGNet-relaxes the generated structures and reports a relaxed match rate + RMSE *as a separate
+  metric* next to the unrelaxed canonical numbers (DiffCSP's headline is unrelaxed — we never
+  overwrite ours with the relaxed row). Expected to tighten our looser matched cells (RMSE MP-20
+  ~0.20, carbon ~0.35 vs DiffCSP ~0.06). Caveat for carbon-24: CHGNet relaxation can pull a
+  metastable allotrope toward graphite/diamond and change topology away from the target polymorph,
+  so the relaxed carbon number is informative, not strictly "better." Run on GPU (chgnet), seeds
+  0/1/2, and add as new columns here.
+- **Strict DiffCSP head-to-head.** Compare match@20 to match@20 (same `get_rms_dist` matcher) by
+  running DiffCSP's released models at `num_evals=20`; replaces the current "~51% (match@1)" /
+  "~17%" placeholders lifted from the papers. See `scripts/diffcsp_headtohead.md`.
+- **Real molecular-crystal benchmark (orientation ON).** carbon-24 and MP-20 both run single-atom
+  blocks with `lambda_orient=0`, so the rigid-body conformer + SO(3) orientation flow + SGFM (the
+  paper's central novelty over atomic-CSP diffusion) is currently validated only on synthetic data.
+  A CSD-derived molecular-crystal set with orientation enabled is the key thesis experiment.
+  Gated on CSD/CCDC access (pursuing via Purdue).
+
+Deferred (real research, uncertain payoff): a fair stochastic-interpolant diffusion baseline with
+OT-coupled/concentrated coordinate noising; unconditional de-novo SUN with composition sampling.
 
 ## Reproduce
 

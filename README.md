@@ -92,13 +92,21 @@ atoms ─2D periodic-table embed─► EGNN (invariant per-molecule emb)
 
 See [`RESULTS.md`](RESULTS.md) for the full ablation tables, diagnostics, and reproduce steps.
 
-## Next phase
+## Next phase (journal hardening → npj Computational Materials)
 
-1. Best-of-`k` match-rate metric (standard CSP eval) — one-to-one understates a
-   generator that produces valid-but-different polymorphs.
-2. DiffCSP-style diffusion baseline for a head-to-head objective comparison.
-3. MP-20 / WBM loaders (`pymatgen` + `mp-api`); report SUN rate (target > 75%),
-   match rate, RMSD, and sampling-step / wall-clock vs diffusion baselines.
+The best-of-k metric, the diffusion baseline, and the MP-20/SUN benchmarks are done (above).
+The remaining work targets the two reviewer-facing weaknesses and the central thesis:
+
+1. **Post-hoc relaxation as a separate metric.** `--relax` on `train_carbon24.py` /
+   `train_mp20.py` reports a CHGNet-relaxed match rate + RMSE *alongside* (never replacing) the
+   canonical unrelaxed numbers — DiffCSP's headline is unrelaxed, so the relaxed row is reported
+   transparently as an additional column. Tightens our looser matched cells (RMSE ~0.20/0.35).
+2. **Strict DiffCSP head-to-head.** Run DiffCSP's released models at `num_evals=20` so we compare
+   match@20 to match@20 (same `get_rms_dist` matcher). See `scripts/diffcsp_headtohead.md`.
+3. **Real molecular-crystal benchmark (orientation ON).** Both current real benchmarks run
+   single-atom blocks with `lambda_orient=0`, so the rigid-body conformer + SO(3) orientation flow
+   + SGFM — the method's headline novelty — is validated only on synthetic data. A CSD-derived
+   molecular-crystal set with orientation enabled is the experiment that justifies the title.
 
 ## License
 

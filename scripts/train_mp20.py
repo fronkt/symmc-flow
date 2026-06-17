@@ -57,15 +57,22 @@ def _to_structures(state, Z, mask):
     return out
 
 
-def match_rate_topk(gen_states, ref_state, Z, mask):
+def match_rate_topk(gen_states, ref_state, Z, mask, relax=False, relax_steps=200):
     """Best-of-k CSP match rate + RMSE (the two standard CSP metrics; DiffCSP reports
     both). For each reference the best (lowest-RMSD) matching candidate among the k draws
     counts as the hit; RMSE is the mean of those StructureMatcher RMS distances (length-
-    scale normalized) over matched references. Returns (rate, total, mean_rmsd)."""
+    scale normalized) over matched references. Returns (rate, total, mean_rmsd).
+
+    `relax=True` CHGNet-relaxes each draw's GENERATED structures before matching (the
+    references are never relaxed). Reported as a SEPARATE metric, never as a replacement
+    for the canonical unrelaxed numbers (DiffCSP's headline match rate is unrelaxed)."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     ref = _to_structures(ref_state, Z, mask)
     gens = [_to_structures(g, Z, mask) for g in gen_states]
+    if relax:
+        from symmc_flow.stability import relax_structures
+        gens = [relax_structures(g, steps=relax_steps) for g in gens]
     hits, total, rmsds = 0, 0, []
     for i, r in enumerate(ref):
         if r is None:
@@ -88,7 +95,8 @@ def match_rate_topk(gen_states, ref_state, Z, mask):
 
 
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
-                    centroid_prior_std, n_eval=256, match_k=1):
+                    centroid_prior_std, n_eval=256, match_k=1,
+                    relax=False, relax_steps=200):
     model.eval()
     n_sample = min(n_eval, len(val_ds))
     batch = move_batch(collate([val_ds[i] for i in range(n_sample)]), device)
@@ -114,10 +122,16 @@ def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
     print(f"  overlaps <0.9 A: {100*(gen_nn<0.9).float().mean():.0f}%")
     print(f"  vol/atom  gen {(vol/n).mean():.2f}  ref {(ref_vol/n).mean():.2f} A^3   "
           f"det>0 {(torch.linalg.det(out.lattice)>0).float().mean():.2f}")
-    mr, total, rmsd = match_rate_topk(draws if match_k > 1 else [out], z1, Z, out.mask)
+    draws_for_match = draws if match_k > 1 else [out]
     tag = f"@{match_k} (best-of-{match_k})" if match_k > 1 else ""
+    mr, total, rmsd = match_rate_topk(draws_for_match, z1, Z, out.mask)
     print(f"  StructureMatcher match rate{tag}: {100*mr:.1f}%  ({total} structures)  "
           f"RMSE {rmsd:.4f}")
+    if relax:
+        mr, total, rmsd = match_rate_topk(draws_for_match, z1, Z, out.mask,
+                                          relax=True, relax_steps=relax_steps)
+        print(f"  + relaxed (CHGNet) match rate{tag}: {100*mr:.1f}%  ({total} structures)  "
+              f"RMSE {rmsd:.4f}")
 
 
 def main():
@@ -136,6 +150,12 @@ def main():
     ap.add_argument("--tag", default="mp20")
     ap.add_argument("--eval-n", type=int, default=256)
     ap.add_argument("--match-k", type=int, default=1)
+    ap.add_argument("--relax", action="store_true",
+                    help="also report a CHGNet-relaxed match rate + RMSE (a SEPARATE "
+                         "metric, never replacing the unrelaxed canonical numbers). "
+                         "Requires chgnet.")
+    ap.add_argument("--relax-steps", type=int, default=200,
+                    help="max CHGNet relaxation steps per structure (with --relax)")
     ap.add_argument("--d-model", type=int, default=256)
     ap.add_argument("--attn-layers", type=int, default=8)
     ap.add_argument("--egnn-hidden", type=int, default=96)
@@ -167,7 +187,8 @@ def main():
         model.load_state_dict(ck["model"])
         print(f"loaded {args.ckpt} (eval-only)")
         sample_and_eval(model, val_ds, device, args.sampler_steps, args.vol_per_atom,
-                        args.centroid_prior_std, args.eval_n, args.match_k)
+                        args.centroid_prior_std, args.eval_n, args.match_k,
+                        relax=args.relax, relax_steps=args.relax_steps)
         return
 
     mcfg = ModelConfig(d_model=args.d_model, n_heads=8, n_attn_layers=args.attn_layers,
@@ -191,7 +212,8 @@ def main():
     print(f"saved checkpoint -> {out_ckpt}")
 
     sample_and_eval(model, val_ds, device, args.sampler_steps, args.vol_per_atom,
-                    args.centroid_prior_std, args.eval_n, args.match_k)
+                    args.centroid_prior_std, args.eval_n, args.match_k,
+                    relax=args.relax, relax_steps=args.relax_steps)
 
 
 if __name__ == "__main__":
