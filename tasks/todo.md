@@ -315,3 +315,42 @@ data; both real benchmarks use single-atom blocks with lambda_orient=0. Gated on
     Old "match@20 beats DiffCSP match@1" framing WITHDRAWN (metric mismatch). Honest takeaway:
     competitive at ~50x fewer sampling steps, not a uniform win. RESULTS + README corrected.
 - Still TODO: molecular-crystal benchmark (orientation ON) gated on CSD access (user reached out).
+
+# Task: molcrystal.py — real rigid-body molecular-crystal loader (lambda_orient>0)
+
+## Plan
+- [x] `symmc_flow/molcrystal.py`: `MolCrystalDataset` — molecule detection via
+      `StructureGraph.from_local_env_strategy(JmolNN)` + PBC-unwrap BFS over `to_jimage`;
+      per-species conformer registry keyed by WL graph hash; Kabsch alignment
+      (`manifolds.project_so3`) with automorphism-min mapping (VF2, element node_match);
+      rigid-strictness skip gate (`conf_tol`, default 0.3 Å) recorded in `self.skipped`;
+      monatomic units -> orient=I/local=0. Same batch dict as carbon24/mp20.
+- [x] `rigid_to_frac` / `rigid_to_structure` — the exact inverse factorization, for
+      round-trip validation and eval-time molecular StructureMatcher reconstruction
+      (the single-atom `_to_structures` in train scripts can't expand molecules).
+- [x] Re-export from `data.py` + `__init__.py`.
+- [x] `tests/test_molcrystal.py` — 5 tests: round-trip recovers planted atoms (gauge-free,
+      frac space), all copies share one conformer + recovered relative rotations match
+      planted, monatomic=identity, non-rigid copy skipped, symmetric-molecule (water)
+      automorphism guard. All green.
+- [x] `scripts/train_molcrystal.py` — smoke train, lambda_orient=1.0, orientation tied to
+      centroid (learnable field): orient loss 5.39 -> 3.38 (37% drop). First time the SO(3)
+      head trains on real multi-atom rigid blocks.
+- [x] full `pytest -q` green (no regression); molcrystal deprecation warning removed.
+
+## Review
+- Factorization convention locked: `cart_atom = c@L + R@local`; species share ONE
+  reference conformer `local`, copies differ only by `R` — that shared conformer is what
+  makes the SO(3) flow learnable (vs single-atom mp20/carbon24 where orient≡I).
+- **No model change needed**: `model.encode_molecules` already runs the EGNN over A>1
+  `local`; only real multi-atom local/orient had to reach it.
+- CSD-independent by design: the loader takes pymatgen `Structure`s, so the full detection
+  pipeline is already exercised on genuine Structure objects; CSD only swaps the *corpus*
+  (a `detect_fn` hook lets the CSD Python API plug in later). Decision: reject non-rigid
+  (flexible) molecules above `conf_tol` to keep the rigid-body benchmark honest.
+- Lesson captured (tasks/lessons.md 2026-06-17): synthetic bond-graph tests must separate
+  copies (large cell + spread centroids) or JmolNN cross-bonds them; flex (don't snap) a
+  copy to exercise the conformer gate; a passing round-trip doesn't prove correctness —
+  assert the shared-conformer invariant too.
+- Still TODO (on CSD access): curated molecular-crystal benchmark corpus + the actual
+  orientation-ON training run and match@k numbers for the paper.

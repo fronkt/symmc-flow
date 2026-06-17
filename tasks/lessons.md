@@ -2,6 +2,23 @@
 
 <!-- Capture a rule after any correction. Format below. -->
 
+## 2026-06-17 — Synthetic molecular-crystal tests must separate copies
+- **Mistake**: Validating `molcrystal.py` I placed rigid-molecule copies at random
+  centroids in a ~14 Å cell; copies landed ~1.5 Å apart so JmolNN bonded atoms ACROSS
+  molecules. The bond graphs then differed per copy → different WL species keys → each
+  copy registered as its own reference (orient=I, its own `local`), so the
+  shared-conformer assertion failed (spread 2.6 Å) and the non-rigid gate "passed" only
+  because the distorted copy re-segmented. Round-trip still passed (each block is
+  self-consistent), which masked the real bug.
+- **Rule**: When testing a covalent-bond detector (JmolNN/StructureGraph), place copies
+  with a large cell + fixed widely-separated centroids (≫ bond cutoff, ~13 Å here) so
+  detection cannot cross-bond or hit periodic images. To exercise the non-rigid/conformer
+  gate, FLEX a copy (perturb terminal atoms while keeping connectivity) rather than
+  hard-displacing one atom (which breaks bonds and re-segments instead of triggering the
+  RMSD gate). A passing round-trip metric does not prove the factorization is correct —
+  also assert the shared-conformer invariant directly.
+- **Context**: `tests/test_molcrystal.py`; any bond-graph-based molecule detection.
+
 ## 2026-06-10 — Project kickoff
 - **Rule**: Architecture must stay dataset-agnostic — keep all dataset specifics
   behind loaders in `data.py` so the synthetic harness and real MP-20/carbon

@@ -106,6 +106,13 @@ def batch_to_state(batch) -> CrystalState:
     )
 
 
+# --- Real-dataset loaders ----------------------------------------------------
+# Molecular crystals (rigid-body blocks, orientation ON) live in molcrystal.py and are
+# re-exported here so the dataset namespace is one import. MP-20 / carbon-24 (single-atom
+# blocks, orientation OFF) live in their own modules.
+from .molcrystal import MolCrystalDataset, rigid_to_frac, rigid_to_structure  # noqa: E402,F401
+
+
 # --- Real-dataset hooks (GPU benchmark phase) --------------------------------
 def load_mp20(*args, **kwargs):
     raise NotImplementedError(
