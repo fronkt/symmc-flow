@@ -374,3 +374,31 @@ Full writeup: see `MOLCRYSTAL.md`.
 2. Diagnostic: condition orientation on TRUE lattice+centroids to confirm the cause.
 3. Fallback: reframe paper as rigid-body lattice+centroid flow + orientation as open problem.
 4. Deprioritized: min-over-symmetry orientation target (helps only symmetric minority).
+
+# Task: Clean-packing diagnostic — does the SO(3) head floor on noised conditioning? (2026-06-18)
+
+Ran the cheap diagnostic (#2 above) BEFORE building two-stage (#1), because a positive result
+is literally two-stage's second stage and a negative result rules two-stage out — strictly
+cheaper either way.
+
+## Plan
+- [x] `TrainConfig.cond_clean_packing` flag (config.py).
+- [x] `train._step_loss`/`evaluate`/`train`: when set, feed the field the TRUE (z1)
+      lattice+centroid instead of noised z_t; orientation stays noised, target unchanged
+      (no leakage). Only the orient loss is meaningful under the flag.
+- [x] `scripts/diag_orient_conditioning.py`: clean-packing run on the 1127 CSD corpus, orient
+      pre→post on held-out val, CONFIRMED/NULL verdict, saves diag_orient_cleanpack.pt.
+- [x] `tests/test_cond_clean_packing.py`: 2 plumbing tests (flag feeds true vs noised packing).
+      Full suite green.
+
+## Review (2026-06-18) — NULL, two-stage RULED OUT
+- 800 steps, clean packing: lattice 1.20→0.044, centroid 0.355→0.254 (both learn), **orient
+  5.35→5.18 (+3.3%) — still at the ~5.2 predict-zero floor; R train oscillates 4.69–5.90,
+  no trend.** Conditioning on the TRUE packing is the best case for two-stage's 2nd stage, so
+  two-stage cannot help → **RULED OUT.**
+- Cause is deeper: the absolute per-molecule SO(3) target (even gauge-fixed) carries no
+  learnable signal on this asymmetric, ~1-crystal-per-molecule corpus.
+- **Decision:** lead with the honest reframe (rigid-body lattice+centroid flow + orientation
+  as a well-diagnosed open problem). One technical lever left before fully committing: change
+  the orientation TARGET (restrict to species recurring across crystals → relative target),
+  not the conditioning. Full writeup in MOLCRYSTAL.md.

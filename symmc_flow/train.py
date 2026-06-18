@@ -20,8 +20,15 @@ def move_batch(batch, device):
 
 
 def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0,
-               centroid_prior_std=None, prior_cache=None):
-    """One CFM forward pass. Returns (loss_tensor, parts)."""
+               centroid_prior_std=None, prior_cache=None, cond_clean_packing=False):
+    """One CFM forward pass. Returns (loss_tensor, parts).
+
+    cond_clean_packing (diagnostic): condition the field on the TRUE lattice+centroid (z1)
+    instead of the noised z_t, while still noising orientation and keeping the orient target.
+    Tests whether the SO(3) head floors only because it must read a half-noised packing. No
+    label leakage (z1.orient is never shown). NOTE: under this flag the lattice/centroid heads
+    see a state inconsistent with their own t-velocity targets, so ONLY the orient loss is
+    meaningful here."""
     z1 = batch_to_state(batch)
     if prior_cache is not None:
         z0 = prior_cache.assemble(z1, batch["idx"])
@@ -32,13 +39,15 @@ def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0,
     t = torch.rand(z1.lattice.shape[0], device=device)
     z_t, targets = interpolate(z0, z1, t)
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
-    pred = model(mol_emb, z_t.lattice, z_t.centroid, z_t.orient, t, batch["sg"], z1.mask)
+    cond_L = z1.lattice if cond_clean_packing else z_t.lattice
+    cond_x = z1.centroid if cond_clean_packing else z_t.centroid
+    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask)
     return cfm_loss(pred, targets, z1.mask, weights)
 
 
 @torch.no_grad()
 def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_atom=10.0,
-             centroid_prior_std=None, prior_cache=None):
+             centroid_prior_std=None, prior_cache=None, cond_clean_packing=False):
     model.eval()
     tot = 0.0
     n = 0
@@ -47,7 +56,7 @@ def evaluate(model, loader, weights, device, max_batches=20, ot=False, vol_per_a
             break
         batch = move_batch(batch, device)
         _, parts = _step_loss(model, batch, weights, device, ot, vol_per_atom,
-                              centroid_prior_std, prior_cache)
+                              centroid_prior_std, prior_cache, cond_clean_packing)
         tot += float(parts["total"])
         n += 1
     model.train()
@@ -87,7 +96,8 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
             batch = move_batch(batch, device)
             loss, parts = _step_loss(model, batch, weights, device,
                                      tcfg.use_ot_coupling, tcfg.prior_vol_per_atom,
-                                     tcfg.centroid_prior_std, train_cache)
+                                     tcfg.centroid_prior_std, train_cache,
+                                     tcfg.cond_clean_packing)
 
             opt.zero_grad()
             loss.backward()
@@ -100,7 +110,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                        f"(L {parts['lattice']:.3f}  x {parts['centroid']:.3f}  "
                        f"R {parts['orient']:.3f})")
                 if val_dl is not None and step % (tcfg.log_every * 5) == 0 and step > 0:
-                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, vol_per_atom=tcfg.prior_vol_per_atom, centroid_prior_std=tcfg.centroid_prior_std, prior_cache=val_cache):.4f}"
+                    msg += f"  | val {evaluate(model, val_dl, weights, device, ot=tcfg.use_ot_coupling, vol_per_atom=tcfg.prior_vol_per_atom, centroid_prior_std=tcfg.centroid_prior_std, prior_cache=val_cache, cond_clean_packing=tcfg.cond_clean_packing):.4f}"
                 print(msg)
             step += 1
 
