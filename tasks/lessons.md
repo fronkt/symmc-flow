@@ -2,6 +2,27 @@
 
 <!-- Capture a rule after any correction. Format below. -->
 
+## 2026-06-18 — Orientation flow is at the predict-zero floor on REAL crystals
+- **Finding**: First orientation-ON training on a real CSD corpus (250 crystals, 1092 rigid
+  blocks, lambda_orient=1). Lattice loss 1.4->0.1 and centroid 0.36->0.25 (both learn), but
+  orientation stayed ~5.0 == its predict-zero floor E||u_R||^2 = 5.29 (decisive diagnostic
+  from the 2026-06-13 lesson). The SO(3) head learned ~nothing. The synthetic smoke train
+  "worked" only because orientation there was BUILT as a deterministic function of centroid.
+- **Root cause**: the absolute orientation target R_m is (1) measured against an ARBITRARY
+  global per-species gauge (whichever copy was parsed first in the whole dataset defines
+  orient=I) and (2) has no space-group/site-symmetry quotient, so symmetry-equivalent
+  orientations are distinct targets. Given the noised flow-time conditioning, R_m is then
+  ~conditionally-random -> irreducible CFM floor. `use_group_averaging` is DEAD config
+  (defined in TrainConfig, referenced nowhere) — the SGFM symmetry averaging was never
+  actually implemented on the orientation loss.
+- **Rule**: validate a new generative DOF on real data with the predict-zero floor check
+  BEFORE a long run, and don't trust a synthetic demo where the target was constructed
+  deterministically. The fix for an at-floor orientation target is the same family that
+  fixed centroids (OT coupling) and eval (best-of-k): make the target gauge/symmetry
+  INVARIANT — min-over-symmetry CFM target, or a molecule-intrinsic reference frame — not
+  more model capacity or steps.
+- **Context**: scripts/train_csd_molcrystal.py; symmc_flow/flow.py cfm_loss orient path.
+
 ## 2026-06-17 — CSD/CCDC API + CIF gotchas (real corpus sourcing)
 - **CCDC Access Structures is not scriptable**: `/structures/download?id=REFCODE` returns an
   HTML consent form (name/email/affiliation + `__RequestVerificationToken` CSRF + server-side
