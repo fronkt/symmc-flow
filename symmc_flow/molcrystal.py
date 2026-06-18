@@ -34,6 +34,25 @@ from torch.utils.data import Dataset
 from . import manifolds as M
 
 
+# ===================== CIF reading ===========================================
+def read_cif(path, occupancy_tolerance: float = 10.0):
+    """Read a CIF into a pymatgen `Structure`, tolerant of special-position occupancies.
+
+    CSD-exported CIFs list atoms on special positions; naive parsing then sums
+    symmetry-overlapping occupancies > 1 and pymatgen rejects the whole structure ("no
+    structures"). A raised `occupancy_tolerance` merges the overlapping equivalents back to
+    occupancy 1. Genuine partial-occupancy *disorder* still produces a disordered structure
+    and is caught downstream by the `is_ordered` gate, so this only rescues symmetry, not
+    disorder. Falls back to the plain reader for non-CIF inputs."""
+    from pymatgen.core import Structure
+    from pymatgen.io.cif import CifParser
+    try:
+        return CifParser(path, occupancy_tolerance=occupancy_tolerance).parse_structures(
+            primitive=False)[0]
+    except Exception:
+        return Structure.from_file(path)
+
+
 # ===================== molecule detection ====================================
 def _detect_molecules(structure):
     """Crystal -> list of (species_key, elements, frac_unwrapped) molecular units.
@@ -241,9 +260,8 @@ class MolCrystalDataset(Dataset):
             self.items, self.skipped = blob["items"], blob["skipped"]
             return
 
-        from pymatgen.core import Structure
         if structures is None:
-            structures = (Structure.from_file(p) for p in (cif_paths or []))
+            structures = (read_cif(p) for p in (cif_paths or []))
 
         registry = _ConformerRegistry()
         self.items = []

@@ -2,6 +2,29 @@
 
 <!-- Capture a rule after any correction. Format below. -->
 
+## 2026-06-17 — CSD/CCDC API + CIF gotchas (real corpus sourcing)
+- **CCDC Access Structures is not scriptable**: `/structures/download?id=REFCODE` returns an
+  HTML consent form (name/email/affiliation + `__RequestVerificationToken` CSRF + server-side
+  session id); POSTing it back just re-renders. It's deliberately manual/per-structure. Use
+  it for a few CIFs by hand, never for bulk. The licensed **CSD Python API** (`ccdc`, bundled
+  in `CCDC/ccdc-software/csd-python-api/miniconda/python.exe`, separate from the project env)
+  is the bulk path; export filtered CIFs with it, then factorize under the torch/pymatgen env.
+- **`hasattr` lies on CCDC objects**: `hasattr(crystal, "is_polymeric")` returned True but
+  accessing it raised AttributeError — `is_polymeric` is on `molecule`, not `crystal`. Don't
+  trust `hasattr` to probe the `ccdc` API; access the attribute in a try, or check the docs.
+- **COD element filter**: distinct-element count is `strictmin`/`strictmax`, NOT `nel`
+  (silently ignored → returns the whole DB). `el1=C&el2=H&el3=N&el4=O&strictmax=4` = exactly
+  CHNO. Endpoint is `/cod/result` (not `result.php`).
+- **pymatgen "Invalid CIF file with no structures!"** on CSD CIFs = atoms on special
+  positions whose symmetry-overlap sums occupancy > 1, tripping the default
+  `occupancy_tolerance=1.0`. Fix: `CifParser(path, occupancy_tolerance=10.0)` merges the
+  equivalents (recovered 15/15). Genuine disorder still yields is_ordered=False downstream.
+- **Rule**: when sourcing a real crystal corpus, expect ~12% of CSD CIFs to need the raised
+  occupancy tolerance and most random organics to be rejected as non-rigid (flexible) — both
+  are correct, not bugs. Keep CSD-derived CIFs OUT of git (not redistributable); commit the
+  scripts + a refcode manifest so the corpus is reproducible by seed+CSD version.
+- **Context**: `scripts/csd_export.py`, `scripts/factorize_cifs.py`, `molcrystal.read_cif`.
+
 ## 2026-06-17 — Synthetic molecular-crystal tests must separate copies
 - **Mistake**: Validating `molcrystal.py` I placed rigid-molecule copies at random
   centroids in a ~14 Å cell; copies landed ~1.5 Å apart so JmolNN bonded atoms ACROSS
