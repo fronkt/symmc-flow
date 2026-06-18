@@ -354,3 +354,23 @@ data; both real benchmarks use single-atom blocks with lambda_orient=0. Gated on
   assert the shared-conformer invariant too.
 - Still TODO (on CSD access): curated molecular-crystal benchmark corpus + the actual
   orientation-ON training run and match@k numbers for the paper.
+
+## 2026-06-18 — Real CSD molecular-crystal benchmark (orientation-ON)
+Full writeup: see `MOLCRYSTAL.md`.
+- [x] CSD access obtained; export (`scripts/csd_export.py`, CCDC interpreter) + COD fallback.
+- [x] Factorize real CIFs → `MolCrystalDataset` (`scripts/factorize_cifs.py`); tolerant `read_cif`.
+- [x] Orientation-ON training on real corpus (`scripts/train_csd_molcrystal.py`).
+- [x] Molecule-intrinsic gauge (`_canonical_frame`) + lr 3e-4 stability fix.
+- [x] Scale corpus 250 → 1127 structures.
+
+### Result (robust negative)
+- lattice + centroid heads LEARN on real data; **SO(3) orientation head stays at its
+  predict-zero floor (5.24)** across both corpus sizes and after the gauge fix.
+- Not data sparsity (scaling didn't help). Leading cause: noised flow-time conditioning —
+  orientation must be predicted from half-noised lattice+centroids.
+
+### Next (not started — paused for thesis-framing discussion)
+1. Two-stage / cleaner conditioning (generate lattice+centroid first, orientation after). [rec]
+2. Diagnostic: condition orientation on TRUE lattice+centroids to confirm the cause.
+3. Fallback: reframe paper as rigid-body lattice+centroid flow + orientation as open problem.
+4. Deprioritized: min-over-symmetry orientation target (helps only symmetric minority).

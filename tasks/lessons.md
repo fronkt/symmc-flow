@@ -2,6 +2,29 @@
 
 <!-- Capture a rule after any correction. Format below. -->
 
+## 2026-06-18 — Intrinsic frame fixes the gauge but not learnability; harder targets NaN
+- **Did**: replaced the arbitrary global per-species gauge with a molecule-INTRINSIC frame
+  (principal axes of the gyration tensor, element-weighted 3rd-moment sign fix, right-handed)
+  so R_m is a gauge-free physical pose. Gauge-free => kept/skip set + all round-trip tests
+  unchanged (Kabsch RMSD is rotation-invariant).
+- **NaN gotcha**: retraining then diverged to NaN at ~step 17 — the SHARED trunk (both v_L and
+  v_R went non-finite while all inputs/targets stayed finite; u_R is bounded by pi). Cause was
+  early-Adam instability: the intrinsic-frame orient targets give larger early gradients and
+  Adam's tiny initial 2nd-moment estimate amplifies them (grad_clip=1.0 doesn't help because
+  the blow-up is finite-but-fast, not a single inf grad). Run 1 (gauge-arbitrary, many
+  near-identity targets) didn't trip it. Fix: lr 1e-3 -> 3e-4 (warmup would also work).
+- **Result**: stable at 3e-4 but orientation STILL at floor (R oscillates 4.95–5.80 around the
+  5.24 predict-zero floor over 200 steps, zero downward trend) while lattice/centroid converge.
+  Intrinsic frame is NECESSARY (correct gauge) but NOT SUFFICIENT on a 250-structure,
+  mostly-asymmetric, ~1-crystal-per-molecule corpus.
+- **Rule**: a gauge fix removes a guaranteed floor but doesn't create learnable signal where
+  the data is too sparse / conditioning too weak. Before building the next symmetry-quotient
+  layer, weigh the cheaper lever (scale the corpus) — orientation generalization needs repeats
+  per molecule, unlike lattice/centroid which follow universal statistics. And: when a target
+  distribution changes (harder), re-check optimizer stability (lr/warmup), don't assume the old
+  lr transfers.
+- **Context**: molcrystal `_canonical_frame`; scripts/train_csd_molcrystal.py.
+
 ## 2026-06-18 — Orientation flow is at the predict-zero floor on REAL crystals
 - **Finding**: First orientation-ON training on a real CSD corpus (250 crystals, 1092 rigid
   blocks, lambda_orient=1). Lattice loss 1.4->0.1 and centroid 0.36->0.25 (both learn), but
