@@ -67,7 +67,9 @@ def main():
     ap.add_argument("--cache", default="data/csd_mol/ds.pt", help="factorized dataset cache")
     ap.add_argument("--steps", type=int, default=1500)
     ap.add_argument("--batch-size", type=int, default=16)
-    ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--lr", type=float, default=3e-4,
+                    help="3e-4 default: the intrinsic-frame orient targets give larger early "
+                         "gradients that diverge under Adam at 1e-3 (NaN ~step 17)")
     ap.add_argument("--val-frac", type=float, default=0.12)
     ap.add_argument("--lambda-orient", type=float, default=1.0)
     ap.add_argument("--seed", type=int, default=0)

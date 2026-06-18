@@ -114,17 +114,48 @@ def _detect_molecules(structure):
 
 
 # ===================== conformer registry / alignment ========================
+def _canonical_frame(Y, elements):
+    """Rotate a centered conformer into a gauge-free, molecule-INTRINSIC body frame.
+
+    Without this the first-parsed copy of a species (anywhere in the dataset) defines an
+    arbitrary global gauge, so the pose rotation ``R_m`` measures "rotation relative to some
+    molecule in another crystal" -- conditionally random, which pins the SO(3) orientation
+    flow at its predict-zero floor (see tasks/lessons.md 2026-06-18). Here the frame is the
+    principal axes of the (mass-agnostic) gyration tensor ``Y^T Y``, ordered by descending
+    spread, with per-axis sign fixed by an element-weighted third moment and the frame forced
+    right-handed (proper rotation, so Kabsch's det+1 alignment stays exact). ``R_m`` then
+    becomes a physically meaningful pose, consistent across every crystal of the species.
+
+    Symmetric tops (degenerate spread / vanishing third moment, e.g. linear or highly
+    symmetric molecules) keep a residual axial gauge freedom -- that is the genuinely
+    unobservable spin about the symmetry axis and does not affect reconstruction."""
+    Y = np.asarray(Y, dtype=float)
+    if Y.shape[0] < 2:
+        return Y.copy()
+    C = Y.T @ Y                                        # gyration tensor (no masses)
+    w, V = np.linalg.eigh(C)                            # ascending eigenvalues
+    V = V[:, np.argsort(w)[::-1]]                       # columns = axes, descending spread
+    zw = np.asarray(elements, dtype=float)
+    m3 = np.array([np.sum(zw * (Y @ V)[:, i] ** 3) for i in range(3)])
+    V = V * np.where(m3 < 0, -1.0, 1.0)                 # fix +/- per axis (asymmetric mols)
+    if np.linalg.det(V) < 0:                            # enforce right-handed (proper) frame
+        V[:, int(np.argmin(np.abs(m3)))] *= -1.0        # flip least-determined axis
+    return (Y @ V).astype(np.float64)
+
+
 class _ConformerRegistry:
-    """species_key -> (Y_ref centered (A,3), ref_elements (A,), ref_graph). The first
-    occurrence of a species defines the body-frame gauge (Y_ref = its centered coords,
-    orient = I); later copies are aligned to it."""
+    """species_key -> (Y_ref (A,3) in the intrinsic frame, ref_elements (A,), ref_graph).
+    The first occurrence of a species defines the shared conformer, canonicalized to its
+    molecule-intrinsic frame (`_canonical_frame`) so the gauge is gauge-free; all copies
+    (including the first) are then Kabsch-aligned to it for a physical pose ``R_m``."""
 
     def __init__(self):
         self.store: dict[str, tuple] = {}
 
     def reference(self, key, elements, centered, graph):
         if key not in self.store:
-            self.store[key] = (centered.copy(), np.asarray(elements).copy(), graph)
+            Y_canon = _canonical_frame(centered, elements)
+            self.store[key] = (Y_canon, np.asarray(elements).copy(), graph)
         return self.store[key]
 
 
