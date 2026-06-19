@@ -402,3 +402,29 @@ cheaper either way.
   as a well-diagnosed open problem). One technical lever left before fully committing: change
   the orientation TARGET (restrict to species recurring across crystals → relative target),
   not the conditioning. Full writeup in MOLCRYSTAL.md.
+
+# Task: Relative-orientation target — decompose the floor (2026-06-18)
+
+Ran the remaining lever: change the orientation TARGET (relative, not absolute), not the
+conditioning. The absolute target factors R_m = rot(g_m)·R_asym (space-group part + free
+asymmetric-unit orientation); re-gauge to cancel R_asym and see if the symmetry part learns.
+
+## Plan
+- [x] `molcrystal.relative_gauge_item` / `_species_groups` / `species_multiplicity`: re-gauge
+      first-copy-as-reference (orient=I), others R'_m=R_m·R0^{-1}; round-trip preserved; adds
+      `is_ref` mask. Test `test_relative_gauge_preserves_roundtrip_and_targets` (suite green).
+- [x] `scripts/diag_orient_relative.py`: regauge + keep multi-copy crystals (1095/1127), train,
+      report orient loss split ref vs NON-ref (guards trivial predict-identity), `--clean-packing`.
+- [x] Ran the full 2×2 (absolute/relative × noised/clean), 800 steps each.
+
+## Review (2026-06-18) — PARTIAL POSITIVE; floor = free asymmetric-unit orientation
+- Non-reference (symmetry-determined) held-out orient loss, untrained→trained:
+  - absolute: 5.37→5.18 (+3.3%, floor) both noised & clean.
+  - **relative: 5.37→3.91 (+27.1%) noised; 5.37→3.94 (+26.7%) clean** — descends + generalizes.
+  - Overall orient +34–36%; reference copies +56–61%.
+- **Identical noised vs clean** → the relative signal rides on the space group (directly
+  conditioned) + coarse centroids; robust to conditioning noise (re-confirms two-stage moot).
+- **Conclusion:** the SO(3) flow DOES learn space-group-induced relative orientation; the floor
+  is the FREE asymmetric-unit orientation R_asym — gauge-arbitrary, fundamentally unlearnable,
+  not a broken flow/conditioning artifact. Orientation is *partially* learnable, precisely
+  decomposed. → Reframe paper with this decomposition (see MOLCRYSTAL.md Next steps).

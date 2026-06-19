@@ -15,7 +15,8 @@ pytest.importorskip("networkx")
 
 from pymatgen.core import Structure, Lattice  # noqa: E402
 from symmc_flow import manifolds as M  # noqa: E402
-from symmc_flow.molcrystal import MolCrystalDataset, rigid_to_frac  # noqa: E402
+from symmc_flow.molcrystal import (  # noqa: E402
+    MolCrystalDataset, rigid_to_frac, relative_gauge_item, species_multiplicity)
 
 
 # An asymmetric 4-atom conformer with ALL-DISTINCT elements (path C-N-O + H on C):
@@ -171,6 +172,35 @@ def test_disordered_structure_is_skipped():
     ds = MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8)
     assert len(ds) == 0
     assert len(ds.skipped) == 1 and "disordered" in ds.skipped[0][1], ds.skipped
+
+
+def test_relative_gauge_preserves_roundtrip_and_targets():
+    # plant n copies of one species at known rotations; the relative gauge must (1) leave the
+    # reconstructed atoms unchanged (gauge-only transform), (2) set the reference copy to I,
+    # and (3) give copy i the planted relative rotation R_i @ R_0^T (orthorhombic => recovered
+    # absolute frame == build frame, so relatives match exactly).
+    L = _BIG
+    n = 3
+    centroids = _grid_centroids(n)
+    Rs = M.random_so3((n,)).numpy()
+    st = _place(_CONFORMER_XYZ, _CONFORMER_Z, L, centroids, Rs)
+    item = MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8)[0]
+    assert species_multiplicity(item) == n
+
+    rel = relative_gauge_item(item)
+    # (1) round-trip atoms identical (compare via min-image NN in frac)
+    f0 = rigid_to_frac(item["lattice"], item["local"], item["centroid"], item["orient"])
+    f1 = rigid_to_frac(rel["lattice"], rel["local"], rel["centroid"], rel["orient"])
+    nn = _match_sets(f0[item["atom_mask"]], f1[rel["atom_mask"]], L)
+    assert float(nn.max()) < 1e-4, f"relative gauge changed atoms by {float(nn.max()):.2e} A"
+    # (2) reference copy (slot 0) is identity, flagged is_ref
+    assert bool(rel["is_ref"][0]) and not bool(rel["is_ref"][1:n].any())
+    assert torch.allclose(rel["orient"][0], torch.eye(3), atol=1e-5)
+    # (3) relative rotations match planted relatives
+    for i in range(1, n):
+        rel_planted = torch.tensor(Rs[i] @ Rs[0].T, dtype=torch.float32)
+        ang = M.so3_angle(rel["orient"][i], rel_planted)
+        assert float(ang) < 1e-2, f"relative rotation off by {float(ang):.3e} rad"
 
 
 def test_symmetric_molecule_automorphism_guard():

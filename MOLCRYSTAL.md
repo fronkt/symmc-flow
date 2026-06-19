@@ -10,21 +10,35 @@ _Last updated: 2026-06-18._
 ## TL;DR
 
 The data pipeline and loader work end-to-end on real CSD data. **The lattice and centroid
-flow heads learn on real molecular crystals; the SO(3) orientation head does not — it sits
-at its predict-zero floor across two corpus sizes (250 and 1127 structures), after a gauge
-fix, and even when conditioned on the TRUE clean packing.** This is a robust negative: the
-orientation novelty does **not** work as-is on real data.
+flow heads learn on real molecular crystals. The SO(3) orientation head learns the
+space-group-determined RELATIVE orientation between symmetry copies (partial positive, robust
+to conditioning), but the ABSOLUTE per-molecule orientation sits at its predict-zero floor**
+across two corpus sizes (250 and 1127), after a gauge fix, and even on the true clean packing.
+The floor is the **free asymmetric-unit orientation** — a gauge-arbitrary degree of freedom,
+not a broken flow or a conditioning artifact.
 
 **The leading hypothesis — that noised lattice+centroid conditioning was starving the SO(3)
-head of the packing geometry that determines orientation — has now been TESTED and REJECTED.**
+head of the packing geometry that determines orientation — has been TESTED and REJECTED.**
 A clean-packing diagnostic (`scripts/diag_orient_conditioning.py`, the `cond_clean_packing`
 flag) fed the field the un-noised lattice+centroids while still noising orientation. Over 800
 steps on the 1127-structure corpus, lattice (1.20→0.044) and centroid (0.355→0.254) learn, but
 orientation moves only 5.35→5.18 (+3.3%) — still at its ~5.2 floor. Since clean conditioning is
 the absolute best case for the second stage of a two-stage model, **this rules out the
-two-stage fix.** The cause is deeper: orientation is not recoverable from packing geometry in
-this mostly-asymmetric, ~1-crystal-per-molecule corpus under the absolute-target CFM (even
-gauge-fixed). Direction now: the honest paper-fallback framing (#3 below).
+two-stage fix.**
+
+**What the floor actually is — DECOMPOSED (2026-06-18).** The absolute per-molecule target
+`R_m` bundles two parts: `R_m = rot(g_m) · R_asym`, where `rot(g_m)` is the space-group op that
+generates copy m (learnable) and `R_asym` is the asymmetric unit's **free** orientation in the
+cell (per-crystal, gauge-arbitrary → unlearnable), and `R_asym` dominates the target. The
+relative-gauge diagnostic (`scripts/diag_orient_relative.py`, `relative_gauge_item`) re-gauges
+each crystal so the first copy of a species is the reference (orient := I) and the rest carry
+only `R'_m = R_m · R0⁻¹`, cancelling `R_asym`. **This is a partial positive:** on the 1095
+multi-copy crystals, the genuinely symmetry-determined NON-reference orient loss drops
+**5.37→3.94 (+27%) and generalizes to held-out val** (vs +3.3% ≈ noise for the absolute
+target). So orientation is **not uniformly unlearnable** — the SO(3) flow does learn the
+space-group-induced relative orientation between symmetry copies; what is unlearnable is the
+free `R_asym`. Direction now: reframe (#1 below) with this precise decomposition as the
+characterization.
 
 ## What was built (all committed, reproducible)
 
@@ -36,6 +50,7 @@ gauge-fixed). Direction now: the honest paper-fallback framing (#3 below).
 | Factorizer | `scripts/factorize_cifs.py` | any CIF dir → `MolCrystalDataset` + kept/skip + Z'/atoms histograms. |
 | Training | `scripts/train_csd_molcrystal.py` | orientation-ON training on the real corpus; train/val split; per-head loss untrained→trained; lattice prior matched to corpus volume/atom. |
 | Diagnostic | `scripts/diag_orient_conditioning.py` | clean-packing test (`cond_clean_packing` flag, `train._step_loss`): conditions the field on the TRUE lattice+centroid to isolate whether noised packing floors the SO(3) head. Rules out two-stage. |
+| Diagnostic | `scripts/diag_orient_relative.py` + `relative_gauge_item` | relative-orientation test: re-gauges to first-copy-as-reference (cancels the free asymmetric-unit orientation), restricts to multi-copy crystals, reports orient loss split ref vs non-reference. Shows the symmetry-determined relative orientation is partially learnable. |
 
 **Reproduce** (CSD CIFs are not redistributable → `data/csd_mol/` is gitignored; the export
 is reproducible from seed + CSD version `601`):
@@ -83,10 +98,38 @@ cannot help.
 | **orientation** | 5.352 | **5.175 (+3.3%)** | **still at floor; R train oscillates 4.69–5.90, no trend** |
 
 **Verdict: NULL.** Orientation does not learn even from the true packing → the two-stage fix is
-ruled out, and the cause is deeper than noised conditioning (absolute SO(3) target carries no
-learnable signal across this asymmetric, ~1-crystal-per-molecule corpus). Checkpoint
-`checkpoints/diag_orient_cleanpack.pt` (pre/post + split). Reproduce:
+ruled out, and the cause is deeper than noised conditioning. The next diagnostic identifies what
+that cause is. Checkpoint `checkpoints/diag_orient_cleanpack.pt` (pre/post + split). Reproduce:
 `python scripts/diag_orient_conditioning.py --cache data/csd_mol/ds.pt --steps 800`.
+
+### Relative-orientation diagnostic (2026-06-18) — decomposes the floor (PARTIAL positive)
+
+The absolute target factors as `R_m = rot(g_m) · R_asym`: a space-group-determined relative part
+`rot(g_m)` (learnable) and the asymmetric unit's **free** orientation `R_asym` (per-crystal,
+gauge-arbitrary, **unlearnable**, and dominant). `scripts/diag_orient_relative.py` re-gauges each
+crystal via `relative_gauge_item` (first copy of each species → reference `orient=I`; others carry
+`R'_m = R_m·R0⁻¹`, cancelling `R_asym`), keeps only the **1095** multi-copy crystals (≥2 copies of
+a species; multiplicity histogram `{2:329, 3:10, 4:650, 6:12, 8:86, 12:1, 16:7}`), and splits the
+orient loss into **reference** copies (target I, trivial) vs **non-reference** copies (genuinely
+symmetry-determined — guards against a trivial predict-identity win).
+
+Held-out val, non-reference orient loss (untrained → trained, 800 steps), across the full 2×2:
+
+| target ＼ conditioning | noised (realistic) | clean packing (best case) |
+|---|---|---|
+| **absolute `R_m`** | 5.37 → 5.18 (**+3.3%**, floor) | 5.35 → 5.18 (**+3.3%**, floor) |
+| **relative `R'_m`** | 5.37 → 3.91 (**+27.1%**) | 5.37 → 3.94 (**+26.7%**) |
+
+**Verdict: PARTIAL positive.** Strip out `R_asym` and the SO(3) flow **learns** the
+space-group-induced relative orientation between symmetry copies (~27% non-ref drop, generalizes;
+overall orient +34–36%, reference copies +56–61%) — vs ~0% for the absolute target. The result is
+**identical under noised and clean conditioning**, so the signal rides on the space group (directly
+conditioned) + coarse centroid arrangement and is robust to conditioning noise. **Conclusion: the
+orientation floor is the free asymmetric-unit orientation — a fundamental gauge-arbitrary degree
+of freedom, not a broken SO(3) flow and not a conditioning artifact.** Orientation is therefore
+*partially* learnable, with the unlearnable part precisely identified. Checkpoints
+`checkpoints/diag_orient_relative{,_noised}.pt`. Reproduce:
+`python scripts/diag_orient_relative.py --cache data/csd_mol/ds.pt --steps 800 [--clean-packing]`.
 
 ## What was diagnosed / fixed along the way
 
@@ -105,20 +148,22 @@ learnable signal across this asymmetric, ~1-crystal-per-molecule corpus). Checkp
 
 ## Next steps (ranked)
 
-1. **Honest reframe — now the lead.** Report rigid-body **lattice+centroid** flow as the
-   contribution and characterize **orientation as a well-diagnosed open problem**, with the
-   floor evidence: predict-zero floor, gauge fix necessary-not-sufficient, scaling 250→1127
-   no help, and the clean-packing diagnostic ruling out two-stage. This is a publishable,
-   carefully-bounded negative on the orientation sub-problem layered on positive lattice+
-   centroid results.
-2. **~~Two-stage / cleaner conditioning.~~ RULED OUT (2026-06-18)** by the clean-packing
-   diagnostic above — orientation does not learn even on the true packing.
-3. **Last technical lever before fully committing to #1: change the orientation TARGET, not the
-   conditioning.** The absolute per-molecule `R_m` (even gauge-fixed) may carry no learnable
-   signal across an asymmetric, ~1-crystal-per-molecule corpus. Options: (a) restrict to
-   species that recur across multiple crystals so a *relative* orientation target is defined;
-   (b) min-over-site-symmetry CFM target (only helps the symmetric minority — heavy plumbing,
-   low expected yield). If (a) also floors, #1 is final.
+1. **Reframe with the decomposition — now the lead.** The paper story is precise and
+   well-supported: rigid-body **lattice+centroid** flow as the working contribution, plus a
+   **characterized orientation result** — the SO(3) flow *learns the space-group-determined
+   relative orientation* between symmetry copies (partial positive, robust to conditioning), and
+   the residual floor is the **free asymmetric-unit orientation `R_asym`**, a gauge-arbitrary
+   degree of freedom that is fundamentally unlearnable from composition+packing. Evidence chain:
+   predict-zero floor → gauge fix necessary-not-sufficient → scaling no help → clean-packing
+   rules out two-stage → relative-gauge isolates the learnable vs free parts.
+2. **Optional strengthening of the partial positive (if a reviewer wants more):**
+   (a) report the relative-orientation result as a *match metric* (reconstruct multi-copy
+   crystals via `rigid_to_structure` and score with StructureMatcher) rather than only CFM loss;
+   (b) push steps/capacity to see how far below 3.9 the non-ref loss can go;
+   (c) condition explicitly on the Wyckoff/site-symmetry to test if `rot(g_m)` becomes near-exact.
+3. **~~Two-stage / cleaner conditioning.~~ RULED OUT (2026-06-18)** — clean-packing diagnostic;
+   orientation does not learn even on the true packing because the dominant target part is free.
+4. **Deprioritized:** min-over-site-symmetry CFM target (helps only the symmetric minority).
 
 ## Artifacts (local, not in git)
 
@@ -126,3 +171,4 @@ learnable signal across this asymmetric, ~1-crystal-per-molecule corpus). Checkp
   `data/csd_mol/manifest.csv` — shareable refcode manifest.
 - `checkpoints/csd_molcrystal*.pt` — trained checkpoints (incl. per-head pre/post val).
 - `checkpoints/diag_orient_cleanpack.pt` — clean-packing diagnostic checkpoint (per-head pre/post + split).
+- `checkpoints/diag_orient_relative{,_noised}.pt` — relative-orientation diagnostic (clean / noised conditioning; ref vs non-ref split).
