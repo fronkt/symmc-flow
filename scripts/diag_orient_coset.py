@@ -1,22 +1,18 @@
-"""DIAGNOSTIC: does the SO(3) flow learn the WITHIN-CRYSTAL RELATIVE orientation?
+"""2c: does conditioning on the space-group COSET id make the relative orientation exact?
 
-The absolute per-molecule target R_m bundles two parts: rot(g_m) from the space-group op that
-generates copy m (learnable) and the asymmetric unit's FREE orientation R_asym (per-crystal,
-gauge-arbitrary, unlearnable) -- and R_asym dominates, pinning the head at its predict-zero
-floor (confirmed even on the true packing by diag_orient_conditioning.py). This run re-gauges
-each crystal to the RELATIVE convention (`relative_gauge_item`): the first copy of each species
-is the reference (orient := I) and the rest carry R'_m = R_m R0^{-1}, cancelling R_asym so the
-only remaining signal is the symmetry-induced relative rotation. The corpus is restricted to
-crystals with >=2 copies of a species (so a non-trivial relative target exists).
+The relative-orientation diagnostic showed the SO(3) flow learns the symmetry-induced relative
+rotation only partially (+27% non-ref) -- the head must INFER which symmetry op generated each
+copy from the (noised) packing. This run hands the model that information directly as a discrete
+per-molecule coset id (`assign_cosets`: clusters the non-reference relative rotations into a
+per-space-group codebook). If the non-reference orient loss now COLLAPSES toward 0, the SO(3)
+head can represent rot(g_m) exactly and the +27% ceiling is purely the difficulty of inferring
+the coset from packing -- a clean upper bound on the decomposition. If it stays at +27%, even
+the discrete op identity is not enough and the residual is representational.
 
-To avoid a trivial "predict identity" positive, the orient loss is reported split by
-reference copies (target I, trivial) vs NON-reference copies (the genuinely symmetry-determined
-targets). The claim is proven iff the NON-REFERENCE orient loss descends + generalizes.
+    python scripts/diag_orient_coset.py --cache data/csd_mol/ds.pt --steps 800 [--clean-packing]
 
-  python scripts/diag_orient_relative.py --cache data/csd_mol/ds.pt --steps 800 [--clean-packing]
-
---clean-packing also conditions on the true lattice+centroid (best case = relative target AND
-clean packing). If even that floors, orientation is unlearnable here -> reframe is final.
+`--no-coset` reruns with the embedding disabled (n_cosets=0) for a paired control on the SAME
+cosetted corpus, isolating the effect of the conditioning alone.
 """
 import argparse
 import os
@@ -25,13 +21,13 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import Subset
 
 from symmc_flow.config import ModelConfig, TrainConfig
 from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
-                                    species_multiplicity)
+                                    species_multiplicity, assign_cosets)
 from symmc_flow.model import SymMCFlow
-from symmc_flow.train import train, _step_loss, move_batch, resolve_device
+from symmc_flow.train import train, _step_loss, resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
 from symmc_flow.flow import sample_prior, interpolate
 
@@ -47,6 +43,7 @@ def corpus_vol_per_atom(items):
 @torch.no_grad()
 def per_head_val(model, ds, device, weights, vol_per_atom, cond_clean_packing,
                  seed=12345, batch_size=16, passes=4):
+    from torch.utils.data import DataLoader
     dl = DataLoader(ds, batch_size=batch_size, shuffle=False, collate_fn=collate)
     acc = {"lattice": 0.0, "centroid": 0.0, "orient": 0.0, "total": 0.0}
     n = 0
@@ -66,8 +63,8 @@ def per_head_val(model, ds, device, weights, vol_per_atom, cond_clean_packing,
 @torch.no_grad()
 def orient_split_val(model, ds, device, vol_per_atom, cond_clean_packing,
                      seed=12345, batch_size=16, passes=4):
-    """Per-molecule orient CFM loss split into reference (target I) vs non-reference copies.
-    Same scale as cfm_loss's `orient` term (mean over molecules of ||v_R - u_R||^2)."""
+    """orient CFM loss split ref vs non-ref, passing the per-molecule coset id to the field."""
+    from torch.utils.data import DataLoader
     dl = DataLoader(ds, batch_size=batch_size, shuffle=False, collate_fn=collate)
     s = {"ref": 0.0, "nonref": 0.0}
     c = {"ref": 0.0, "nonref": 0.0}
@@ -83,8 +80,9 @@ def orient_split_val(model, ds, device, vol_per_atom, cond_clean_packing,
             mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
             cond_L = z1.lattice if cond_clean_packing else z_t.lattice
             cond_x = z1.centroid if cond_clean_packing else z_t.centroid
-            _, _, v_R = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask)
-            se = ((v_R - targets[2]) ** 2).sum(-1)          # (B,M) per-molecule ||.||^2
+            _, _, v_R = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask,
+                              coset=batch.get("coset"))
+            se = ((v_R - targets[2]) ** 2).sum(-1)
             ref = batch["is_ref"] & z1.mask
             non = (~batch["is_ref"]) & z1.mask
             s["ref"] += float((se * ref).sum()); c["ref"] += float(ref.sum())
@@ -100,34 +98,25 @@ def main():
     ap.add_argument("--lr", type=float, default=3e-4)
     ap.add_argument("--val-frac", type=float, default=0.12)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--clean-packing", action="store_true",
-                    help="also condition the field on the TRUE lattice+centroid (best case)")
-    ap.add_argument("--d-model", type=int, default=128, help="capacity sweep (2b)")
-    ap.add_argument("--n-attn-layers", type=int, default=4, help="capacity sweep (2b)")
-    ap.add_argument("--egnn-layers", type=int, default=4, help="capacity sweep (2b)")
-    ap.add_argument("--ckpt", default="checkpoints/diag_orient_relative.pt")
+    ap.add_argument("--angle-tol", type=float, default=20.0, help="coset clustering tolerance (deg)")
+    ap.add_argument("--clean-packing", action="store_true")
+    ap.add_argument("--no-coset", action="store_true", help="paired control: disable the embedding")
+    ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
 
     if not os.path.exists(args.cache):
-        sys.exit(f"no cache at {args.cache}; run csd_export.py + factorize_cifs.py first")
+        sys.exit(f"no cache at {args.cache}")
 
     full = MolCrystalDataset(cache_path=args.cache)
-    n0 = len(full)
-    # re-gauge to relative orientation + keep only multi-copy crystals
-    rel_items = [relative_gauge_item(full.items[i]) for i in range(n0)]
-    mults = [species_multiplicity(it) for it in rel_items]
-    keep = [i for i, m in enumerate(mults) if m >= 2]
-    full.items = [rel_items[i] for i in keep]
+    rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
+    keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
+    items = [rel[i] for i in keep]
+    items, n_cosets = assign_cosets(items, angle_tol_deg=args.angle_tol)
+    full.items = items
     n = len(full)
-    print(f"corpus: {n0} crystals -> {n} multi-copy (>=2 copies of a species) after relative re-gauge")
-    print(f"DIAGNOSTIC: relative orientation target; clean_packing={args.clean_packing}")
-    hist = {}
-    for i in keep:
-        hist[mults[i]] = hist.get(mults[i], 0) + 1
-    print("  max-species-multiplicity histogram:",
-          {k: hist[k] for k in sorted(hist)})
-    if n < 40:
-        sys.exit("too few multi-copy crystals for a meaningful run")
+    print(f"corpus: {len(rel)} -> {n} multi-copy after relative re-gauge")
+    print(f"cosets: {n_cosets} distinct space-group cosets (tol {args.angle_tol} deg); "
+          f"coset conditioning: {'OFF (control)' if args.no_coset else 'ON'}")
 
     g = torch.Generator().manual_seed(args.seed)
     perm = torch.randperm(n, generator=g).tolist()
@@ -137,18 +126,15 @@ def main():
     print(f"  split: {len(train_ds)} train / {len(val_ds)} val")
 
     vpa = corpus_vol_per_atom(full.items)
-    print(f"  lattice prior vol/atom matched to corpus: {vpa:.1f} A^3\n")
+    print(f"  lattice prior vol/atom: {vpa:.1f} A^3\n")
 
-    mcfg = ModelConfig(lambda_orient=1.0, d_model=args.d_model,
-                       n_attn_layers=args.n_attn_layers, egnn_layers=args.egnn_layers)
-    print(f"  capacity: d_model={args.d_model} attn_layers={args.n_attn_layers} "
-          f"egnn_layers={args.egnn_layers}")
+    mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets)
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
                        cond_clean_packing=args.clean_packing)
     device = resolve_device(tcfg.device)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
-    print(f"  device={device}  steps={args.steps}\n")
+    print(f"  device={device}  steps={args.steps}  n_cosets(model)={mcfg.n_cosets}\n")
 
     torch.manual_seed(args.seed)
     base = SymMCFlow(mcfg).to(device)
@@ -163,30 +149,21 @@ def main():
     for k in ("lattice", "centroid", "orient", "total"):
         drop = 100 * (1 - post[k] / pre[k]) if pre[k] else 0.0
         print(f"  {k:9s}: {pre[k]:.4f} -> {post[k]:.4f}  ({drop:+.1f}%)")
-    print("  orient split (the decisive numbers):")
+    print("  orient split:")
     for k in ("ref", "nonref"):
         drop = 100 * (1 - post_split[k] / pre_split[k]) if pre_split[k] else 0.0
-        tag = "  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)" if k == "nonref" else ""
+        tag = "  <-- NON-REFERENCE (coset-conditioned target)" if k == "nonref" else ""
         print(f"    {k:7s}: {pre_split[k]:.4f} -> {post_split[k]:.4f}  ({drop:+.1f}%){tag}")
 
     nonref_drop = 1 - post_split["nonref"] / pre_split["nonref"] if pre_split["nonref"] else 0.0
-    if nonref_drop > 0.50:
-        verdict = ("CONFIRMED (strong): the SO(3) flow learns within-crystal RELATIVE "
-                   "orientation -> the floor was the free asymmetric-unit orientation.")
-    elif nonref_drop > 0.15:
-        verdict = ("PARTIAL: the symmetry-determined relative orientation is partially "
-                   "learnable + generalizes (the absolute target gave ~0%) -> the floor was "
-                   "dominated by the free asymmetric-unit orientation, now characterized.")
-    else:
-        verdict = ("NULL: even the relative (symmetry-determined) orientation stays at floor "
-                   "-> orientation is unlearnable in this pipeline; the reframe is final.")
-    print(f"\nVERDICT ({100 * nonref_drop:+.1f}% non-ref): {verdict}")
+    print(f"\nNON-REF drop ({100 * nonref_drop:+.1f}%): vs +27% without coset conditioning -> "
+          f"{'coset id collapses the residual (representational head, inference-limited ceiling)' if nonref_drop > 0.6 else 'coset id helps but residual remains' if nonref_drop > 0.35 else 'coset id does not materially help (residual is representational)'}")
 
     os.makedirs(os.path.dirname(args.ckpt) or ".", exist_ok=True)
     torch.save({"model": model.state_dict(), "model_cfg": mcfg.__dict__, "vol_per_atom": vpa,
-                "val_idx": val_idx, "train_idx": train_idx, "pre": pre, "post": post,
-                "pre_split": pre_split, "post_split": post_split,
-                "clean_packing": args.clean_packing}, args.ckpt)
+                "val_idx": val_idx, "train_idx": train_idx, "pre_split": pre_split,
+                "post_split": post_split, "n_cosets": n_cosets,
+                "no_coset": args.no_coset}, args.ckpt)
     print(f"checkpoint -> {args.ckpt}")
 
 

@@ -428,3 +428,23 @@ asymmetric-unit orientation); re-gauge to cancel R_asym and see if the symmetry 
   is the FREE asymmetric-unit orientation R_asym — gauge-arbitrary, fundamentally unlearnable,
   not a broken flow/conditioning artifact. Orientation is *partially* learnable, precisely
   decomposed. → Reframe paper with this decomposition (see MOLCRYSTAL.md Next steps).
+
+## Review (2026-06-20) — strengthening 2a/2b/2c DONE; reframe shipped
+Ran the three follow-ups the partial positive needed, then reframed the docs.
+- [x] **2a match metric** (`scripts/eval_orient_matchrate.py`): orientation-isolated
+      (true lattice+centroid+conformer, sample only SO(3), best-of-8), rebuild via
+      `rigid_to_structure`, StructureMatcher.fit. n=131 val: trained **16.8%** vs 0% floor /
+      1.5% naive R=I; oracle 100%. Single deterministic draw collapses to the conditional mean
+      (relatives are ≈180°), so best-of-k is the correct generative read.
+- [x] **2b capacity/steps** (`diag_orient_relative.py` + `--d-model/--n-attn-layers/--egnn-layers`):
+      d_model 192 / 2000 steps → non-ref 5.35→3.56 (**+33.4%**, ref +68%). Real but diminishing;
+      plateaus above 0. First "big" config (256/6/5) OOM-swapped the CPU box (19 GB) → killed,
+      reran modest. Lesson: this box swaps with parallel/oversized training; run sequentially.
+- [x] **2c coset conditioning** (`scripts/diag_orient_coset.py`, `assign_cosets`, model
+      `n_cosets`/`coset_embed`): 707-coset per-SG codebook; conditioned non-ref 5.36→**2.65
+      (+50.6%)** vs `--no-coset` control 5.37→3.91 (+27.1%, reproduces baseline). → ceiling is
+      **inference-limited, not representational**; residual = free R_asym + symmetric-top multimodality.
+- [x] Tests: +`test_assign_cosets_*` (loader), +`test_coset_conditioning_optional_and_active`
+      (model); fixed `test_cond_clean_packing` for new `coset=` kwarg. Suite **60 passed, 2 skipped**.
+- [x] **Reframe (task 1)**: MOLCRYSTAL.md (TL;DR 3-way characterization, 2a/2b/2c subsections,
+      components table, next steps, artifacts) + PLAN.md §1 reframe note.

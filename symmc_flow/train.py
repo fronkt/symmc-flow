@@ -41,7 +41,8 @@ def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0,
     mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
     cond_L = z1.lattice if cond_clean_packing else z_t.lattice
     cond_x = z1.centroid if cond_clean_packing else z_t.centroid
-    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask)
+    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask,
+                 coset=batch.get("coset"))
     return cfm_loss(pred, targets, z1.mask, weights)
 
 

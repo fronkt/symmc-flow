@@ -47,6 +47,9 @@ class SymMCFlow(nn.Module):
             nn.Linear(c.time_embed_dim, c.d_model), nn.SiLU(), nn.Linear(c.d_model, c.d_model)
         )
         self.sg_embed = nn.Embedding(c.n_space_groups + 1, c.d_model)
+        # optional per-molecule space-group coset id (2c): which general-position op relates a
+        # copy to its species reference. 0 is reserved for reference/padding molecules.
+        self.coset_embed = nn.Embedding(c.n_cosets + 1, c.d_model) if c.n_cosets > 0 else None
 
         # pair features: frac diff (3) + frac dist (1) + Cartesian diff (3) +
         # Cartesian dist (1) + Fourier(frac diff) (3*2*n_freq). Cartesian terms give
@@ -93,11 +96,12 @@ class SymMCFlow(nn.Module):
         fourier = fourier.flatten(-2)                                  # (B,M,M,3*2F)
         return torch.cat([d, dist, cart, cart_dist, fourier], dim=-1)
 
-    def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask):
+    def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None):
         """Predict velocity fields.
         mol_emb:(B,M,d) lattice:(B,3,3) centroid:(B,M,3) orient:(B,M,3,3)
-        t:(B,) sg:(B,) mol_mask:(B,M). Returns (v_L (B,10) in lattice param space,
-        v_x (B,M,3), v_R (B,M,3))."""
+        t:(B,) sg:(B,) mol_mask:(B,M). coset:(B,M) long or None (per-molecule space-group coset
+        id, only used if the model was built with n_cosets>0). Returns (v_L (B,10) in lattice
+        param space, v_x (B,M,3), v_R (B,M,3))."""
         B, Mm, _ = centroid.shape
         n = mol_mask.sum(-1).clamp_min(1)
         k = M.lattice_to_param(lattice, n)                                     # (B,10)
@@ -105,6 +109,8 @@ class SymMCFlow(nn.Module):
         temb = self.time_mlp(timestep_embedding(t, self.cfg.time_embed_dim))  # (B,d)
         sgemb = self.sg_embed(sg.clamp(0, self.cfg.n_space_groups))            # (B,d)
         tok = tok + temb.unsqueeze(1) + sgemb.unsqueeze(1) + self.lattice_in(k).unsqueeze(1)
+        if self.coset_embed is not None and coset is not None:
+            tok = tok + self.coset_embed(coset.clamp(0, self.cfg.n_cosets))    # (B,M,d)
 
         pair = self._pair_features(centroid, lattice)
         h = self.attn(tok, pair, mol_mask)                                    # (B,M,d)

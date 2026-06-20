@@ -21,6 +21,7 @@ class ModelConfig:
     n_space_groups: int = 230
     sg_embed_dim: int = 64
     time_embed_dim: int = 64
+    n_cosets: int = 0  # >0 enables per-molecule space-group coset embedding (2c diagnostic)
     # flow head loss weights
     lambda_lattice: float = 1.0
     lambda_centroid: float = 1.0

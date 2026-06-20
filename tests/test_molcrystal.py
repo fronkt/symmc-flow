@@ -16,7 +16,8 @@ pytest.importorskip("networkx")
 from pymatgen.core import Structure, Lattice  # noqa: E402
 from symmc_flow import manifolds as M  # noqa: E402
 from symmc_flow.molcrystal import (  # noqa: E402
-    MolCrystalDataset, rigid_to_frac, relative_gauge_item, species_multiplicity)
+    MolCrystalDataset, rigid_to_frac, relative_gauge_item, species_multiplicity,
+    assign_cosets)
 
 
 # An asymmetric 4-atom conformer with ALL-DISTINCT elements (path C-N-O + H on C):
@@ -201,6 +202,30 @@ def test_relative_gauge_preserves_roundtrip_and_targets():
         rel_planted = torch.tensor(Rs[i] @ Rs[0].T, dtype=torch.float32)
         ang = M.so3_angle(rel["orient"][i], rel_planted)
         assert float(ang) < 1e-2, f"relative rotation off by {float(ang):.3e} rad"
+
+
+def test_assign_cosets_labels_reference_zero_and_shares_codebook():
+    # Two crystals with the SAME planted relative rotation must get the SAME non-ref coset id
+    # (shared per-SG codebook); reference copies + padding stay 0; a distinct rotation gets a
+    # new id. This is the discrete conditioning the 2c diagnostic feeds the field.
+    L = _BIG
+    R0 = M.random_so3((1,))[0]
+    Rrel = M.so3_exp(torch.tensor([0.0, 0.0, 3.14159265 / 2]))  # a fixed 90 deg about z
+    Rother = M.so3_exp(torch.tensor([3.14159265 / 2, 0.0, 0.0]))  # 90 deg about x (distinct)
+
+    def crystal(second_rel):
+        Rs = torch.stack([R0, second_rel @ R0]).numpy()
+        st = _place(_CONFORMER_XYZ, _CONFORMER_Z, L, _grid_centroids(2), Rs)
+        return relative_gauge_item(MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8)[0])
+
+    a, b, c = crystal(Rrel), crystal(Rrel), crystal(Rother)
+    items, n_cosets = assign_cosets([a, b, c], angle_tol_deg=10.0)
+    for it in items:
+        assert int(it["coset"][0]) == 0                      # reference copy -> 0
+        assert not bool(it["mol_mask"][2:].any()) or int(it["coset"][2:][~it["mol_mask"][2:]].sum()) == 0
+    assert int(a["coset"][1]) >= 1 and int(a["coset"][1]) == int(b["coset"][1])  # shared id
+    assert int(c["coset"][1]) != int(a["coset"][1])          # distinct rotation -> distinct id
+    assert n_cosets == 2
 
 
 def test_symmetric_molecule_automorphism_guard():

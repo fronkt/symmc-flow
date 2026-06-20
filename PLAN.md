@@ -27,6 +27,15 @@ one flow-matching generator:
 (~50 RK4 steps) while reaching a **Stable/Unique/Novel (SUN) rate > 75%** on
 MP-20 and the carbon dataset.
 
+> **Reframe (2026-06-20, real-CSD orientation finding — see `MOLCRYSTAL.md`).** On real
+> molecular crystals the rigid-body **lattice + centroid** flow is the working contribution.
+> The SO(3) **orientation** target decomposes as `R_m = rot(g_m)·R_asym`: the model **learns the
+> space-group-determined relative orientation** between symmetry copies (+27% non-ref CFM loss;
+> **16.8%** exact StructureMatcher reconstruction of held-out multi-copy packings vs 0% floor; the
+> ceiling is inference-limited — discrete coset conditioning lifts it to +51%), while the **free
+> asymmetric-unit orientation `R_asym`** is gauge-arbitrary and fundamentally unlearnable. The
+> paper leads with this decomposition rather than an unqualified per-molecule SO(3) claim.
+
 ---
 
 ## 2. What is in scope for this repo

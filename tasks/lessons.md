@@ -226,3 +226,14 @@
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.
+
+## 2026-06-20 — CPU training jobs: run sequentially, watch memory
+**Pattern:** launched 3 background CPU jobs (match-rate eval + two trainings) in parallel; the
+oversized config (d_model 256 / 6 attn / 5 egnn, 2000 steps) ballooned to **19 GB** and the box
+started swapping, starving (and effectively OOM-killing) the others. A modest config (d_model 192)
+sits at ~2.4 GB and runs fine.
+**Rule:** on this CPU box, run heavy training runs **one at a time** (a lightweight no_grad eval can
+overlap). Before committing to a long sweep, launch and check `Get-Process python | WorkingSet64`
+after ~30 s; if a single training job is >6 GB, shrink it. Don't trust per-process memory numbers
+taken *during* contention (a swapping box mis-attributes — a d_model=128 job showed 16 GB only while
+the 19 GB monster was alive).

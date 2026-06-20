@@ -38,6 +38,37 @@ def test_forward_shapes():
     assert torch.allclose(v_x[pad], torch.zeros_like(v_x[pad]))
 
 
+def test_coset_conditioning_optional_and_active():
+    # n_cosets=0 (default): coset arg is ignored, backward-compatible. n_cosets>0: passing a
+    # per-molecule coset id must change the orientation field (the 2c conditioning path).
+    batch = _batch()
+    z1 = batch_to_state(batch)
+    z0 = sample_prior(z1)
+    t = torch.rand(z1.lattice.shape[0])
+    B, Mm = z1.mask.shape
+    coset = torch.randint(1, 6, (B, Mm))
+
+    base = SymMCFlow(ModelConfig(d_model=48, egnn_hidden=48, atom_embed_dim=32,
+                                 n_attn_layers=2, egnn_layers=2, n_heads=4))
+    emb = base.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    assert base.coset_embed is None
+    # disabled model: identical output with or without a coset arg
+    a = base(emb, z0.lattice, z0.centroid, z0.orient, t, batch["sg"], z1.mask)
+    b = base(emb, z0.lattice, z0.centroid, z0.orient, t, batch["sg"], z1.mask, coset=coset)
+    assert torch.allclose(a[2], b[2])
+
+    cnet = SymMCFlow(ModelConfig(d_model=48, egnn_hidden=48, atom_embed_dim=32,
+                                 n_attn_layers=2, egnn_layers=2, n_heads=4, n_cosets=8))
+    emb2 = cnet.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    assert cnet.coset_embed is not None
+    with torch.no_grad():
+        torch.nn.init.normal_(cnet.coset_embed.weight, std=0.5)  # ensure non-degenerate ids
+    v_no = cnet(emb2, z0.lattice, z0.centroid, z0.orient, t, batch["sg"], z1.mask)[2]
+    v_cs = cnet(emb2, z0.lattice, z0.centroid, z0.orient, t, batch["sg"], z1.mask, coset=coset)[2]
+    real = z1.mask.unsqueeze(-1).expand_as(v_no)
+    assert not torch.allclose(v_no[real], v_cs[real]), "coset id must change the orient field"
+
+
 def test_backward_runs():
     model, _ = _small_model()
     batch = _batch()
