@@ -50,8 +50,9 @@ but the absolute per-molecule orientation flow remains at its predict-zero
 floor. We trace this to a decomposition of the orientation target,
 $R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}}$, into a space-group-determined
 relative rotation between symmetry copies and the asymmetric unit's free
-orientation in the cell. The free part is gauge-arbitrary and unlearnable; the
-relative part is learnable. Re-gauging to cancel the free part lifts the
+orientation in the cell. The free part is gauge-arbitrary and is not learnable
+from composition and packing here; the relative part is learnable. Re-gauging to
+cancel the free part lifts the
 held-out non-reference orientation loss by $27\%$ (versus $\sim\!0\%$ for the
 absolute target) and, in an orientation-isolated evaluation, reconstructs
 $16.8\%$ of held-out multi-copy packings exactly under StructureMatcher against
@@ -60,7 +61,9 @@ coset identity raises the learnable signal to $51\%$, showing the residual
 ceiling is set by the difficulty of \emph{inferring} the symmetry operation
 from packing rather than by the network's capacity to represent the rotation.
 The result delineates exactly what a rigid-body $\mathrm{SO}(3)$ flow can and
-cannot contribute to molecular-crystal generation.
+cannot contribute to molecular-crystal generation, and suggests that such
+generators should condition on crystal symmetry for the relative orientation and
+sample, rather than regress, the remaining free pose.
 \end{abstract}
 
 \noindent\textbf{Keywords:} crystal structure prediction; flow matching;
@@ -129,7 +132,8 @@ This paper answers that question. We build SymMC-Flow, a
 space-group-conditioned rigid-body flow on
 $\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$, and train it on a
 corpus of $1{,}127$ molecular crystals exported from the Cambridge Structural
-Database (CSD). The lattice and centroid flows learn; the absolute per-molecule
+Database (CSD)\cite{groom2016csd}. The lattice and centroid flows learn; the
+absolute per-molecule
 orientation flow does not, sitting at the predict-zero floor across two corpus
 sizes and after a gauge correction. We explain this with a decomposition of the
 orientation target and a chain of controlled diagnostics, and we show that the
@@ -201,7 +205,8 @@ acting on a shared body-frame conformer, with atoms reconstructed by
 Eq.~\eqref{eq:factor}. (b) The per-molecule orientation target factors as
 $R_m=\mathrm{rot}(g_m)\cdot R_{\text{asym}}$ into a space-group-determined
 relative rotation, which the flow learns, and the asymmetric unit's free
-orientation, which is gauge-arbitrary and unlearnable.}
+orientation, which is gauge-arbitrary and not learnable from composition and
+packing.}
 \label{fig:schematic}
 \end{figure}
 
@@ -222,8 +227,10 @@ single-atom benchmarks never exercise.
 \begin{table}[t]
 \centering
 \caption{Held-out per-head flow-matching loss, untrained $\rightarrow$ trained,
-on the CSD molecular-crystal corpus (noised conditioning). Lattice and centroid
-learn; the absolute orientation target stays at its predict-zero floor.}
+on the multi-copy CSD corpus under noised conditioning and a common split.
+Lattice and centroid losses are independent of the orientation target; the
+orientation row is the absolute target $R_m$. Lattice and centroid learn; the
+absolute orientation target stays at its predict-zero floor.}
 \label{tab:perhead}
 \begin{tabular}{lccc}
 \toprule
@@ -279,9 +286,18 @@ R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}},
 \end{equation}
 where $R_{\text{asym}}$ is the orientation of the asymmetric unit in the cell.
 The first factor is determined by the space group and is shared structure across
-crystals; the second is a free, per-crystal choice with no relation to
-composition or packing, and it dominates the target. Because $R_{\text{asym}}$
-is gauge-arbitrary, no model can predict it, which is exactly the floor.
+crystals; the second is a free, per-crystal choice that dominates the target.
+Because the body-frame gauge is arbitrary, $R_{\text{asym}}$ carries no
+consistent training signal tied to composition or packing, which produces the
+floor. The empirical distribution bears this out: the absolute reference-copy
+orientations track the Haar-uniform density on $\mathrm{SO}(3)$ across the full
+range of geodesic angles, with mean $122.6^\circ$ against the Haar expectation of
+$126.5^\circ$ (Supplementary Fig.~S1). A Kolmogorov--Smirnov test detects only a
+slight deviation from uniformity ($D=0.04$), confined to a small near-identity
+excess attributable to the gauge-defining copies rather than to a broad preferred
+orientation. We therefore state the claim narrowly: $R_{\text{asym}}$ is not
+predictable from the conditioning available here, not that orientation is
+unlearnable in principle.
 
 To isolate the learnable factor we re-gauge each crystal so that the first copy
 of every species is a reference with $R=I$ and the remaining copies carry only
@@ -334,10 +350,11 @@ lattice, centroid, and conformer fixed, we sample only the $\mathrm{SO}(3)$ fiel
 and rebuild each crystal, then test whether it matches the ground truth under
 pymatgen's StructureMatcher\cite{ong2013pymatgen}. The symmetry-induced relative
 rotations are large, clustering near $180^\circ$ because the dominant organic
-space groups relate copies by two-fold rotations and inversions, so a single
-deterministic integration of the field collapses to the conditional mean and
-underperforms. We therefore draw eight orientation samples per crystal and take
-the best, the appropriate generative read for a multimodal target. Reporting a
+space groups, such as $P2_1/c$ and $P\bar{1}$, relate copies by two-fold
+rotations and inversions\cite{groom2016csd}, so a single deterministic
+integration of the field collapses to the conditional mean and underperforms. We
+therefore draw eight orientation samples per crystal and take the best, the
+appropriate generative read for a multimodal target. Reporting a
 controlled best-of-$k$ match alongside the geodesic orientation error, rather
 than a single headline rate, follows recent cautions on match-rate
 metrics\cite{martirossyan2025matching}.
@@ -399,6 +416,16 @@ with the coset supplied is attributable to the free $R_{\text{asym}}$ and to the
 axial gauge freedom of symmetric-top molecules, whose orientation about a
 symmetry axis is genuinely unobservable.
 
+This experiment is a representability diagnostic, not a deployable conditioning.
+Because the codebook is built by clustering the observed relative rotations, the
+coset index is derived in part from the target it helps predict, so the $51\%$ is
+an upper bound on what the discrete symmetry identity can contribute, isolating
+representability from inference. The same label is in principle available at
+sampling time without the answer, since the coset is a deterministic function of
+the space group, the Wyckoff assignment, and the copy ordering, which
+template-based generators already provide\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025};
+realizing that gain in a sampler is left to future work.
+
 \begin{table}[t]
 \centering
 \caption{Held-out non-reference orientation loss under model and conditioning
@@ -449,10 +476,10 @@ confirm the flow and sampler are sound and are not the focus of this study.
 The orientation field of a rigid-body molecular-crystal flow is neither fully
 learnable nor uniformly broken. It splits into a space-group-determined relative
 orientation that a flow learns and reconstructs, and a gauge-free
-asymmetric-unit orientation that no model can predict. This split is a property
-of the representation, not of the optimizer or the architecture, which is why it
-survives gauge correction, data scaling, capacity increases, and clean
-conditioning.
+asymmetric-unit orientation that the model cannot predict from composition and
+packing. This split is a property of the representation, not of the optimizer or
+the architecture, which is why it survives gauge correction, data scaling,
+capacity increases, and clean conditioning.
 
 The decomposition reconciles the divergent design choices in the field. All-atom
 generators\cite{jin2025oxtal,subramanian2026packflow} never expose
@@ -461,7 +488,7 @@ trading the low dimensionality of the rigid-body representation for a target
 without a gauge obstruction. MOFFlow\cite{kim2025mofflow} succeeds with a
 rigid-body $\mathrm{SE}(3)$ flow in part because framework connectivity
 constrains block orientations far more tightly than the free pose of a molecule
-in a van der Waals packing, shrinking the unlearnable component. The present
+in a van der Waals packing, shrinking the gauge-free component. The present
 analysis predicts that rigid-body $\mathrm{SO}(3)$ generation will be most
 effective precisely where orientation is constrained by the surrounding network
 or by high site symmetry, and least effective for low-symmetry organic packings.
@@ -588,14 +615,20 @@ depth and trains for $2{,}000$ steps.
 Reconstruction holds the true lattice, centroid, and conformer fixed and
 integrates only the orientation field from a random $\mathrm{SO}(3)$ prior under
 clean-packing conditioning. Reconstructed crystals are built with
-Eq.~\eqref{eq:factor} and compared to the ground truth with StructureMatcher
-(fractional and site tolerances as in pymatgen
-defaults)\cite{ong2013pymatgen}. For each crystal we draw eight orientation
-samples and count a match if any draw matches; we also report the
-minimum mean geodesic error over draws on non-reference copies.
+Eq.~\eqref{eq:factor} and compared to the ground truth with
+StructureMatcher\cite{ong2013pymatgen} using a length tolerance of $0.3$, a site
+tolerance of $0.5$, and an angle tolerance of $10^\circ$, slightly looser than
+the pymatgen defaults to accommodate the rebuilt cells. The oracle row, which
+reconstructs every structure at these tolerances, confirms they are not so loose
+as to admit spurious matches. For each crystal we draw eight orientation samples
+and count a match if any draw matches; we also report the minimum mean geodesic
+error over draws on non-reference copies. Reported match rates carry a binomial
+(Wilson) $95\%$ confidence interval of approximately $\pm6$ percentage points at
+$n=131$.
 
 \subsection{Data}
-The corpus is a seeded random sample of the CSD filtered to ordered, organic,
+The corpus is a seeded random sample of the CSD (database version 601, accessed
+via the CSD Python API)\cite{groom2016csd} filtered to ordered, organic,
 three-dimensional, non-polymeric molecular crystals within size and
 $Z'$ bounds, yielding $1{,}127$ crystals and $5{,}048$ rigid blocks from
 $14{,}874$ scanned entries; $1{,}095$ contain at least two copies of a species

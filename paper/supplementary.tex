@@ -79,6 +79,36 @@ variety\cite{martirossyan2025matching}. The numbers above should be read as a
 sanity check on the architecture under the field's conventional protocol rather
 than as a definitive ranking.
 
+% =====================================================================
+\section{Is the absolute molecular orientation uniform on SO(3)?}
+% =====================================================================
+
+The main-text claim that the free asymmetric-unit pose $R_{\text{asym}}$ carries
+no learnable signal predicts that the absolute per-molecule orientations should be
+close to Haar-uniform on $\mathrm{SO}(3)$, since a uniform target offers nothing to
+predict. For Haar-uniform rotations the geodesic angle $\theta$ from the identity
+has density $p(\theta)=(1-\cos\theta)/\pi$ on $[0,\pi]$, with mean $126.5^\circ$.
+Figure~\ref{fig:rasym} compares the empirical distribution of the reference-copy
+orientations, which equal $R_{\text{asym}}$ up to the operation generating the
+first-detected copy, to this density. The empirical distribution tracks the Haar
+curve across the full angular range, with mean $122.6^\circ$ ($n=1{,}467$). A
+one-sample Kolmogorov--Smirnov test against the Haar law gives $D=0.04$, a small
+but nonzero deviation localized to a near-identity excess that comes from the
+gauge-defining copies, whose self-alignment lands near the identity. The absolute
+orientation is therefore close to uniform, consistent with the predict-zero floor,
+and the residual deviation is a gauge artifact rather than a broad packing
+preference.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/figS_rasym.pdf}
+\caption{Empirical distribution of absolute reference-copy orientations (geodesic
+angle from the identity) against the Haar-uniform $\mathrm{SO}(3)$ density. The two
+agree across the range apart from a small near-identity excess from gauge-defining
+copies.}
+\label{fig:rasym}
+\end{figure}
+
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 
