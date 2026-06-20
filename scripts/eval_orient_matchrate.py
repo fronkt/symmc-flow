@@ -85,6 +85,7 @@ def per_crystal_err_deg(R_pred, R_true, nonref):
     return (ang * sel).sum(1) / sel.sum(1).clamp_min(1.0) * RAD2DEG
 
 
+@torch.no_grad()
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_relative_noised.pt")

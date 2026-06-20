@@ -74,7 +74,7 @@ axB.text(7.45, 5.2, "UNLEARNABLE", ha="center", fontsize=8.5,
 # evidence strip
 axB.text(5.0, 3.4, "evidence", ha="center", fontsize=8, style="italic",
          color=OK["grey"])
-axB.text(2.55, 2.5, "+27% loss\n16.8% packings\nreconstructed", ha="center",
+axB.text(2.55, 2.5, "+27% loss\n13.7% packings\nreconstructed", ha="center",
          va="center", fontsize=7.6, color=OK["green"])
 axB.text(7.45, 2.5, "0% beyond\npredict-zero\nfloor", ha="center",
          va="center", fontsize=7.6, color=OK["vermillion"])

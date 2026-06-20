@@ -88,7 +88,7 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
     val_cache = (PriorCache(tcfg.prior_vol_per_atom, tcfg.centroid_prior_std)
                  if tcfg.fixed_prior else None)
 
-    history, step = [], 0
+    history, step, skipped = [], 0, 0
     model.train()
     while step < tcfg.steps:
         for batch in dl:
@@ -102,8 +102,18 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
 
             opt.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), tcfg.grad_clip)
-            opt.step()
+            # clip_grad_norm_ returns the total grad norm -> non-finite iff some grad is NaN/inf.
+            # Skip the optimizer step on a non-finite loss/grad so one bad batch (e.g. a
+            # near-singular config in a higher-capacity model) can't poison the weights;
+            # forward behavior is unchanged, so existing checkpoints stay comparable.
+            gnorm = torch.nn.utils.clip_grad_norm_(model.parameters(), tcfg.grad_clip)
+            if torch.isfinite(loss) and torch.isfinite(gnorm):
+                opt.step()
+            else:
+                skipped += 1
+                opt.zero_grad(set_to_none=True)
+                step += 1
+                continue
 
             history.append(parts["total"].item())
             if verbose and step % tcfg.log_every == 0:
@@ -115,6 +125,8 @@ def train(model_cfg: ModelConfig | None = None, train_cfg: TrainConfig | None = 
                 print(msg)
             step += 1
 
+    if verbose and skipped:
+        print(f"  (skipped {skipped} non-finite step(s) to protect weights)")
     return model, history
 
 

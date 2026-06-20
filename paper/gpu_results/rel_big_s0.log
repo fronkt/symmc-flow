@@ -7,55 +7,116 @@ DIAGNOSTIC: relative orientation target; clean_packing=False
   capacity: d_model=256 attn_layers=6 egnn_layers=5
   device=cuda  steps=5000
 
-Traceback (most recent call last):
-  File "/root/symmc-flow/scripts/diag_orient_relative.py", line 194, in <module>
-    main()
-  File "/root/symmc-flow/scripts/diag_orient_relative.py", line 158, in main
-    model, _ = train(mcfg, tcfg, verbose=True, train_dataset=train_ds, val_dataset=val_ds)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/symmc-flow/symmc_flow/train.py", line 98, in train
-    loss, parts = _step_loss(model, batch, weights, device,
-                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/symmc-flow/symmc_flow/train.py", line 41, in _step_loss
-    mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
-              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/symmc-flow/symmc_flow/model.py", line 84, in encode_molecules
-    _, pooled = self.egnn(feats, coords, safe)              # (B*M,hidden)
-                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/symmc-flow/symmc_flow/egnn.py", line 67, in forward
-    h, x = layer(h, x, mask)
-           ^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/symmc-flow/symmc_flow/egnn.py", line 35, in forward
-    m = self.edge_mlp(torch.cat([hi, hj, dist2], dim=-1))  # (B,N,N,H)
-        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/container.py", line 253, in forward
-    input = module(input)
-            ^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
-    return self._call_impl(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
-    return forward_call(*args, **kwargs)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/linear.py", line 134, in forward
-    return F.linear(input, self.weight, self.bias)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 31.36 GiB of which 296.50 MiB is free. Process 10703 has 13.09 GiB memory in use. Including non-PyTorch memory, this process has 17.97 GiB memory in use. Of the allocated memory 17.32 GiB is allocated by PyTorch, and 28.82 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+step     0  loss 6.7503  (L 1.384  x 0.333  R 5.033)
+step    50  loss 5.3645  (L 0.101  x 0.272  R 4.992)
+step   100  loss 5.5528  (L 0.087  x 0.241  R 5.225)
+step   150  loss 5.6314  (L 0.092  x 0.278  R 5.261)
+step   200  loss 5.6333  (L 0.106  x 0.266  R 5.261)
+step   250  loss 5.8982  (L 0.098  x 0.274  R 5.526)  | val 5.1810
+step   300  loss 5.2838  (L 0.106  x 0.240  R 4.937)
+step   350  loss 5.1156  (L 0.116  x 0.249  R 4.750)
+step   400  loss 4.0457  (L 0.072  x 0.275  R 3.698)
+step   450  loss 4.5583  (L 0.077  x 0.256  R 4.225)
+step   500  loss 4.7891  (L 0.106  x 0.251  R 4.433)  | val 4.0418
+step   550  loss 4.9098  (L 0.054  x 0.251  R 4.605)
+step   600  loss 3.4383  (L 0.085  x 0.233  R 3.120)
+step   650  loss 3.0431  (L 0.063  x 0.257  R 2.723)
+step   700  loss 3.7115  (L 0.080  x 0.214  R 3.417)
+step   750  loss 3.8349  (L 0.081  x 0.267  R 3.487)  | val 4.3823
+step   800  loss 5.0488  (L 0.057  x 0.277  R 4.714)
+step   850  loss 5.0034  (L 0.076  x 0.245  R 4.682)
+step   900  loss 3.7264  (L 0.067  x 0.240  R 3.419)
+step   950  loss 3.5225  (L 0.080  x 0.270  R 3.173)
+step  1000  loss 3.4161  (L 0.060  x 0.258  R 3.098)  | val 3.7536
+step  1050  loss 3.2107  (L 0.083  x 0.264  R 2.864)
+step  1100  loss 3.1075  (L 0.045  x 0.227  R 2.835)
+step  1150  loss 2.7675  (L 0.051  x 0.239  R 2.477)
+step  1200  loss 3.6628  (L 0.066  x 0.271  R 3.325)
+step  1250  loss 3.7825  (L 0.085  x 0.260  R 3.438)  | val 3.4622
+step  1300  loss 3.8066  (L 0.049  x 0.259  R 3.499)
+step  1350  loss 4.0151  (L 0.088  x 0.241  R 3.686)
+step  1400  loss 2.1268  (L 0.058  x 0.254  R 1.815)
+step  1450  loss 3.5295  (L 0.063  x 0.246  R 3.220)
+step  1500  loss 3.4679  (L 0.054  x 0.224  R 3.190)  | val 3.1663
+step  1550  loss 4.2366  (L 0.088  x 0.253  R 3.896)
+step  1600  loss 2.6562  (L 0.058  x 0.246  R 2.353)
+step  1650  loss 3.1363  (L 0.082  x 0.248  R 2.806)
+step  1700  loss 2.9780  (L 0.056  x 0.269  R 2.652)
+step  1750  loss 3.1838  (L 0.032  x 0.253  R 2.899)  | val 3.6354
+step  1800  loss 2.3302  (L 0.044  x 0.250  R 2.036)
+step  1850  loss 2.9187  (L 0.081  x 0.225  R 2.613)
+step  1900  loss 3.6499  (L 0.048  x 0.287  R 3.316)
+step  1950  loss 2.6984  (L 0.055  x 0.260  R 2.383)
+step  2000  loss 3.9503  (L 0.080  x 0.242  R 3.628)  | val 3.8049
+step  2050  loss 2.9105  (L 0.049  x 0.264  R 2.598)
+step  2100  loss 3.5952  (L 0.058  x 0.252  R 3.284)
+step  2150  loss 3.7834  (L 0.062  x 0.249  R 3.472)
+step  2200  loss 2.8768  (L 0.056  x 0.231  R 2.590)
+step  2250  loss 2.8623  (L 0.053  x 0.220  R 2.589)  | val 3.1353
+step  2300  loss 4.1495  (L 0.077  x 0.264  R 3.808)
+step  2350  loss 3.8851  (L 0.067  x 0.263  R 3.556)
+step  2400  loss 3.6583  (L 0.069  x 0.252  R 3.338)
+step  2450  loss 4.5723  (L 0.039  x 0.258  R 4.276)
+step  2500  loss 2.5332  (L 0.036  x 0.257  R 2.240)  | val 3.9420
+step  2550  loss 3.2992  (L 0.078  x 0.248  R 2.973)
+step  2600  loss 1.9909  (L 0.052  x 0.216  R 1.723)
+step  2650  loss 3.3936  (L 0.034  x 0.262  R 3.098)
+step  2700  loss 3.0255  (L 0.048  x 0.257  R 2.720)
+step  2750  loss 2.6528  (L 0.045  x 0.213  R 2.395)  | val 3.2088
+step  2800  loss 3.5140  (L 0.051  x 0.233  R 3.230)
+step  2850  loss 2.6459  (L 0.056  x 0.284  R 2.306)
+step  2900  loss 2.1066  (L 0.050  x 0.244  R 1.813)
+step  2950  loss 3.9200  (L 0.040  x 0.244  R 3.636)
+step  3000  loss 2.4099  (L 0.067  x 0.246  R 2.098)  | val 3.2379
+step  3050  loss 3.4088  (L 0.047  x 0.281  R 3.082)
+step  3100  loss 2.6574  (L 0.056  x 0.253  R 2.348)
+step  3150  loss 2.2774  (L 0.050  x 0.240  R 1.987)
+step  3200  loss 3.5207  (L 0.058  x 0.256  R 3.206)
+step  3250  loss 2.7534  (L 0.052  x 0.227  R 2.475)  | val 3.3637
+step  3300  loss 3.5611  (L 0.062  x 0.263  R 3.236)
+step  3350  loss 2.1665  (L 0.050  x 0.262  R 1.854)
+step  3400  loss 2.7151  (L 0.053  x 0.239  R 2.423)
+step  3450  loss 3.8646  (L 0.046  x 0.274  R 3.546)
+step  3500  loss 3.4938  (L 0.055  x 0.251  R 3.187)  | val 3.2209
+step  3550  loss 3.3966  (L 0.055  x 0.282  R 3.059)
+step  3600  loss 4.1233  (L 0.050  x 0.264  R 3.810)
+step  3650  loss 2.5351  (L 0.049  x 0.199  R 2.286)
+step  3700  loss 3.5681  (L 0.062  x 0.244  R 3.262)
+step  3750  loss 3.2151  (L 0.043  x 0.276  R 2.896)  | val 3.4595
+step  3800  loss 3.1417  (L 0.038  x 0.267  R 2.837)
+step  3850  loss 3.0778  (L 0.070  x 0.239  R 2.769)
+step  3900  loss 2.6444  (L 0.091  x 0.255  R 2.299)
+step  3950  loss 2.3926  (L 0.048  x 0.267  R 2.078)
+step  4000  loss 3.5350  (L 0.073  x 0.258  R 3.204)  | val 2.8845
+step  4050  loss 3.9556  (L 0.061  x 0.242  R 3.652)
+step  4100  loss 3.2153  (L 0.058  x 0.261  R 2.896)
+step  4150  loss 2.0571  (L 0.052  x 0.229  R 1.776)
+step  4200  loss 1.8374  (L 0.056  x 0.248  R 1.534)
+step  4250  loss 3.5462  (L 0.057  x 0.241  R 3.248)  | val 3.2286
+step  4300  loss 2.0948  (L 0.058  x 0.242  R 1.795)
+step  4350  loss 2.7325  (L 0.048  x 0.236  R 2.448)
+step  4400  loss 2.7926  (L 0.050  x 0.237  R 2.505)
+step  4450  loss 3.5748  (L 0.040  x 0.243  R 3.292)
+step  4500  loss 3.0553  (L 0.055  x 0.242  R 2.759)  | val 3.5794
+step  4550  loss 2.3093  (L 0.061  x 0.284  R 1.964)
+step  4600  loss 2.9705  (L 0.036  x 0.267  R 2.668)
+step  4650  loss 3.5871  (L 0.053  x 0.236  R 3.299)
+step  4700  loss 2.8780  (L 0.054  x 0.277  R 2.547)
+step  4750  loss 1.6865  (L 0.055  x 0.266  R 1.366)  | val 2.8233
+step  4800  loss 3.4861  (L 0.053  x 0.273  R 3.160)
+step  4850  loss 2.3385  (L 0.064  x 0.236  R 2.039)
+step  4900  loss 2.2592  (L 0.047  x 0.230  R 1.982)
+step  4950  loss 2.7338  (L 0.036  x 0.251  R 2.446)
+  (skipped 1 non-finite step(s) to protect weights)
+
+==== held-out validation, per head (untrained -> trained) ====
+  lattice  : 1.3956 -> 0.0539  (+96.1%)
+  centroid : 0.3287 -> 0.2492  (+24.2%)
+  orient   : 5.3788 -> 2.5508  (+52.6%)
+  total    : 7.1030 -> 2.8539  (+59.8%)
+  orient split (the decisive numbers):
+    ref    : 5.3140 -> 1.5099  (+71.6%)
+    nonref : 5.4196 -> 2.9822  (+45.0%)  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)
+
+VERDICT (+45.0% non-ref): PARTIAL: the symmetry-determined relative orientation is partially learnable + generalizes (the absolute target gave ~0%) -> the floor was dominated by the free asymmetric-unit orientation, now characterized.
+checkpoint -> checkpoints/rel_big_s0.pt

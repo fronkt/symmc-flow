@@ -27,9 +27,11 @@ fig, (axL, axR) = plt.subplots(1, 2, figsize=(7.0, 3.0))
 
 # ---- (a) match rate by condition ----
 conds = ["oracle", "identity\n(R=I)", "untrained\n(floor)", "trained"]
-rates = [100.0, 1.5, 0.0, 16.8]
+rates = [100.0, 0.8, 0.0, 13.7]
 colors = [OK["grey"], OK["orange"], OK["vermillion"], OK["blue"]]
-bars = axL.bar(conds, rates, color=colors, width=0.66)
+rate_err = [0.0, 0.0, 0.0, 2.0]  # 3-seed s.d. on the trained match rate
+bars = axL.bar(conds, rates, color=colors, width=0.66, yerr=rate_err,
+               error_kw=dict(ecolor=OK["black"], elinewidth=0.8, capsize=2.5))
 axL.set_ylabel("exact match rate (%)")
 axL.set_title("(a) orientation-isolated reconstruction")
 axL.set_ylim(0, 105)
@@ -40,7 +42,7 @@ axL.axhline(0, color=OK["black"], lw=0.6)
 
 # ---- (b) non-reference orientation loss drop under levers ----
 levers = ["baseline", "+capacity\n& steps", "+coset\ncond.", "coset\ncontrol"]
-drops = [27.1, 33.4, 50.6, 27.1]
+drops = [27.1, 45.0, 50.6, 27.1]
 lcolors = [OK["blue"], OK["green"], OK["vermillion"], OK["grey"]]
 bars2 = axR.bar(levers, drops, color=lcolors, width=0.66)
 axR.set_ylabel("non-ref. orientation loss drop (%)")

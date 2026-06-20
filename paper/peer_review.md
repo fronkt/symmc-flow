@@ -106,13 +106,27 @@ Do not dilute them.
 - **M3 (coset fairness) — ADDRESSED.** Reframed as an upper-bound/representability
   diagnostic with the deployment-label note.
 - **M4 (statistics) — ADDRESSED.** 3-seed error bars on GPU: relative
-  $27.5\pm2.7\%$, coset $47.9\pm3.2\%$; Wilson CIs on match rates.
+  $27.5\pm2.7\%$, coset $47.9\pm3.2\%$; Wilson CIs on match rates. The
+  orientation-isolated match rate is now reported as a 3-seed mean: the headline
+  $16.8\%$ (one CPU seed) becomes $13.7\pm2.0\%$ ($12.2/13.0/16.0\%$); the
+  single-seed figure sat at the top of this spread. Table~1, Table~2, Fig.~2, and
+  the abstract were updated, with error bars added to Fig.~2a.
 - **Minors m1, m2, m4, m5, m3 — ADDRESSED** (CSD citation + version, matcher
   tolerances, abstract takeaway, Table 1 provenance, space-group citation).
-- **Outstanding (optional):** capacity-de-novo and GPU orient-iso reproduction
-  OOM'd against a concurrent job and were not essential (CPU $16.8\%$ stands);
-  Fig 1 TikZ redraw (m6); sampling wall-clock (m7). C-pivot (a working generator)
-  is not supported by the de-novo result, confirming the focused framing.
+- **Capacity + de-novo reproduction (2026-06-20, re-run on a free GPU) — DONE.**
+  The earlier OOMs were two real bugs, now fixed: (i) `eval_orient_matchrate.py`
+  lacked `@torch.no_grad()`, retaining the EGNN autograd graph ($30.5$ GB OOM
+  $\rightarrow$ $3.3$ GB); (ii) the deeper $d{=}256$ model NaN'd in training, so a
+  non-finite-step guard was added in `train.py` (skips the optimizer step on a
+  non-finite loss/grad; no forward change, so existing checkpoints stay valid).
+  Clean capacity run ($d256$, 6 attn / 5 enc, $5{,}000$ steps, lr $1\mathrm{e}{-4}$,
+  1 step skipped): non-reference drop $+45.0\%$ (was $+33.4\%$); big-model de-novo
+  remains $0\%$ match@20 with sharper components (lattice $0.37$, centroid $0.35$,
+  orient $48^\circ$), strengthening the structural-bottleneck argument. Logs in
+  `paper/gpu_results/`.
+- **Outstanding (optional):** Fig 1 TikZ redraw (m6); sampling wall-clock (m7).
+  C-pivot (a working generator) is not supported by the de-novo result,
+  confirming the focused framing.
 
 ## Prioritized revision roadmap
 
