@@ -93,6 +93,27 @@ Do not dilute them.
 
 ---
 
+## Revision status (2026-06-20)
+
+- **M1 (de-novo generation) — ADDRESSED.** Added end-to-end joint-generation match
+  rate (`eval_denovo_matchrate.py`, GPU, 3 seeds): $0\%$ at match@20 (Wilson CI
+  $0$--$2.8\%$, $n=131$), with a best-of-20 component breakdown (lattice $0.46$,
+  centroid $0.35$, orientation $60^\circ$) locating the bottleneck. Reported
+  honestly as a new Results subsection + abstract clause + Discussion limitation;
+  reinforces the characterization framing.
+- **M2 (over-claim) — ADDRESSED.** Softened throughout + new $R_{\text{asym}}$
+  Haar-uniformity test (Fig S1: mean $122.6^\circ$ vs $126.5^\circ$, KS $D=0.04$).
+- **M3 (coset fairness) — ADDRESSED.** Reframed as an upper-bound/representability
+  diagnostic with the deployment-label note.
+- **M4 (statistics) — ADDRESSED.** 3-seed error bars on GPU: relative
+  $27.5\pm2.7\%$, coset $47.9\pm3.2\%$; Wilson CIs on match rates.
+- **Minors m1, m2, m4, m5, m3 — ADDRESSED** (CSD citation + version, matcher
+  tolerances, abstract takeaway, Table 1 provenance, space-group citation).
+- **Outstanding (optional):** capacity-de-novo and GPU orient-iso reproduction
+  OOM'd against a concurrent job and were not essential (CPU $16.8\%$ stands);
+  Fig 1 TikZ redraw (m6); sampling wall-clock (m7). C-pivot (a working generator)
+  is not supported by the de-novo result, confirming the focused framing.
+
 ## Prioritized revision roadmap
 
 ### A. Text-only fixes (no new compute) — do first

@@ -1,0 +1,43 @@
+[32mActivated conda/uv virtual environment at [36m/venv/main[0m
+[08:53:18] === B: relative-orientation error bars (seeds 0,1,2) ===
+[08:53:18] RELATIVE seed 0
+[08:55:28] RELATIVE seed 1
+[08:57:23] RELATIVE seed 2
+[08:59:21] === B: coset-conditioning error bars (seeds 0,1,2) ===
+[08:59:21] COSET seed 0
+[09:01:40] COSET seed 1
+[09:04:03] COSET seed 2
+[09:06:24] === C / M1: de-novo joint-generation match@20 (seeds 0,1,2) ===
+[09:06:24] DENOVO seed 0
+[09:10:44] DENOVO seed 1
+[09:15:02] DENOVO seed 2
+[09:19:47] === C2: capacity run (d256/6L/5000 steps) + de-novo ===
+[09:19:57] rel_big FAILED
+[09:20:00] denovo_big FAILED
+[09:20:00] === orientation-isolated consistency (seeds 0,1,2; reproduces CPU 16.8%) ===
+[09:20:00] ORIENT-ISO seed 0
+[09:20:05] iso s0 FAILED
+[09:20:05] ORIENT-ISO seed 1
+[09:20:10] iso s1 FAILED
+[09:20:10] ORIENT-ISO seed 2
+[09:20:15] iso s2 FAILED
+[09:20:15] === summary ===
+    nonref : 5.4100 -> 2.8592  (+47.1%)  <-- NON-REFERENCE (coset-conditioned target)
+NON-REF drop (+47.1%): vs +27% without coset conditioning -> coset id helps but residual remains
+    nonref : 5.3166 -> 2.9173  (+45.1%)  <-- NON-REFERENCE (coset-conditioned target)
+NON-REF drop (+45.1%): vs +27% without coset conditioning -> coset id helps but residual remains
+    nonref : 5.3116 -> 2.5817  (+51.4%)  <-- NON-REFERENCE (coset-conditioned target)
+NON-REF drop (+51.4%): vs +27% without coset conditioning -> coset id helps but residual remains
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  TAG denovo_s0 k 20 match 0.00
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  TAG denovo_s1 k 20 match 0.00
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  TAG denovo_s2 k 20 match 0.00
+    nonref : 5.3985 -> 3.8101  (+29.4%)  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)
+VERDICT (+29.4% non-ref): PARTIAL: the symmetry-determined relative orientation is partially learnable + generalizes (the absolute target gave ~0%) -> the floor was dominated by the free asymmetric-unit orientation, now characterized.
+    nonref : 5.2830 -> 3.9960  (+24.4%)  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)
+VERDICT (+24.4% non-ref): PARTIAL: the symmetry-determined relative orientation is partially learnable + generalizes (the absolute target gave ~0%) -> the floor was dominated by the free asymmetric-unit orientation, now characterized.
+    nonref : 5.3969 -> 3.8433  (+28.8%)  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)
+VERDICT (+28.8% non-ref): PARTIAL: the symmetry-determined relative orientation is partially learnable + generalizes (the absolute target gave ~0%) -> the floor was dominated by the free asymmetric-unit orientation, now characterized.
+[09:20:15] SWEEP DONE

@@ -1,0 +1,61 @@
+corpus: 1127 crystals -> 1095 multi-copy (>=2 copies of a species) after relative re-gauge
+DIAGNOSTIC: relative orientation target; clean_packing=False
+  max-species-multiplicity histogram: {2: 329, 3: 10, 4: 650, 6: 12, 8: 86, 12: 1, 16: 7}
+  split: 964 train / 131 val
+  lattice prior vol/atom matched to corpus: 9.9 A^3
+
+  capacity: d_model=256 attn_layers=6 egnn_layers=5
+  device=cuda  steps=5000
+
+Traceback (most recent call last):
+  File "/root/symmc-flow/scripts/diag_orient_relative.py", line 194, in <module>
+    main()
+  File "/root/symmc-flow/scripts/diag_orient_relative.py", line 158, in main
+    model, _ = train(mcfg, tcfg, verbose=True, train_dataset=train_ds, val_dataset=val_ds)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/symmc-flow/symmc_flow/train.py", line 98, in train
+    loss, parts = _step_loss(model, batch, weights, device,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/symmc-flow/symmc_flow/train.py", line 41, in _step_loss
+    mol_emb = model.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/symmc-flow/symmc_flow/model.py", line 84, in encode_molecules
+    _, pooled = self.egnn(feats, coords, safe)              # (B*M,hidden)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/symmc-flow/symmc_flow/egnn.py", line 67, in forward
+    h, x = layer(h, x, mask)
+           ^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/symmc-flow/symmc_flow/egnn.py", line 35, in forward
+    m = self.edge_mlp(torch.cat([hi, hj, dist2], dim=-1))  # (B,N,N,H)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/container.py", line 253, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/linear.py", line 134, in forward
+    return F.linear(input, self.weight, self.bias)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 512.00 MiB. GPU 0 has a total capacity of 31.36 GiB of which 296.50 MiB is free. Process 10703 has 13.09 GiB memory in use. Including non-PyTorch memory, this process has 17.97 GiB memory in use. Of the allocated memory 17.32 GiB is allocated by PyTorch, and 28.82 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)

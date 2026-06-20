@@ -60,6 +60,9 @@ $0\%$ for the predict-floor baseline. Conditioning on a discrete space-group
 coset identity raises the learnable signal to $51\%$, showing the residual
 ceiling is set by the difficulty of \emph{inferring} the symmetry operation
 from packing rather than by the network's capacity to represent the rotation.
+End-to-end joint generation, which must also sample the lattice and centroids,
+does not yet reconstruct packings exactly, placing the orientation result as a
+characterization rather than a finished generator.
 The result delineates exactly what a rigid-body $\mathrm{SO}(3)$ flow can and
 cannot contribute to molecular-crystal generation, and suggests that such
 generators should condition on crystal symmetry for the relative orientation and
@@ -309,8 +312,10 @@ orientation loss into reference copies (target $I$) and non-reference copies
 Table~\ref{tab:twobytwo} gives the full $2\times2$ over target and conditioning.
 The absolute target floors in both conditioning regimes. The relative target
 descends by $27\%$ on held-out non-reference copies and generalizes, with an
-identical result under noised and clean conditioning. The signal therefore
-rides on the space group, which is conditioned directly, together with the
+identical result under noised and clean conditioning. Across three random seeds
+the non-reference drop is $27.5\pm2.7\%$ (mean $\pm$ s.d.), so the effect is
+stable. The signal therefore rides on the space group, which is conditioned
+directly, together with the
 coarse centroid arrangement, and is robust to conditioning noise.
 
 The relative analysis runs on the $1{,}095$ crystals that contain at least two
@@ -408,7 +413,8 @@ continuous rotation itself. Table~\ref{tab:strengthen} shows that coset
 conditioning raises the non-reference signal to $51\%$, with reference copies
 reaching $89\%$, nearly doubling the learnable component relative to a paired
 control that reproduces the $27\%$ baseline on the identical corpus and split
-(Fig.~\ref{fig:results}b). Most of the ceiling is therefore the difficulty of
+(Fig.~\ref{fig:results}b); over three seeds the coset-conditioned non-reference
+drop is $47.9\pm3.2\%$. Most of the ceiling is therefore the difficulty of
 inferring which symmetry
 operation generated each copy from the noised packing, not an inability of the
 $\mathrm{SO}(3)$ head to represent the rotation. The residual that remains even
@@ -458,6 +464,25 @@ while the no-coset control reproduces it, showing the ceiling is inference-limit
 rather than representational.}
 \label{fig:results}
 \end{figure}
+
+\subsection{End-to-end generation is bottlenecked by the joint packing}
+
+The orientation-isolated metric supplies the true lattice and centroid. The
+complementary question is how the full pipeline performs when all three manifolds
+are sampled from the prior, that is, end-to-end rigid-body structure prediction
+given only the molecular composition and conformer. Generating complete crystals
+for the held-out molecules (match@20, three seeds) yields no exact match at the
+StructureMatcher tolerances above ($0\%$, Wilson $95\%$ CI $0$--$2.8\%$,
+$n=131$). The best-of-$20$ per-component errors locate the bottleneck: a median
+lattice-parameter error of $0.46$, a fractional centroid error of $0.35$, and an
+orientation error of $60^\circ$. Every head contributes; in particular the
+centroid field, which improves by only $30\%$ in loss, leaves molecules displaced
+by roughly a third of a cell, and the orientation still carries the gauge-free
+component. The orientation-isolated $16.8\%$ is therefore an upper bound that is
+attainable only when the packing is supplied, and end-to-end molecular-crystal
+generation at this corpus scale and compute budget remains open. This is
+consistent with the scope of the paper: the contribution is the characterization
+of the orientation field, not a finished generator.
 
 \subsection{Method validation on inorganic benchmarks}
 
@@ -512,15 +537,19 @@ the right division of labor for rigid-body molecular CSP is to condition on
 symmetry for the relative orientation and to sample, rather than regress, the
 remaining gauge-free degree of freedom.
 
-This study has limits. A de-novo stable--unique--novel evaluation is not
-meaningful here because the universal interatomic potentials used to judge
-stability are trained on inorganic data\cite{deng2023chgnet} and do not transfer
-to organic molecular crystals; we therefore evaluate by reconstruction against
-known structures. Training is at CPU scale. The rigid-conformer gate excludes
-flexible molecules by construction, and the conformer registry is shared across
-crystals, so a species whose conformer differs between polymorphs beyond
-tolerance is rejected. These choices keep the rigid-body benchmark honest but
-narrow its coverage.
+This study has limits. End-to-end generation does not yet reconstruct held-out
+packings exactly, and the analysis isolates orientation rather than delivering a
+finished generator. A de-novo stable--unique--novel evaluation would not add much
+here either, because the universal interatomic potentials used to judge stability
+are trained on inorganic data\cite{deng2023chgnet} and do not transfer to organic
+molecular crystals; we therefore evaluate by reconstruction against known
+structures. The corpus is roughly one thousand crystals and training is at modest
+scale, so the absolute generation numbers should be read as a lower bound that
+more data and compute would improve. The rigid-conformer gate excludes flexible
+molecules by construction, and the conformer registry is shared across crystals,
+so a species whose conformer differs between polymorphs beyond tolerance is
+rejected. These choices keep the rigid-body benchmark honest but narrow its
+coverage.
 
 Two directions follow. A hybrid that predicts a rigid pose and then refines the
 conformer would extend the approach to flexible molecules while keeping the
