@@ -191,6 +191,20 @@ separation matters for the analysis: the three heads can be read independently,
 so a failure localized to orientation is visible against a backdrop of lattice
 and centroid that train normally.
 
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig1_schematic.pdf}
+\caption{Rigid-body factorization and the orientation decomposition.
+(a) A molecular crystal is represented by a lattice $L$, a fractional centroid
+$c_m\in\mathbb{T}^3$ per molecule, and an orientation $R_m\in\mathrm{SO}(3)$
+acting on a shared body-frame conformer, with atoms reconstructed by
+Eq.~\eqref{eq:factor}. (b) The per-molecule orientation target factors as
+$R_m=\mathrm{rot}(g_m)\cdot R_{\text{asym}}$ into a space-group-determined
+relative rotation, which the flow learns, and the asymmetric unit's free
+orientation, which is gauge-arbitrary and unlearnable.}
+\label{fig:schematic}
+\end{figure}
+
 \subsection{Lattice and centroid flows learn on real molecular crystals}
 
 The corpus is a seeded random sample of the CSD, scanning $14{,}874$ entries and
@@ -334,7 +348,8 @@ confirming the metric's tolerances. The trained flow reconstructs $16.8\%$ of
 held-out packings exactly, against $0\%$ for a random (predict-floor) field and
 $1.5\%$ for the naive choice of leaving every copy un-rotated. Its mean
 non-reference orientation error is $68^\circ$, below the $85^\circ$ of a random
-field. The $27\%$ loss reduction is real reconstructed geometry.
+field (Fig.~\ref{fig:results}a). The $27\%$ loss reduction is real reconstructed
+geometry.
 
 \begin{table}[t]
 \centering
@@ -375,8 +390,9 @@ generation\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, rather than the
 continuous rotation itself. Table~\ref{tab:strengthen} shows that coset
 conditioning raises the non-reference signal to $51\%$, with reference copies
 reaching $89\%$, nearly doubling the learnable component relative to a paired
-control that reproduces the $27\%$ baseline on the identical corpus and split.
-Most of the ceiling is therefore the difficulty of inferring which symmetry
+control that reproduces the $27\%$ baseline on the identical corpus and split
+(Fig.~\ref{fig:results}b). Most of the ceiling is therefore the difficulty of
+inferring which symmetry
 operation generated each copy from the noised packing, not an inability of the
 $\mathrm{SO}(3)$ head to represent the rotation. The residual that remains even
 with the coset supplied is attributable to the free $R_{\text{asym}}$ and to the
@@ -400,6 +416,21 @@ baseline (relative target)        & $5.37\!\rightarrow\!3.91$ & $+27.1\%$ \\
 \bottomrule
 \end{tabular}
 \end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{figures/fig2_results.pdf}
+\caption{The orientation results. (a) Orientation-isolated StructureMatcher
+reconstruction rate by condition (true lattice, centroid, and conformer; only
+$\mathrm{SO}(3)$ sampled; best of eight draws; $n=131$ held-out crystals). The
+trained flow reconstructs $16.8\%$ of packings exactly, against $0\%$ for the
+predict-floor field and $1.5\%$ for the naive $R=I$ baseline. (b) Held-out
+non-reference orientation loss drop under the strengthening levers; coset
+conditioning nearly doubles the learnable signal over the baseline level (dotted),
+while the no-coset control reproduces it, showing the ceiling is inference-limited
+rather than representational.}
+\label{fig:results}
+\end{figure}
 
 \subsection{Method validation on inorganic benchmarks}
 
