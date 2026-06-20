@@ -82,6 +82,19 @@ Riemannian flow matching for materials\cite{miller2024flowmm} has steadily
 lowered both sample cost and error on inorganic benchmarks, where each atom is
 an independent site.
 
+Sampling cost is a practical constraint for CSP, where a single composition may
+require thousands of candidate packings before relaxation and ranking. Diffusion
+samplers typically integrate hundreds to a thousand steps per structure, whereas
+flow matching learns a straight conditional path that off-the-shelf ordinary
+differential equation solvers traverse in tens of
+steps\cite{lipman2023flowmatching,chen2024riemannian}. The same advantage drove
+the move from $\mathrm{SE}(3)$ diffusion to $\mathrm{SE}(3)$ flow matching for
+protein backbones, where roughly five-fold fewer steps were reported at equal or
+better quality\cite{yim2023se3diffusion,yim2023frameflow}. A factorized,
+flow-matched generator that retains this efficiency while respecting crystal
+symmetry is therefore an attractive target, provided each of its degrees of
+freedom is in fact learnable.
+
 Molecular crystals are harder. A molecular crystal couples flexible
 intramolecular degrees of freedom to the rigid-body packing of whole molecules,
 and the most common organic space groups place several symmetry-related copies
@@ -164,15 +177,33 @@ mixes molecules within the cell. Figure~\ref{fig:schematic} summarizes the
 factorization and the orientation decomposition developed below. Architecture,
 manifold operations, and data are detailed in Methods.
 
+Each manifold is given a parametrization that makes its conditional path
+well-conditioned. The lattice is not flowed as a raw $3\times3$ matrix, which
+mixes scale and shape and admits negative determinants, but in a ten-dimensional
+space of a per-atom log-volume and a determinant-one shape, with the prior
+volume matched to the corpus mean so that the generated cells start at a
+physical density. Centroids live on the periodic torus and are flowed along its
+geodesics with wrap-around, so the target velocity respects the minimum-image
+convention. Orientations are flowed along $\mathrm{SO}(3)$ geodesics, with the
+network predicting a body-frame angular velocity and the sampler advancing by the
+exponential map, which keeps every intermediate state on the manifold. This
+separation matters for the analysis: the three heads can be read independently,
+so a failure localized to orientation is visible against a backdrop of lattice
+and centroid that train normally.
+
 \subsection{Lattice and centroid flows learn on real molecular crystals}
 
-We first establish that the pipeline learns the packing degrees of freedom.
+The corpus is a seeded random sample of the CSD, scanning $14{,}874$ entries and
+retaining $1{,}127$ ordered organic molecular crystals that factorize into
+$5{,}048$ rigid blocks after the rigid-conformer and disorder gates (Methods).
+We establish first that the pipeline learns the packing degrees of freedom.
 Table~\ref{tab:perhead} reports the held-out per-head flow-matching loss before
-and after training on the CSD corpus. The lattice loss falls by $94\%$ and the
-centroid loss by $30\%$, both converging within the first epoch. The absolute
-orientation loss moves by only $3.3\%$ and shows no downward trend over
-training. Lattice and centroid behave as on inorganic benchmarks; orientation
-is the outlier.
+and after training. The lattice loss falls by $94\%$ and the centroid loss by
+$30\%$, both converging within the first epoch. The absolute orientation loss
+moves by only $3.3\%$ and shows no downward trend over training. Lattice and
+centroid behave as they do on inorganic benchmarks, where every block is a single
+atom; orientation is the outlier, and it is the one degree of freedom that the
+single-atom benchmarks never exercise.
 
 \begin{table}[t]
 \centering
@@ -209,6 +240,20 @@ first and orientation second. Orientation still moves by only $3.3\%$
 (Table~\ref{tab:twobytwo}, top row), so noised conditioning is not the cause and
 a two-stage architecture cannot help. The obstruction is in the target itself.
 
+The gauge correction deserves emphasis because it is a prerequisite for the
+target to be well-posed at all. Without it, a species' body frame is set by
+whichever copy is parsed first anywhere in the dataset, so $R_m$ measures
+rotation relative to a molecule in an unrelated crystal, a quantity that is
+random across the corpus and would floor any orientation head by construction.
+Fixing the frame to a molecule-intrinsic quantity (Methods) removes this
+artificial randomness, and the harder, well-posed targets it produces require a
+lower learning rate to avoid an early-training divergence in the shared trunk.
+With both in place the orientation head is given every chance to learn, yet the
+trained loss continues to oscillate within a narrow band around the
+predict-zero value with no downward trend, while lattice and centroid converge
+in the same run. The failure is specific and reproducible, not an optimization
+accident.
+
 \subsection{The orientation target decomposes into a learnable and a free part}
 
 Consider a molecule $m$ generated from an asymmetric-unit molecule by a
@@ -237,6 +282,18 @@ descends by $27\%$ on held-out non-reference copies and generalizes, with an
 identical result under noised and clean conditioning. The signal therefore
 rides on the space group, which is conditioned directly, together with the
 coarse centroid arrangement, and is robust to conditioning noise.
+
+The relative analysis runs on the $1{,}095$ crystals that contain at least two
+copies of a species, the subset in which a non-trivial relative target exists;
+their species multiplicities are dominated by two- and four-copy cells, with a
+tail to sixteen. On this subset the overall orientation loss, counting both
+copy classes, improves by $34$ to $36\%$, and the reference copies, whose target
+is the identity, improve by $61\%$. The non-reference figure of $27\%$ is the
+conservative one, since it cannot be earned by collapsing to the identity, and it
+is the number we carry forward. Read together, the floor of the absolute target
+and the descent of the relative target confirm Eq.~\eqref{eq:decomp}
+quantitatively: the only learnable content in $R_m$ is the part that survives
+cancellation of $R_{\text{asym}}$.
 
 \begin{table}[t]
 \centering
@@ -301,23 +358,30 @@ trained                   & $16.8\%$  & $68^\circ$ \\
 \subsection{The ceiling is inference-limited, not representational}
 
 Two experiments locate the remaining gap. Increasing model capacity and
-training (a wider model trained longer) raises the non-reference signal from
-$27\%$ to $33\%$, real but diminishing headroom that plateaus well above zero.
-The decisive test conditions the field on a discrete space-group coset
-identity. For a copy generated by a crystallographic operation, the relative
-rotation $R'_m$ equals that operation's rotation part, so within a space group
-the non-reference relative rotations fall into a small discrete set of cosets.
-We cluster them into a per-space-group codebook and condition each molecule on
-its coset index, a discrete label of the kind used in symmetry-conditioned
-crystal generation\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, rather
-than the continuous rotation itself. Table~\ref{tab:strengthen} shows that
-coset conditioning raises the non-reference signal to $51\%$, nearly doubling
-the learnable component relative to a paired control that reproduces the $27\%$
-baseline on the identical corpus. Most of the ceiling is therefore the
-difficulty of inferring which symmetry operation generated each copy from the
-noised packing, not an inability of the $\mathrm{SO}(3)$ head to represent the
-rotation. A residual remains, attributable to the free $R_{\text{asym}}$ and to
-the axial gauge freedom of symmetric-top molecules.
+training, a wider network with more attention layers trained for more than twice
+as many steps, raises the non-reference signal from $27\%$ to $33\%$. This is
+real but diminishing headroom that plateaus well above zero, so the relative
+target is not merely under-fit; scaling alone does not close it.
+
+The decisive test conditions the field on a discrete space-group coset identity.
+For a copy generated by a crystallographic operation, the relative rotation
+$R'_m$ equals that operation's rotation part, so within a space group the
+non-reference relative rotations fall into a small discrete set of cosets.
+Clustering the observed relative rotations by geodesic distance within each space
+group yields a codebook of $707$ cosets across the corpus, and we condition each
+molecule on its coset index, a discrete label of the kind used in
+symmetry-conditioned crystal
+generation\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, rather than the
+continuous rotation itself. Table~\ref{tab:strengthen} shows that coset
+conditioning raises the non-reference signal to $51\%$, with reference copies
+reaching $89\%$, nearly doubling the learnable component relative to a paired
+control that reproduces the $27\%$ baseline on the identical corpus and split.
+Most of the ceiling is therefore the difficulty of inferring which symmetry
+operation generated each copy from the noised packing, not an inability of the
+$\mathrm{SO}(3)$ head to represent the rotation. The residual that remains even
+with the coset supplied is attributable to the free $R_{\text{asym}}$ and to the
+axial gauge freedom of symmetric-top molecules, whose orientation about a
+symmetry axis is genuinely unobservable.
 
 \begin{table}[t]
 \centering
@@ -377,6 +441,19 @@ summary\cite{martirossyan2025matching}: the learnable signal is visible only
 when the metric isolates orientation and samples the multimodal target. We
 report the geodesic error and a controlled best-of-$k$ match for this reason.
 
+The coset result also carries a practical implication for how rigid-body
+generators should be conditioned. Template-based pipelines already supply a
+space group and Wyckoff assignment at sampling time, and the coset index is a
+deterministic function of that assignment together with the copy ordering. A
+generator that consumes this discrete label, as space-group- and
+Wyckoff-conditioned models already do for atomic
+sites\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, converts the
+inference-limited part of the orientation field into a near-deterministic
+lookup, leaving only the genuinely free pose to be sampled. This suggests that
+the right division of labor for rigid-body molecular CSP is to condition on
+symmetry for the relative orientation and to sample, rather than regress, the
+remaining gauge-free degree of freedom.
+
 This study has limits. A de-novo stable--unique--novel evaluation is not
 meaningful here because the universal interatomic potentials used to judge
 stability are trained on inorganic data\cite{deng2023chgnet} and do not transfer
@@ -426,7 +503,23 @@ for the orientation update; molecular-crystal samples used here take fifty
 steps. The construction follows Riemannian flow
 matching\cite{chen2024riemannian} and parallels frame-based generative models
 for proteins\cite{yim2023se3diffusion,yim2023frameflow} and metal--organic
-frameworks\cite{kim2025mofflow}.
+frameworks\cite{kim2025mofflow}. The orientation target is the constant-velocity
+geodesic tangent $u_R = \log(R_0^\top R_1)$ carried in the body frame, where
+$R_0$ is the prior and $R_1$ the data orientation, and the loss is the squared
+geodesic residual between the predicted and target tangents averaged over real
+molecules.
+
+\subsection{Predict-zero floor and clean-packing control}
+The predict-zero floor is the loss of the trivial field that outputs the zero
+velocity, $\mathbb{E}\lVert u_R\rVert^2$, estimated by averaging the squared
+target tangent over the validation set; it is the value a head must beat to have
+learned anything, and on this corpus it is approximately $5.24$. The
+clean-packing control replaces the noised conditioning state with the true
+lattice and centroids while leaving the orientation input noised and the
+orientation target unchanged, so no label information leaks. Under this control
+the lattice and centroid heads see a state inconsistent with their own velocity
+targets and their losses are not interpretable, which is why only the orientation
+number is read from that run.
 
 \subsection{Network}
 An $\mathrm{E}(n)$-equivariant graph network\cite{satorras2021egnn} encodes each
@@ -446,6 +539,20 @@ are trivial. The coset codebook clusters non-reference relative rotations within
 each space group by geodesic distance into a shared set of discrete indices,
 which become the per-molecule coset labels.
 
+\subsection{Training}
+Models are trained with Adam at a learning rate of $3\times10^{-4}$, gradient
+clipping, and a batch size of $16$. The reduced learning rate, relative to a
+common default of $10^{-3}$, is needed because the intrinsic-frame orientation
+targets produce larger early gradients that otherwise diverge in the shared
+trunk within the first tens of steps. The lattice prior volume per atom is
+matched to the corpus mean so that generated cells begin at a physical density.
+Held-out losses are averaged over several independent draws of the flow time and
+prior at a fixed seed, so that the untrained and trained measurements are taken
+under identical random conditions and their difference reflects learning rather
+than sampling noise. The baseline relative run uses the default network for
+$800$ steps; the capacity run widens the model and adds attention and encoder
+depth and trains for $2{,}000$ steps.
+
 \subsection{Orientation-isolated match metric}
 Reconstruction holds the true lattice, centroid, and conformer fixed and
 integrates only the orientation field from a random $\mathrm{SO}(3)$ prior under
@@ -459,11 +566,16 @@ minimum mean geodesic error over draws on non-reference copies.
 \subsection{Data}
 The corpus is a seeded random sample of the CSD filtered to ordered, organic,
 three-dimensional, non-polymeric molecular crystals within size and
-$Z'$ bounds, yielding $1{,}127$ crystals and $5{,}048$ rigid blocks; $1{,}095$
-contain at least two copies of a species and define the multi-copy subset used
-for the relative and coset analyses. A fixed seed gives a $964/131$
-train/validation split. CSD structures are not redistributable; a refcode
-manifest and the export and analysis code reproduce the dataset from the CSD.
+$Z'$ bounds, yielding $1{,}127$ crystals and $5{,}048$ rigid blocks from
+$14{,}874$ scanned entries; $1{,}095$ contain at least two copies of a species
+and define the multi-copy subset used for the relative and coset analyses. The
+species multiplicities of that subset are concentrated at two and four copies
+per cell, with smaller populations at three, six, eight, twelve, and sixteen,
+reflecting the general-position multiplicities of the common organic space
+groups. A fixed seed gives a $964/131$ train/validation split, used identically
+across every diagnostic so that comparisons are paired. CSD structures are not
+redistributable; a refcode manifest and the export and analysis code reproduce
+the dataset from a licensed CSD installation.
 
 \section*{Data availability}
 The CSD entries used cannot be redistributed under the CSD licence. A manifest
