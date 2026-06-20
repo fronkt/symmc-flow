@@ -19,13 +19,18 @@ See [`PLAN.md`](PLAN.md) for the full research plan, math, and benchmark protoco
 > train→sample runs end-to-end on CPU and GPU. Key results: the lattice was reparametrized
 > in (log-volume, shape) space and a **concentrated wrapped-normal fractional prior** fixes
 > the atom-collapse failure mode (valid C–C bonds 17% → ~82%). Scored with the CSP-standard
-> `StructureMatcher.get_rms_dist` matcher (as in DiffCSP), **carbon-24 match@1 = 26.7%
-> (match@20 79.7%), above DiffCSP's ~17%** — the earlier "~5% plateau" was a matcher/metric
-> artifact (`fit` + match@1), not a real ceiling. On MP-20 the flow reaches match@1 41.4% /
-> match@20 80.5%, and **SUN = 56.6%** conditional / 35.2% unconditional (train-sampled comps;
-> stable ~60% via CHGNet E_above_hull). Capacity scaling (d_model 384, ~3× compute) adds only
-> ~+2 pp match@1 — near the objective floor, so the gap to DiffCSP is method, not scale. Full
-> experiment log in [`RESULTS.md`](RESULTS.md).
+> `StructureMatcher.get_rms_dist` matcher (as in DiffCSP): **carbon-24 match@1 = 26.7%
+> (match@20 79.7%); MP-20 match@1 41.4% (match@20 80.5%)**; the earlier "~5% plateau" was a
+> matcher/metric artifact (`fit` + match@1), not a real ceiling. **SUN = 56.6%** conditional /
+> 35.2% unconditional (CHGNet E_above_hull). A **strict same-matcher head-to-head against
+> DiffCSP's released models** (our num_evals=20 runs) is **genuinely mixed — each method wins
+> two of four match cells**: the flow leads carbon-24 match@1 (26.7% vs 18.8%) and MP-20
+> match@20 (80.5% vs 76.2%); DiffCSP leads MP-20 match@1 (48.0% vs 41.4%) and carbon-24
+> match@20 (89.1% vs 79.7%), with consistently tighter RMSE. The takeaway is **competitive at
+> ~50× fewer sampling steps (50 RK4 vs ~1000)**, not a uniform win — the old "match@20 beats
+> DiffCSP's match@1" claim was a metric mismatch and is withdrawn. Post-hoc CHGNet relaxation
+> *raises* MP-20 match@1 (41.8→44.7%) but *lowers* carbon-24's (29.4→21.2%, topology drift to
+> graphite/diamond). Full experiment log in [`RESULTS.md`](RESULTS.md).
 > A DiffCSP-style diffusion baseline is implemented and loses head-to-head (objective finding).
 
 ## Install
@@ -92,13 +97,21 @@ atoms ─2D periodic-table embed─► EGNN (invariant per-molecule emb)
 
 See [`RESULTS.md`](RESULTS.md) for the full ablation tables, diagnostics, and reproduce steps.
 
-## Next phase
+## Next phase (journal hardening → npj Computational Materials)
 
-1. Best-of-`k` match-rate metric (standard CSP eval) — one-to-one understates a
-   generator that produces valid-but-different polymorphs.
-2. DiffCSP-style diffusion baseline for a head-to-head objective comparison.
-3. MP-20 / WBM loaders (`pymatgen` + `mp-api`); report SUN rate (target > 75%),
-   match rate, RMSD, and sampling-step / wall-clock vs diffusion baselines.
+The best-of-k metric, the diffusion baseline, and the MP-20/SUN benchmarks are done (above).
+The remaining work targets the two reviewer-facing weaknesses and the central thesis:
+
+1. **Post-hoc relaxation as a separate metric.** `--relax` on `train_carbon24.py` /
+   `train_mp20.py` reports a CHGNet-relaxed match rate + RMSE *alongside* (never replacing) the
+   canonical unrelaxed numbers — DiffCSP's headline is unrelaxed, so the relaxed row is reported
+   transparently as an additional column. Tightens our looser matched cells (RMSE ~0.20/0.35).
+2. **Strict DiffCSP head-to-head.** Run DiffCSP's released models at `num_evals=20` so we compare
+   match@20 to match@20 (same `get_rms_dist` matcher). See `scripts/diffcsp_headtohead.md`.
+3. **Real molecular-crystal benchmark (orientation ON).** Both current real benchmarks run
+   single-atom blocks with `lambda_orient=0`, so the rigid-body conformer + SO(3) orientation flow
+   + SGFM — the method's headline novelty — is validated only on synthetic data. A CSD-derived
+   molecular-crystal set with orientation enabled is the experiment that justifies the title.
 
 ## License
 

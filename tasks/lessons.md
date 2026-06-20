@@ -2,6 +2,90 @@
 
 <!-- Capture a rule after any correction. Format below. -->
 
+## 2026-06-18 — Intrinsic frame fixes the gauge but not learnability; harder targets NaN
+- **Did**: replaced the arbitrary global per-species gauge with a molecule-INTRINSIC frame
+  (principal axes of the gyration tensor, element-weighted 3rd-moment sign fix, right-handed)
+  so R_m is a gauge-free physical pose. Gauge-free => kept/skip set + all round-trip tests
+  unchanged (Kabsch RMSD is rotation-invariant).
+- **NaN gotcha**: retraining then diverged to NaN at ~step 17 — the SHARED trunk (both v_L and
+  v_R went non-finite while all inputs/targets stayed finite; u_R is bounded by pi). Cause was
+  early-Adam instability: the intrinsic-frame orient targets give larger early gradients and
+  Adam's tiny initial 2nd-moment estimate amplifies them (grad_clip=1.0 doesn't help because
+  the blow-up is finite-but-fast, not a single inf grad). Run 1 (gauge-arbitrary, many
+  near-identity targets) didn't trip it. Fix: lr 1e-3 -> 3e-4 (warmup would also work).
+- **Result**: stable at 3e-4 but orientation STILL at floor (R oscillates 4.95–5.80 around the
+  5.24 predict-zero floor over 200 steps, zero downward trend) while lattice/centroid converge.
+  Intrinsic frame is NECESSARY (correct gauge) but NOT SUFFICIENT on a 250-structure,
+  mostly-asymmetric, ~1-crystal-per-molecule corpus.
+- **Rule**: a gauge fix removes a guaranteed floor but doesn't create learnable signal where
+  the data is too sparse / conditioning too weak. Before building the next symmetry-quotient
+  layer, weigh the cheaper lever (scale the corpus) — orientation generalization needs repeats
+  per molecule, unlike lattice/centroid which follow universal statistics. And: when a target
+  distribution changes (harder), re-check optimizer stability (lr/warmup), don't assume the old
+  lr transfers.
+- **Context**: molcrystal `_canonical_frame`; scripts/train_csd_molcrystal.py.
+
+## 2026-06-18 — Orientation flow is at the predict-zero floor on REAL crystals
+- **Finding**: First orientation-ON training on a real CSD corpus (250 crystals, 1092 rigid
+  blocks, lambda_orient=1). Lattice loss 1.4->0.1 and centroid 0.36->0.25 (both learn), but
+  orientation stayed ~5.0 == its predict-zero floor E||u_R||^2 = 5.29 (decisive diagnostic
+  from the 2026-06-13 lesson). The SO(3) head learned ~nothing. The synthetic smoke train
+  "worked" only because orientation there was BUILT as a deterministic function of centroid.
+- **Root cause**: the absolute orientation target R_m is (1) measured against an ARBITRARY
+  global per-species gauge (whichever copy was parsed first in the whole dataset defines
+  orient=I) and (2) has no space-group/site-symmetry quotient, so symmetry-equivalent
+  orientations are distinct targets. Given the noised flow-time conditioning, R_m is then
+  ~conditionally-random -> irreducible CFM floor. `use_group_averaging` is DEAD config
+  (defined in TrainConfig, referenced nowhere) — the SGFM symmetry averaging was never
+  actually implemented on the orientation loss.
+- **Rule**: validate a new generative DOF on real data with the predict-zero floor check
+  BEFORE a long run, and don't trust a synthetic demo where the target was constructed
+  deterministically. The fix for an at-floor orientation target is the same family that
+  fixed centroids (OT coupling) and eval (best-of-k): make the target gauge/symmetry
+  INVARIANT — min-over-symmetry CFM target, or a molecule-intrinsic reference frame — not
+  more model capacity or steps.
+- **Context**: scripts/train_csd_molcrystal.py; symmc_flow/flow.py cfm_loss orient path.
+
+## 2026-06-17 — CSD/CCDC API + CIF gotchas (real corpus sourcing)
+- **CCDC Access Structures is not scriptable**: `/structures/download?id=REFCODE` returns an
+  HTML consent form (name/email/affiliation + `__RequestVerificationToken` CSRF + server-side
+  session id); POSTing it back just re-renders. It's deliberately manual/per-structure. Use
+  it for a few CIFs by hand, never for bulk. The licensed **CSD Python API** (`ccdc`, bundled
+  in `CCDC/ccdc-software/csd-python-api/miniconda/python.exe`, separate from the project env)
+  is the bulk path; export filtered CIFs with it, then factorize under the torch/pymatgen env.
+- **`hasattr` lies on CCDC objects**: `hasattr(crystal, "is_polymeric")` returned True but
+  accessing it raised AttributeError — `is_polymeric` is on `molecule`, not `crystal`. Don't
+  trust `hasattr` to probe the `ccdc` API; access the attribute in a try, or check the docs.
+- **COD element filter**: distinct-element count is `strictmin`/`strictmax`, NOT `nel`
+  (silently ignored → returns the whole DB). `el1=C&el2=H&el3=N&el4=O&strictmax=4` = exactly
+  CHNO. Endpoint is `/cod/result` (not `result.php`).
+- **pymatgen "Invalid CIF file with no structures!"** on CSD CIFs = atoms on special
+  positions whose symmetry-overlap sums occupancy > 1, tripping the default
+  `occupancy_tolerance=1.0`. Fix: `CifParser(path, occupancy_tolerance=10.0)` merges the
+  equivalents (recovered 15/15). Genuine disorder still yields is_ordered=False downstream.
+- **Rule**: when sourcing a real crystal corpus, expect ~12% of CSD CIFs to need the raised
+  occupancy tolerance and most random organics to be rejected as non-rigid (flexible) — both
+  are correct, not bugs. Keep CSD-derived CIFs OUT of git (not redistributable); commit the
+  scripts + a refcode manifest so the corpus is reproducible by seed+CSD version.
+- **Context**: `scripts/csd_export.py`, `scripts/factorize_cifs.py`, `molcrystal.read_cif`.
+
+## 2026-06-17 — Synthetic molecular-crystal tests must separate copies
+- **Mistake**: Validating `molcrystal.py` I placed rigid-molecule copies at random
+  centroids in a ~14 Å cell; copies landed ~1.5 Å apart so JmolNN bonded atoms ACROSS
+  molecules. The bond graphs then differed per copy → different WL species keys → each
+  copy registered as its own reference (orient=I, its own `local`), so the
+  shared-conformer assertion failed (spread 2.6 Å) and the non-rigid gate "passed" only
+  because the distorted copy re-segmented. Round-trip still passed (each block is
+  self-consistent), which masked the real bug.
+- **Rule**: When testing a covalent-bond detector (JmolNN/StructureGraph), place copies
+  with a large cell + fixed widely-separated centroids (≫ bond cutoff, ~13 Å here) so
+  detection cannot cross-bond or hit periodic images. To exercise the non-rigid/conformer
+  gate, FLEX a copy (perturb terminal atoms while keeping connectivity) rather than
+  hard-displacing one atom (which breaks bonds and re-segments instead of triggering the
+  RMSD gate). A passing round-trip metric does not prove the factorization is correct —
+  also assert the shared-conformer invariant directly.
+- **Context**: `tests/test_molcrystal.py`; any bond-graph-based molecule detection.
+
 ## 2026-06-10 — Project kickoff
 - **Rule**: Architecture must stay dataset-agnostic — keep all dataset specifics
   behind loaders in `data.py` so the synthetic harness and real MP-20/carbon
@@ -142,3 +226,14 @@
 ## 2026-06-10 — Git commits
 - **Rule**: Never add `Co-Authored-By` trailers to commits in this user's repos.
 - **Context**: Standing user preference.
+
+## 2026-06-20 — CPU training jobs: run sequentially, watch memory
+**Pattern:** launched 3 background CPU jobs (match-rate eval + two trainings) in parallel; the
+oversized config (d_model 256 / 6 attn / 5 egnn, 2000 steps) ballooned to **19 GB** and the box
+started swapping, starving (and effectively OOM-killing) the others. A modest config (d_model 192)
+sits at ~2.4 GB and runs fine.
+**Rule:** on this CPU box, run heavy training runs **one at a time** (a lightweight no_grad eval can
+overlap). Before committing to a long sweep, launch and check `Get-Process python | WorkingSet64`
+after ~30 s; if a single training job is >6 GB, shrink it. Don't trust per-process memory numbers
+taken *during* contention (a swapping box mis-attributes — a d_model=128 job showed 16 GB only while
+the 19 GB monster was alive).

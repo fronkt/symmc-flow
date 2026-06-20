@@ -266,3 +266,185 @@ uncertain payoff. Chose MP-20 (concrete, standard benchmark) over it for the war
     GPU phase pulls full ops from pymatgen.
   - SGFM averaging is implemented for the centroid field; lattice/orient use the
     plain field (full joint averaging is a GPU-phase extension).
+
+# Task: Journal hardening — relaxed match + strict DiffCSP head-to-head + mol-crystal (2026-06-16)
+
+Target: npj Computational Materials (fallback Digital Discovery). Addresses the two reviewer-facing
+weaknesses (apples-to-oranges DiffCSP baseline; loose matched cells / no relaxation) and the central
+thesis gap (orientation off on both real benchmarks).
+
+## P0 — done in repo (CPU), GPU runs pending
+- [x] `--relax` / `--relax-steps` on train_carbon24.py + train_mp20.py: CHGNet-relaxes GENERATED
+      structures (refs never relaxed) and prints a relaxed match rate + RMSE as a SEPARATE line,
+      never replacing the canonical unrelaxed numbers. Reuses symmc_flow.stability.relax_structures
+      (lazy chgnet import). Added `relax=`/`relax_steps=` kwargs to match_rate/match_rate_topk.
+- [x] tests/test_match_topk.py: identity-relax monkeypatch test (relaxed score == unrelaxed when
+      relaxation is identity; relax hook invoked). Skips if no pymatgen; no chgnet import. py_compile OK.
+- [x] scripts/diffcsp_headtohead.md: runbook to run DiffCSP's released models at num_evals=20 and
+      report match@1/@20 + RMSE with the same get_rms_dist matcher (no repo code; GPU-box task).
+- [ ] GPU: scp carbon24_big.pt + mp20.pt to box; `pip install chgnet`; run --relax (seeds 0/1/2)
+      on both; add relaxed match@1/@20 + RMSE as NEW columns in RESULTS.md (with carbon-topology caveat).
+- [ ] GPU: run scripts/diffcsp_headtohead.md; replace the "~51% (match@1)"/"~17%" placeholders in
+      RESULTS.md/README with DiffCSP's own match@20 from our run of the released checkpoint.
+
+## P0-strategic — molecular-crystal benchmark (orientation ON) — SCOPED, not built
+The thesis (rigid-body conformers + SO(3) orientation flow + SGFM) is validated only on synthetic
+data; both real benchmarks use single-atom blocks with lambda_orient=0. Gated on data access.
+- [ ] Confirm Purdue CCDC/CSD license access (Libraries / CCDC academic program).
+- [ ] Choose a CSD-derived molecular-crystal benchmark set (align with MolCrystalFlow's protocol if
+      available) so numbers are comparable.
+- [ ] Then design symmc_flow/molcrystal.py — analog of mp20.py but multi-atom rigid blocks (PCA
+      framing) with orientation ON (lambda_orient>0), exercising the SO(3) flow + SGFM on real data.
+
+## Deferred (real research, uncertain payoff)
+- [ ] Fair stochastic-interpolant diffusion baseline (OT-coupled / concentrated coordinate noising).
+- [ ] Unconditional de-novo SUN with composition sampling (model can't generate compositions yet).
+
+## Review (2026-06-17) — GPU runs DONE
+- Checkpoints carbon24_big.pt + mp20.pt were LOST (not local, boxes recycled) -> RETRAINED on
+  vast.ai RTX 5090 (108.240.82.27). Reproduced canonical: carbon match@20 78.9% (rec 79.7),
+  mp20 match@20 82.4% (rec 80.5). Both scp'd to LOCAL repo checkpoints/ (recycle-safe this time).
+- **Relaxed match@1 (mean seeds 0/1/2, --relax):** MP-20 41.8->44.7% (HELPS, RMSE 0.21->0.16);
+  carbon 29.4->21.2% (HURTS - CHGNet drifts allotropes to graphite/diamond, RMSE 0.41->0.33).
+  Consistent across all 3 seeds. RESULTS.md "Post-hoc relaxation" section added.
+- **DiffCSP head-to-head DONE** (2x RTX 3090 box, torch-1.9 env, released ckpts, num_evals=20,
+  256 test, get_rms_dist; recipe in scripts/diffcsp_headtohead.md):
+  - carbon: DiffCSP m@1 18.8% (<ours 26.7), m@20 89.1% (>ours 79.7).
+  - mp20:   DiffCSP m@1 48.0% (>ours 41.4), m@20 76.2% (<ours 80.5).
+  - **MIXED - each wins 2 of 4 cells.** DiffCSP RMSE much tighter (0.06-0.21 vs 0.15-0.35).
+    Old "match@20 beats DiffCSP match@1" framing WITHDRAWN (metric mismatch). Honest takeaway:
+    competitive at ~50x fewer sampling steps, not a uniform win. RESULTS + README corrected.
+- Still TODO: molecular-crystal benchmark (orientation ON) gated on CSD access (user reached out).
+
+# Task: molcrystal.py — real rigid-body molecular-crystal loader (lambda_orient>0)
+
+## Plan
+- [x] `symmc_flow/molcrystal.py`: `MolCrystalDataset` — molecule detection via
+      `StructureGraph.from_local_env_strategy(JmolNN)` + PBC-unwrap BFS over `to_jimage`;
+      per-species conformer registry keyed by WL graph hash; Kabsch alignment
+      (`manifolds.project_so3`) with automorphism-min mapping (VF2, element node_match);
+      rigid-strictness skip gate (`conf_tol`, default 0.3 Å) recorded in `self.skipped`;
+      monatomic units -> orient=I/local=0. Same batch dict as carbon24/mp20.
+- [x] `rigid_to_frac` / `rigid_to_structure` — the exact inverse factorization, for
+      round-trip validation and eval-time molecular StructureMatcher reconstruction
+      (the single-atom `_to_structures` in train scripts can't expand molecules).
+- [x] Re-export from `data.py` + `__init__.py`.
+- [x] `tests/test_molcrystal.py` — 5 tests: round-trip recovers planted atoms (gauge-free,
+      frac space), all copies share one conformer + recovered relative rotations match
+      planted, monatomic=identity, non-rigid copy skipped, symmetric-molecule (water)
+      automorphism guard. All green.
+- [x] `scripts/train_molcrystal.py` — smoke train, lambda_orient=1.0, orientation tied to
+      centroid (learnable field): orient loss 5.39 -> 3.38 (37% drop). First time the SO(3)
+      head trains on real multi-atom rigid blocks.
+- [x] full `pytest -q` green (no regression); molcrystal deprecation warning removed.
+
+## Review
+- Factorization convention locked: `cart_atom = c@L + R@local`; species share ONE
+  reference conformer `local`, copies differ only by `R` — that shared conformer is what
+  makes the SO(3) flow learnable (vs single-atom mp20/carbon24 where orient≡I).
+- **No model change needed**: `model.encode_molecules` already runs the EGNN over A>1
+  `local`; only real multi-atom local/orient had to reach it.
+- CSD-independent by design: the loader takes pymatgen `Structure`s, so the full detection
+  pipeline is already exercised on genuine Structure objects; CSD only swaps the *corpus*
+  (a `detect_fn` hook lets the CSD Python API plug in later). Decision: reject non-rigid
+  (flexible) molecules above `conf_tol` to keep the rigid-body benchmark honest.
+- Lesson captured (tasks/lessons.md 2026-06-17): synthetic bond-graph tests must separate
+  copies (large cell + spread centroids) or JmolNN cross-bonds them; flex (don't snap) a
+  copy to exercise the conformer gate; a passing round-trip doesn't prove correctness —
+  assert the shared-conformer invariant too.
+- Still TODO (on CSD access): curated molecular-crystal benchmark corpus + the actual
+  orientation-ON training run and match@k numbers for the paper.
+
+## 2026-06-18 — Real CSD molecular-crystal benchmark (orientation-ON)
+Full writeup: see `MOLCRYSTAL.md`.
+- [x] CSD access obtained; export (`scripts/csd_export.py`, CCDC interpreter) + COD fallback.
+- [x] Factorize real CIFs → `MolCrystalDataset` (`scripts/factorize_cifs.py`); tolerant `read_cif`.
+- [x] Orientation-ON training on real corpus (`scripts/train_csd_molcrystal.py`).
+- [x] Molecule-intrinsic gauge (`_canonical_frame`) + lr 3e-4 stability fix.
+- [x] Scale corpus 250 → 1127 structures.
+
+### Result (robust negative)
+- lattice + centroid heads LEARN on real data; **SO(3) orientation head stays at its
+  predict-zero floor (5.24)** across both corpus sizes and after the gauge fix.
+- Not data sparsity (scaling didn't help). Leading cause: noised flow-time conditioning —
+  orientation must be predicted from half-noised lattice+centroids.
+
+### Next (not started — paused for thesis-framing discussion)
+1. Two-stage / cleaner conditioning (generate lattice+centroid first, orientation after). [rec]
+2. Diagnostic: condition orientation on TRUE lattice+centroids to confirm the cause.
+3. Fallback: reframe paper as rigid-body lattice+centroid flow + orientation as open problem.
+4. Deprioritized: min-over-symmetry orientation target (helps only symmetric minority).
+
+# Task: Clean-packing diagnostic — does the SO(3) head floor on noised conditioning? (2026-06-18)
+
+Ran the cheap diagnostic (#2 above) BEFORE building two-stage (#1), because a positive result
+is literally two-stage's second stage and a negative result rules two-stage out — strictly
+cheaper either way.
+
+## Plan
+- [x] `TrainConfig.cond_clean_packing` flag (config.py).
+- [x] `train._step_loss`/`evaluate`/`train`: when set, feed the field the TRUE (z1)
+      lattice+centroid instead of noised z_t; orientation stays noised, target unchanged
+      (no leakage). Only the orient loss is meaningful under the flag.
+- [x] `scripts/diag_orient_conditioning.py`: clean-packing run on the 1127 CSD corpus, orient
+      pre→post on held-out val, CONFIRMED/NULL verdict, saves diag_orient_cleanpack.pt.
+- [x] `tests/test_cond_clean_packing.py`: 2 plumbing tests (flag feeds true vs noised packing).
+      Full suite green.
+
+## Review (2026-06-18) — NULL, two-stage RULED OUT
+- 800 steps, clean packing: lattice 1.20→0.044, centroid 0.355→0.254 (both learn), **orient
+  5.35→5.18 (+3.3%) — still at the ~5.2 predict-zero floor; R train oscillates 4.69–5.90,
+  no trend.** Conditioning on the TRUE packing is the best case for two-stage's 2nd stage, so
+  two-stage cannot help → **RULED OUT.**
+- Cause is deeper: the absolute per-molecule SO(3) target (even gauge-fixed) carries no
+  learnable signal on this asymmetric, ~1-crystal-per-molecule corpus.
+- **Decision:** lead with the honest reframe (rigid-body lattice+centroid flow + orientation
+  as a well-diagnosed open problem). One technical lever left before fully committing: change
+  the orientation TARGET (restrict to species recurring across crystals → relative target),
+  not the conditioning. Full writeup in MOLCRYSTAL.md.
+
+# Task: Relative-orientation target — decompose the floor (2026-06-18)
+
+Ran the remaining lever: change the orientation TARGET (relative, not absolute), not the
+conditioning. The absolute target factors R_m = rot(g_m)·R_asym (space-group part + free
+asymmetric-unit orientation); re-gauge to cancel R_asym and see if the symmetry part learns.
+
+## Plan
+- [x] `molcrystal.relative_gauge_item` / `_species_groups` / `species_multiplicity`: re-gauge
+      first-copy-as-reference (orient=I), others R'_m=R_m·R0^{-1}; round-trip preserved; adds
+      `is_ref` mask. Test `test_relative_gauge_preserves_roundtrip_and_targets` (suite green).
+- [x] `scripts/diag_orient_relative.py`: regauge + keep multi-copy crystals (1095/1127), train,
+      report orient loss split ref vs NON-ref (guards trivial predict-identity), `--clean-packing`.
+- [x] Ran the full 2×2 (absolute/relative × noised/clean), 800 steps each.
+
+## Review (2026-06-18) — PARTIAL POSITIVE; floor = free asymmetric-unit orientation
+- Non-reference (symmetry-determined) held-out orient loss, untrained→trained:
+  - absolute: 5.37→5.18 (+3.3%, floor) both noised & clean.
+  - **relative: 5.37→3.91 (+27.1%) noised; 5.37→3.94 (+26.7%) clean** — descends + generalizes.
+  - Overall orient +34–36%; reference copies +56–61%.
+- **Identical noised vs clean** → the relative signal rides on the space group (directly
+  conditioned) + coarse centroids; robust to conditioning noise (re-confirms two-stage moot).
+- **Conclusion:** the SO(3) flow DOES learn space-group-induced relative orientation; the floor
+  is the FREE asymmetric-unit orientation R_asym — gauge-arbitrary, fundamentally unlearnable,
+  not a broken flow/conditioning artifact. Orientation is *partially* learnable, precisely
+  decomposed. → Reframe paper with this decomposition (see MOLCRYSTAL.md Next steps).
+
+## Review (2026-06-20) — strengthening 2a/2b/2c DONE; reframe shipped
+Ran the three follow-ups the partial positive needed, then reframed the docs.
+- [x] **2a match metric** (`scripts/eval_orient_matchrate.py`): orientation-isolated
+      (true lattice+centroid+conformer, sample only SO(3), best-of-8), rebuild via
+      `rigid_to_structure`, StructureMatcher.fit. n=131 val: trained **16.8%** vs 0% floor /
+      1.5% naive R=I; oracle 100%. Single deterministic draw collapses to the conditional mean
+      (relatives are ≈180°), so best-of-k is the correct generative read.
+- [x] **2b capacity/steps** (`diag_orient_relative.py` + `--d-model/--n-attn-layers/--egnn-layers`):
+      d_model 192 / 2000 steps → non-ref 5.35→3.56 (**+33.4%**, ref +68%). Real but diminishing;
+      plateaus above 0. First "big" config (256/6/5) OOM-swapped the CPU box (19 GB) → killed,
+      reran modest. Lesson: this box swaps with parallel/oversized training; run sequentially.
+- [x] **2c coset conditioning** (`scripts/diag_orient_coset.py`, `assign_cosets`, model
+      `n_cosets`/`coset_embed`): 707-coset per-SG codebook; conditioned non-ref 5.36→**2.65
+      (+50.6%)** vs `--no-coset` control 5.37→3.91 (+27.1%, reproduces baseline). → ceiling is
+      **inference-limited, not representational**; residual = free R_asym + symmetric-top multimodality.
+- [x] Tests: +`test_assign_cosets_*` (loader), +`test_coset_conditioning_optional_and_active`
+      (model); fixed `test_cond_clean_packing` for new `coset=` kwarg. Suite **60 passed, 2 skipped**.
+- [x] **Reframe (task 1)**: MOLCRYSTAL.md (TL;DR 3-way characterization, 2a/2b/2c subsections,
+      components table, next steps, artifacts) + PLAN.md §1 reframe note.

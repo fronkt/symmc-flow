@@ -21,6 +21,7 @@ class ModelConfig:
     n_space_groups: int = 230
     sg_embed_dim: int = 64
     time_embed_dim: int = 64
+    n_cosets: int = 0  # >0 enables per-molecule space-group coset embedding (2c diagnostic)
     # flow head loss weights
     lambda_lattice: float = 1.0
     lambda_centroid: float = 1.0
@@ -48,3 +49,5 @@ class TrainConfig:
     centroid_prior_std: float | None = None  # None -> uniform torus prior; float -> wrapped-normal
     fixed_prior: bool = False         # cache one prior per structure (sharper OT target)
     sampler_churn: float = 0.0        # Langevin-style noise in the sampler (0 = deterministic)
+    cond_clean_packing: bool = False  # diagnostic: condition the field on TRUE lattice+centroid
+                                      # (not z_t) to test if noised packing is what floors orient

@@ -1,0 +1,13 @@
+corpus: 1127 -> 1095 multi-copy; val crystals: 131
+ckpt checkpoints/rel_s2.pt  clean_packing(train)=False  vol/atom 9.9
+
+==== orientation-isolated reconstruction, best-of-8 (true lattice+centroid+conformer) ====
+  matcher: ltol=0.3 stol=0.5 angle_tol=10.0
+
+  condition   match-rate   non-ref orient err
+  oracle          100.0%               0.0 deg  (ceiling)
+  identity          0.8%             163.7 deg  (naive R=I)
+  untrained         0.0%              88.2 deg  (floor)
+  trained          16.0%              70.5 deg  <-- RESULT
+
+  (n=131 crystals; orient err = best-of-8 mean SO(3) angle on non-ref copies)

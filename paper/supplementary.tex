@@ -1,0 +1,115 @@
+% =====================================================================
+% Supplementary Information
+% What an SO(3) orientation flow can and cannot learn in
+% molecular-crystal structure prediction
+% =====================================================================
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,microtype}
+\usepackage[numbers,super,sort&compress]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+
+\renewcommand{\thesection}{S\arabic{section}}
+\renewcommand{\thetable}{S\arabic{table}}
+\renewcommand{\thefigure}{S\arabic{figure}}
+
+\title{\bfseries Supplementary Information:\\
+What an SO(3) orientation flow can and cannot learn in
+molecular-crystal structure prediction}
+\author{Frank Cai}
+\date{}
+
+\begin{document}
+\maketitle
+
+% =====================================================================
+\section{Method validation on single-block inorganic benchmarks}
+% =====================================================================
+
+The orientation analysis in the main text isolates a target obstruction that is
+specific to multi-copy molecular crystals. To confirm that the underlying
+SymMC-Flow architecture, training objective, and Runge--Kutta sampler are sound
+independently of that obstruction, we benchmarked the model on two standard
+single-block datasets, carbon-24 and MP-20, in which each atom is its own rigid
+block and the orientation head is inactive ($\lambda_{\text{orient}}=0$). These
+results are reported for completeness; they are not the contribution of this
+paper.
+
+\paragraph{Protocol.} We compare against joint equivariant
+diffusion\cite{jiao2023diffcsp} using its released models, with matched
+evaluation: $256$ held-out targets, $20$ samples per target, and the same
+root-mean-square structure distance routine for both methods. Match rate at $k$
+(``match@$k$'') is the fraction of targets for which at least one of $k$ samples
+matches the reference under StructureMatcher\cite{ong2013pymatgen}. SymMC-Flow
+samples in $50$ Runge--Kutta steps, against roughly $1{,}000$ steps for the
+diffusion baseline.
+
+\paragraph{Outcome.} Table~\ref{tab:inorganic} shows a mixed result: each method
+wins two of the four match cells. SymMC-Flow leads on carbon-24 match@1 and on
+MP-20 match@20, while the diffusion baseline leads on MP-20 match@1 and on
+carbon-24 match@20 and produces tighter RMSE on matched structures. The honest
+summary is that SymMC-Flow is competitive at roughly an order of magnitude fewer
+sampling steps, not a uniform improvement. This is sufficient to establish that
+the flow and sampler are well-behaved, which is all the main-text analysis
+requires.
+
+\begin{table}[h]
+\centering
+\caption{SymMC-Flow versus a diffusion baseline\cite{jiao2023diffcsp} on
+single-block inorganic CSP under a matched evaluation ($256$ targets, $20$
+samples, identical RMSD routine). Match rates in percent; higher is better. Each
+method wins two of the four cells.}
+\label{tab:inorganic}
+\begin{tabular}{llcc}
+\toprule
+dataset & metric & SymMC-Flow & diffusion baseline \\
+\midrule
+carbon-24 & match@1  & \textbf{26.7} & 18.8 \\
+carbon-24 & match@20 & 79.7 & \textbf{89.1} \\
+MP-20     & match@1  & 41.4 & \textbf{48.0} \\
+MP-20     & match@20 & \textbf{80.5} & 76.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Caveat on benchmarks.} Recent work shows that carbon-24 contains a
+large fraction of duplicate structures and that match-rate metrics can mislead
+when identical building blocks exhibit structural
+variety\cite{martirossyan2025matching}. The numbers above should be read as a
+sanity check on the architecture under the field's conventional protocol rather
+than as a definitive ranking.
+
+% =====================================================================
+\section{Is the absolute molecular orientation uniform on SO(3)?}
+% =====================================================================
+
+The main-text claim that the free asymmetric-unit pose $R_{\text{asym}}$ carries
+no learnable signal predicts that the absolute per-molecule orientations should be
+close to Haar-uniform on $\mathrm{SO}(3)$, since a uniform target offers nothing to
+predict. For Haar-uniform rotations the geodesic angle $\theta$ from the identity
+has density $p(\theta)=(1-\cos\theta)/\pi$ on $[0,\pi]$, with mean $126.5^\circ$.
+Figure~\ref{fig:rasym} compares the empirical distribution of the reference-copy
+orientations, which equal $R_{\text{asym}}$ up to the operation generating the
+first-detected copy, to this density. The empirical distribution tracks the Haar
+curve across the full angular range, with mean $122.6^\circ$ ($n=1{,}467$). A
+one-sample Kolmogorov--Smirnov test against the Haar law gives $D=0.04$, a small
+but nonzero deviation localized to a near-identity excess that comes from the
+gauge-defining copies, whose self-alignment lands near the identity. The absolute
+orientation is therefore close to uniform, consistent with the predict-zero floor,
+and the residual deviation is a gauge artifact rather than a broad packing
+preference.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.62\linewidth]{figures/figS_rasym.pdf}
+\caption{Empirical distribution of absolute reference-copy orientations (geodesic
+angle from the identity) against the Haar-uniform $\mathrm{SO}(3)$ density. The two
+agree across the range apart from a small near-identity excess from gauge-defining
+copies.}
+\label{fig:rasym}
+\end{figure}
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}

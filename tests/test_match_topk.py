@@ -49,3 +49,37 @@ def test_match_topk_ors_across_draws():
     # sanity: the exact copy matches under the one-shot metric too
     mr_one, _, rmsd_one = tc.match_rate(exact, ref)
     assert mr_one == 1.0 and rmsd_one < 1e-6
+
+
+def test_relax_plumbing_identity(monkeypatch):
+    """--relax routes generated structures through symmc_flow.stability.relax_structures
+    before matching. With relaxation stubbed to identity, the relaxed score must equal the
+    unrelaxed score (this exercises the wiring without importing/relying on CHGNet)."""
+    import symmc_flow.stability as stab
+
+    called = {"n": 0}
+
+    def _identity(structures, fmax=0.1, steps=200):
+        called["n"] += 1
+        return list(structures)
+
+    monkeypatch.setattr(stab, "relax_structures", _identity)
+
+    L = torch.eye(3) * 3.5
+    frac = torch.tensor([[0.0, 0.0, 0.0],
+                         [0.5, 0.5, 0.5],
+                         [0.5, 0.0, 0.5],
+                         [0.0, 0.5, 0.0]])
+    ref = _state(L, frac)
+    exact = _state(L.clone(), frac.clone())
+    collapsed = _state(L.clone(), torch.zeros_like(frac))
+
+    base = tc.match_rate_topk([collapsed, exact], ref)
+    relaxed = tc.match_rate_topk([collapsed, exact], ref, relax=True)
+    assert relaxed == base                     # identity relax must not change the score
+    assert called["n"] > 0                      # and the relax hook was actually invoked
+
+    # single-shot match_rate path too
+    b1 = tc.match_rate(exact, ref)
+    r1 = tc.match_rate(exact, ref, relax=True)
+    assert r1 == b1

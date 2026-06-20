@@ -56,13 +56,20 @@ def _to_structures(state):
     return out
 
 
-def match_rate(gen_state, ref_state):
+def match_rate(gen_state, ref_state, relax=False, relax_steps=200):
     """CSP match rate + RMSE: fraction of generated structures that StructureMatcher
     (CDVAE tolerances) matches to their ground truth, and the mean RMS distance over
-    matched pairs (length-scale normalized). Returns (rate, total, mean_rmsd)."""
+    matched pairs (length-scale normalized). Returns (rate, total, mean_rmsd).
+
+    `relax=True` CHGNet-relaxes the GENERATED structures before matching (references are
+    never relaxed). This is reported as a SEPARATE metric, never as a replacement for the
+    canonical unrelaxed numbers (DiffCSP's headline match rate is unrelaxed)."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     gen, ref = _to_structures(gen_state), _to_structures(ref_state)
+    if relax:
+        from symmc_flow.stability import relax_structures
+        gen = relax_structures(gen, steps=relax_steps)
     hits, total, rmsds = 0, 0, []
     for g, r in zip(gen, ref):
         if r is None:
@@ -79,15 +86,21 @@ def match_rate(gen_state, ref_state):
     return hits / max(total, 1), total, mean_rmsd
 
 
-def match_rate_topk(gen_states, ref_state):
+def match_rate_topk(gen_states, ref_state, relax=False, relax_steps=200):
     """Best-of-k CSP match rate + RMSE (the two standard CSP metrics; DiffCSP/CDVAE
     report both). `gen_states` is a list of k independent generations for the SAME
     references; a reference is matched if any candidate matches, and RMSE averages the
-    best (lowest) matching RMS distance per reference. Returns (rate, total, mean_rmsd)."""
+    best (lowest) matching RMS distance per reference. Returns (rate, total, mean_rmsd).
+
+    `relax=True` CHGNet-relaxes each draw's GENERATED structures before matching (the
+    references are never relaxed); reported as a separate metric, see `match_rate`."""
     from pymatgen.analysis.structure_matcher import StructureMatcher
     sm = StructureMatcher(ltol=0.3, stol=0.5, angle_tol=10.0)
     ref = _to_structures(ref_state)
     gens = [_to_structures(g) for g in gen_states]            # k x (n_struct)
+    if relax:
+        from symmc_flow.stability import relax_structures
+        gens = [relax_structures(g, steps=relax_steps) for g in gens]
     hits, total, rmsds = 0, 0, []
     for i, r in enumerate(ref):
         if r is None:
@@ -110,7 +123,8 @@ def match_rate_topk(gen_states, ref_state):
 
 
 def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
-                    centroid_prior_std, churn, n_eval=64, match_k=1):
+                    centroid_prior_std, churn, n_eval=64, match_k=1,
+                    relax=False, relax_steps=200):
     """Sample from the prior and report NN-distance / volume / match-rate stats.
     With match_k>1, draws k independent generations per reference and reports the
     best-of-k (match@k) rate; sanity stats use the first draw."""
@@ -144,10 +158,18 @@ def sample_and_eval(model, val_ds, device, sampler_steps, vol_per_atom,
         mr, total, rmsd = match_rate(out, z1)
         print(f"  StructureMatcher match rate: {100*mr:.1f}%  ({total} structures)  "
               f"RMSE {rmsd:.4f}")
+        if relax:
+            mr, total, rmsd = match_rate(out, z1, relax=True, relax_steps=relax_steps)
+            print(f"  + relaxed (CHGNet) match rate: {100*mr:.1f}%  ({total} structures)  "
+                  f"RMSE {rmsd:.4f}")
     else:
         mr, total, rmsd = match_rate_topk(draws, z1)
         print(f"  StructureMatcher match rate @{match_k} (best-of-{match_k}): "
               f"{100*mr:.1f}%  ({total} structures)  RMSE {rmsd:.4f}")
+        if relax:
+            mr, total, rmsd = match_rate_topk(draws, z1, relax=True, relax_steps=relax_steps)
+            print(f"  + relaxed (CHGNet) match rate @{match_k} (best-of-{match_k}): "
+                  f"{100*mr:.1f}%  ({total} structures)  RMSE {rmsd:.4f}")
 
 
 def main():
@@ -172,6 +194,14 @@ def main():
     ap.add_argument("--match-k", type=int, default=1,
                     help="best-of-k CSP match rate: draw k generations per reference "
                          "and count a hit if any matches (standard CSP eval; 1 = match@1)")
+    ap.add_argument("--relax", action="store_true",
+                    help="also report a CHGNet-relaxed match rate + RMSE (a SEPARATE "
+                         "metric, never replacing the unrelaxed canonical numbers). "
+                         "Requires chgnet. Note: relaxation can pull a metastable carbon "
+                         "allotrope toward graphite/diamond, changing topology away from "
+                         "the target polymorph, so relaxed match is informative not strictly better.")
+    ap.add_argument("--relax-steps", type=int, default=200,
+                    help="max CHGNet relaxation steps per structure (with --relax)")
     ap.add_argument("--d-model", type=int, default=192)
     ap.add_argument("--attn-layers", type=int, default=6)
     ap.add_argument("--egnn-hidden", type=int, default=96)
@@ -203,7 +233,8 @@ def main():
         model.load_state_dict(ck["model"])
         print(f"loaded {args.ckpt} (eval-only)")
         sample_and_eval(model, val_ds, device, args.sampler_steps, 9.0,
-                        args.centroid_prior_std, args.churn, args.eval_n, args.match_k)
+                        args.centroid_prior_std, args.churn, args.eval_n, args.match_k,
+                        relax=args.relax, relax_steps=args.relax_steps)
         return
 
     mcfg = ModelConfig(d_model=args.d_model, n_heads=8, n_attn_layers=args.attn_layers,
@@ -228,7 +259,8 @@ def main():
     print(f"saved checkpoint -> {out_ckpt}")
 
     sample_and_eval(model, val_ds, device, args.sampler_steps, tcfg.prior_vol_per_atom,
-                    args.centroid_prior_std, args.churn, args.eval_n, args.match_k)
+                    args.centroid_prior_std, args.churn, args.eval_n, args.match_k,
+                    relax=args.relax, relax_steps=args.relax_steps)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,188 @@
+% SymMC-Flow molecular-crystal orientation paper — verified references.
+% Every entry was located via web search (arXiv ID / venue / DOI confirmed June 2026).
+% Phase 5a (citation_compliance) will re-verify DOIs before submission.
+
+% ---------- Flow matching / generative foundations ----------
+@inproceedings{lipman2023flowmatching,
+  title     = {Flow Matching for Generative Modeling},
+  author    = {Lipman, Yaron and Chen, Ricky T. Q. and Ben-Hamu, Heli and Nickel, Maximilian and Le, Matt},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2023},
+  note      = {arXiv:2210.02747}
+}
+
+@inproceedings{chen2024riemannian,
+  title     = {Flow Matching on General Geometries},
+  author    = {Chen, Ricky T. Q. and Lipman, Yaron},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {arXiv:2302.03660}
+}
+
+@inproceedings{pooladian2023multisample,
+  title     = {Multisample Flow Matching: Straightening Flows with Minibatch Couplings},
+  author    = {Pooladian, Aram-Alexandre and Ben-Hamu, Heli and Domingo-Enrich, Carles and Amos, Brandon and Lipman, Yaron and Chen, Ricky T. Q.},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+  note      = {arXiv:2304.14772}
+}
+
+@inproceedings{satorras2021egnn,
+  title     = {{E}(n) Equivariant Graph Neural Networks},
+  author    = {Satorras, V{\'i}ctor Garcia and Hoogeboom, Emiel and Welling, Max},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2021},
+  note      = {arXiv:2102.09844}
+}
+
+% ---------- SO(3)/SE(3) generative modeling (rigid-body precedent) ----------
+@inproceedings{leach2022so3,
+  title     = {Denoising Diffusion Probabilistic Models on {SO(3)} for Rotational Alignment},
+  author    = {Leach, Adam and Schmon, Sebastian M. and Degiacomi, Matteo T. and Willcocks, Chris G.},
+  booktitle = {ICLR 2022 Workshop on Geometrical and Topological Representation Learning},
+  year      = {2022}
+}
+
+@inproceedings{yim2023se3diffusion,
+  title     = {{SE(3)} Diffusion Model with Application to Protein Backbone Generation},
+  author    = {Yim, Jason and Trippe, Brian L. and De Bortoli, Valentin and Mathieu, Emile and Doucet, Arnaud and Barzilay, Regina and Jaakkola, Tommi},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2023},
+  note      = {arXiv:2302.02277}
+}
+
+@article{yim2023frameflow,
+  title   = {Fast Protein Backbone Generation with {SE(3)} Flow Matching},
+  author  = {Yim, Jason and Campbell, Andrew and Foong, Andrew Y. K. and Gastegger, Michael and Jim{\'e}nez-Luna, Jos{\'e} and Lewis, Sarah and Satorras, Victor Garcia and Veeling, Bastiaan S. and Barzilay, Regina and Jaakkola, Tommi and No{\'e}, Frank},
+  journal = {arXiv preprint arXiv:2310.05297},
+  year    = {2023}
+}
+
+% ---------- Crystal generation (inorganic) ----------
+@inproceedings{xie2022cdvae,
+  title     = {Crystal Diffusion Variational Autoencoder for Periodic Material Generation},
+  author    = {Xie, Tian and Fu, Xiang and Ganea, Octavian-Eugen and Barzilay, Regina and Jaakkola, Tommi},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2022},
+  note      = {arXiv:2110.06197}
+}
+
+@inproceedings{jiao2023diffcsp,
+  title     = {Crystal Structure Prediction by Joint Equivariant Diffusion},
+  author    = {Jiao, Rui and Huang, Wenbing and Lin, Peijia and Han, Jiaqi and Chen, Pin and Lu, Yutong and Liu, Yang},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2023},
+  note      = {arXiv:2309.04475}
+}
+
+@inproceedings{jiao2024diffcsppp,
+  title     = {Space Group Constrained Crystal Generation},
+  author    = {Jiao, Rui and Huang, Wenbing and Liu, Yu and Zhao, Deli and Liu, Yang},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024},
+  note      = {arXiv:2402.03992; the DiffCSP++ model}
+}
+
+@inproceedings{miller2024flowmm,
+  title     = {{FlowMM}: Generating Materials with Riemannian Flow Matching},
+  author    = {Miller, Benjamin Kurt and Chen, Ricky T. Q. and Sriram, Anuroop and Wood, Brandon M.},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  year      = {2024},
+  note      = {arXiv:2406.04713}
+}
+
+@article{wyckoffdiff2025,
+  title   = {{WyckoffDiff}: A Generative Diffusion Model for Crystal Symmetry},
+  author  = {Kelvinius, Filip Ekstr{\"o}m and Andersson, Oskar B. and Parackal, Abhijith S. and Qian, Dong and Armiento, Rickard and Lindsten, Fredrik},
+  journal = {arXiv preprint arXiv:2502.06485},
+  year    = {2025}
+}
+
+@article{symmcd2025,
+  title   = {{SymmCD}: Symmetry-Preserving Crystal Generation with Diffusion Models},
+  author  = {Levy, Daniel and Panigrahi, Siba Smarak and Kaba, S{\'e}kou-Oumar and Zhu, Qiang and Lee, Kin Long Kelvin and Galkin, Mikhail and Miret, Santiago and Ravanbakhsh, Siamak},
+  journal = {arXiv preprint arXiv:2502.03638},
+  year    = {2025}
+}
+
+% ---------- Rigid-body / molecular / MOF crystal structure prediction (closest neighbors) ----------
+@inproceedings{kim2025mofflow,
+  title     = {{MOFFlow}: Flow Matching for Structure Prediction of Metal-Organic Frameworks},
+  author    = {Kim, Nayoung and Kim, Seongsu and Kim, Minsu and Park, Jinkyoo and Ahn, Sungsoo},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2025},
+  note      = {arXiv:2410.17270; rigid-body SE(3) flow matching for MOFs}
+}
+
+@article{jin2025oxtal,
+  title   = {{OXtal}: An All-Atom Diffusion Model for Organic Crystal Structure Prediction},
+  author  = {Jin, Emily and Nica, Andrei Cristian and Galkin, Mikhail and others},
+  journal = {arXiv preprint arXiv:2512.06987},
+  year    = {2025}
+}
+
+@article{subramanian2026packflow,
+  title   = {{PackFlow}: Generative Molecular Crystal Structure Prediction via Reinforcement Learning Alignment},
+  author  = {Subramanian, Akshay and Pan, Elton and Nam, Juno and Weiler, Maurice and Qu, Shuhui and Park, Cheol Woo and Jaakkola, Tommi S. and Olivetti, Elsa and Gomez-Bombarelli, Rafael},
+  journal = {arXiv preprint arXiv:2602.20140},
+  year    = {2026}
+}
+
+@article{obrien2021dataefficient,
+  title   = {Data-Efficient Machine Learning for Molecular Crystal Structure Prediction},
+  author  = {Wengert, Simon and Cs{\'a}nyi, G{\'a}bor and Reuter, Karsten and Margraf, Johannes T.},
+  journal = {Chemical Science},
+  volume  = {12},
+  pages   = {4536--4546},
+  year    = {2021},
+  doi     = {10.1039/D0SC05765G}
+}
+
+@article{price2023blindtest7,
+  title   = {The Seventh Blind Test of Crystal Structure Prediction: Structure Generation Methods},
+  author  = {Hunnisett, Lily M. and others},
+  journal = {Acta Crystallographica Section B},
+  volume  = {80},
+  number  = {6},
+  year    = {2024},
+  doi     = {10.1107/S2052520624007492}
+}
+
+@article{groom2016csd,
+  title   = {The Cambridge Structural Database},
+  author  = {Groom, Colin R. and Bruno, Ian J. and Lightfoot, Matthew P. and Ward, Suzanna C.},
+  journal = {Acta Crystallographica Section B},
+  volume  = {72},
+  number  = {2},
+  pages   = {171--179},
+  year    = {2016},
+  doi     = {10.1107/S2052520616003954}
+}
+
+% ---------- Evaluation tooling / interatomic potentials ----------
+@article{ong2013pymatgen,
+  title   = {Python Materials Genomics (pymatgen): A Robust, Open-Source Python Library for Materials Analysis},
+  author  = {Ong, Shyue Ping and Richards, William Davidson and Jain, Anubhav and Hautier, Geoffroy and Kocher, Michael and Cholia, Shreyas and Gunter, Dan and Chevrier, Vincent L. and Persson, Kristin A. and Ceder, Gerbrand},
+  journal = {Computational Materials Science},
+  volume  = {68},
+  pages   = {314--319},
+  year    = {2013},
+  doi     = {10.1016/j.commatsci.2012.10.028}
+}
+
+@article{deng2023chgnet,
+  title   = {{CHGNet} as a Pretrained Universal Neural Network Potential for Charge-Informed Atomistic Modelling},
+  author  = {Deng, Bowen and Zhong, Peichen and Jun, KyuJung and Riebesell, Janosh and Han, Kevin and Bartel, Christopher J. and Ceder, Gerbrand},
+  journal = {Nature Machine Intelligence},
+  volume  = {5},
+  pages   = {1031--1041},
+  year    = {2023},
+  doi     = {10.1038/s42256-023-00716-3}
+}
+
+@article{martirossyan2025matching,
+  title   = {All That Structure Matches Does Not Glitter},
+  author  = {Martirossyan, Maya M. and Egg, Thomas and Hoellmer, Philipp and Karypis, George and Transtrum, Mark and Roitberg, Adrian and Liu, Mingjie and Hennig, Richard G. and Tadmor, Ellad B. and Martiniani, Stefano},
+  journal = {arXiv preprint arXiv:2509.12178},
+  year    = {2025}
+}

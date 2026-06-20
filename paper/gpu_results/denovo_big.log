@@ -1,0 +1,11 @@
+[denovo_big] corpus 1127 -> 1095 multi-copy; val 131; device cuda; k=20 steps=100
+  sampled 32/131
+  sampled 64/131
+  sampled 96/131
+  sampled 128/131
+  sampled 131/131
+
+==== DE-NOVO joint generation, match@20 (n=131) ====
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  median best-of-k component error: lattice-param 0.365  centroid(frac) 0.346  orient 48.1 deg
+  TAG denovo_big k 20 match 0.00

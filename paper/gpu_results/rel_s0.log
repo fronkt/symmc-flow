@@ -1,0 +1,37 @@
+corpus: 1127 crystals -> 1095 multi-copy (>=2 copies of a species) after relative re-gauge
+DIAGNOSTIC: relative orientation target; clean_packing=False
+  max-species-multiplicity histogram: {2: 329, 3: 10, 4: 650, 6: 12, 8: 86, 12: 1, 16: 7}
+  split: 964 train / 131 val
+  lattice prior vol/atom matched to corpus: 9.9 A^3
+
+  capacity: d_model=128 attn_layers=4 egnn_layers=4
+  device=cuda  steps=800
+
+step     0  loss 6.3942  (L 1.279  x 0.323  R 4.792)
+step    50  loss 5.8597  (L 0.111  x 0.261  R 5.488)
+step   100  loss 5.6296  (L 0.073  x 0.264  R 5.292)
+step   150  loss 5.6151  (L 0.083  x 0.268  R 5.264)
+step   200  loss 5.2728  (L 0.070  x 0.233  R 4.970)
+step   250  loss 5.3053  (L 0.162  x 0.238  R 4.905)  | val 5.2246
+step   300  loss 4.8708  (L 0.115  x 0.253  R 4.503)
+step   350  loss 5.4696  (L 0.090  x 0.259  R 5.120)
+step   400  loss 4.0333  (L 0.106  x 0.223  R 3.704)
+step   450  loss 4.1355  (L 0.075  x 0.230  R 3.830)
+step   500  loss 3.5052  (L 0.087  x 0.261  R 3.157)  | val 4.0551
+step   550  loss 4.1616  (L 0.100  x 0.228  R 3.833)
+step   600  loss 2.9024  (L 0.061  x 0.224  R 2.617)
+step   650  loss 3.6137  (L 0.069  x 0.250  R 3.296)
+step   700  loss 3.6796  (L 0.089  x 0.234  R 3.356)
+step   750  loss 4.5441  (L 0.068  x 0.266  R 4.210)  | val 4.1874
+
+==== held-out validation, per head (untrained -> trained) ====
+  lattice  : 1.2385 -> 0.0783  (+93.7%)
+  centroid : 0.3701 -> 0.2546  (+31.2%)
+  orient   : 5.3658 -> 3.2654  (+39.1%)
+  total    : 6.9743 -> 3.5983  (+48.4%)
+  orient split (the decisive numbers):
+    ref    : 5.3140 -> 1.9372  (+63.5%)
+    nonref : 5.3985 -> 3.8101  (+29.4%)  <-- NON-REFERENCE (symmetry-determined; THIS is the claim)
+
+VERDICT (+29.4% non-ref): PARTIAL: the symmetry-determined relative orientation is partially learnable + generalizes (the absolute target gave ~0%) -> the floor was dominated by the free asymmetric-unit orientation, now characterized.
+checkpoint -> checkpoints/rel_s0.pt
