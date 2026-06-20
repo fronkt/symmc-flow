@@ -1,0 +1,500 @@
+% =====================================================================
+% What an SO(3) orientation flow can and cannot learn in
+% molecular-crystal structure prediction
+%
+% Formatted for npj Computational Materials (Nature Portfolio).
+% For submission, replace the preamble with the official Springer Nature
+% template:  \documentclass[pdflatex,sn-nature]{sn-jnl}  and move the
+% metadata into the SN \author/\affil macros. The section structure,
+% numbered references, and back-matter below already follow npj policy.
+% Compiles standalone with pdflatex + bibtex (natbib / unsrtnat).
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage[numbers,super,sort&compress]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{siunitx}
+\usepackage{authblk}
+
+\renewcommand{\abstractname}{\vspace{-\baselineskip}}
+\setlength{\parskip}{0.2em}
+
+\title{\bfseries What an SO(3) orientation flow can and cannot learn in
+molecular-crystal structure prediction}
+
+\author[1]{Frank Cai\thanks{\texttt{cai495@purdue.edu}}}
+\affil[1]{Purdue University, West Lafayette, IN, USA}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Rigid-body factorization is an appealing route to molecular-crystal structure
+prediction: freezing each molecule's conformer reduces a crystal to a lattice,
+a set of fractional centroids on the torus $\mathbb{T}^3$, and a per-molecule
+orientation on $\mathrm{SO}(3)$, a low-dimensional target amenable to fast
+flow-matching samplers. Whether the orientation field is actually learnable on
+real molecular crystals has not been examined. We introduce SymMC-Flow, a
+space-group-conditioned rigid-body flow on
+$\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$, and use it to
+characterize the orientation field on $1{,}127$ crystals exported from the
+Cambridge Structural Database. The lattice and centroid flows learn normally,
+but the absolute per-molecule orientation flow remains at its predict-zero
+floor. We trace this to a decomposition of the orientation target,
+$R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}}$, into a space-group-determined
+relative rotation between symmetry copies and the asymmetric unit's free
+orientation in the cell. The free part is gauge-arbitrary and unlearnable; the
+relative part is learnable. Re-gauging to cancel the free part lifts the
+held-out non-reference orientation loss by $27\%$ (versus $\sim\!0\%$ for the
+absolute target) and, in an orientation-isolated evaluation, reconstructs
+$16.8\%$ of held-out multi-copy packings exactly under StructureMatcher against
+$0\%$ for the predict-floor baseline. Conditioning on a discrete space-group
+coset identity raises the learnable signal to $51\%$, showing the residual
+ceiling is set by the difficulty of \emph{inferring} the symmetry operation
+from packing rather than by the network's capacity to represent the rotation.
+The result delineates exactly what a rigid-body $\mathrm{SO}(3)$ flow can and
+cannot contribute to molecular-crystal generation.
+\end{abstract}
+
+\noindent\textbf{Keywords:} crystal structure prediction; flow matching;
+molecular crystals; rigid-body factorization; $\mathrm{SO}(3)$; space-group
+symmetry
+
+% =====================================================================
+\section{Introduction}
+% =====================================================================
+
+Crystal structure prediction (CSP) asks for the stable periodic arrangement of
+a given chemical system, a problem whose combinatorial landscape has
+historically demanded large ensembles of density-functional relaxations.
+Generative models have emerged as a fast alternative that learns the
+distribution of stable structures directly. The progression from the crystal
+diffusion variational autoencoder\cite{xie2022cdvae} to joint equivariant
+diffusion over lattices and fractional coordinates\cite{jiao2023diffcsp} and to
+Riemannian flow matching for materials\cite{miller2024flowmm} has steadily
+lowered both sample cost and error on inorganic benchmarks, where each atom is
+an independent site.
+
+Molecular crystals are harder. A molecular crystal couples flexible
+intramolecular degrees of freedom to the rigid-body packing of whole molecules,
+and the most common organic space groups place several symmetry-related copies
+of a molecule in each cell, a regime where packing search has long been a
+bottleneck in community blind tests\cite{price2023blindtest7} and a target for
+data-efficient learned models\cite{obrien2021dataefficient}. Two design choices
+have emerged. All-atom
+generators predict every atomic coordinate jointly: OXtal\cite{jin2025oxtal}
+learns the conditional distribution over conformation and packing with a
+lattice-free diffusion model, and PackFlow\cite{subramanian2026packflow} flows
+heavy-atom Cartesian coordinates and lattice parameters with a reinforcement
+learning alignment step. Rigid-body generators instead treat building blocks as
+rigid and predict only their pose. MOFFlow\cite{kim2025mofflow} demonstrates
+this for metal--organic frameworks, casting metal nodes and organic linkers as
+rigid bodies and applying $\mathrm{SE}(3)$ flow matching to their
+roto-translations, which mirrors generative modeling on the rotation
+group\cite{leach2022so3} and the frame-based generation developed for protein
+backbones\cite{yim2023se3diffusion,yim2023frameflow}.
+
+Rigid-body factorization is attractive for molecular crystals: it collapses
+dozens of atomic coordinates per molecule to a single pose, exploits the
+modularity of the cell, and supports the short sampling trajectories
+characteristic of flow matching\cite{lipman2023flowmatching,chen2024riemannian}.
+It also introduces a per-molecule orientation variable on the rotation group
+$\mathrm{SO}(3)$. Whether that orientation field is learnable on real molecular
+crystals is an open question. MOFFlow reports a working method but does not
+analyze the orientation field in isolation, and the all-atom approaches sidestep
+orientation altogether. No prior work asks what a rigid-body $\mathrm{SO}(3)$
+orientation flow actually learns on molecular crystals, or where it fails.
+
+This paper answers that question. We build SymMC-Flow, a
+space-group-conditioned rigid-body flow on
+$\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$, and train it on a
+corpus of $1{,}127$ molecular crystals exported from the Cambridge Structural
+Database (CSD). The lattice and centroid flows learn; the absolute per-molecule
+orientation flow does not, sitting at the predict-zero floor across two corpus
+sizes and after a gauge correction. We explain this with a decomposition of the
+orientation target and a chain of controlled diagnostics, and we show that the
+learnable component is real geometry, not a loss artifact.
+
+Our contributions are:
+\begin{itemize}
+\itemsep0.1em
+\item A rigid-body $\mathrm{SO}(3)$ flow for molecular crystals with a
+molecule-intrinsic orientation gauge that removes the spurious cross-crystal
+reference frame.
+\item The decomposition $R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}}$ and a
+falsification chain (predict-zero floor, gauge fix, scaling, clean-packing
+control, relative re-gauge) that isolates the learnable symmetry-relative
+orientation from the gauge-free asymmetric-unit pose.
+\item An orientation-isolated StructureMatcher metric showing the learned
+relative orientation reconstructs $16.8\%$ of held-out multi-copy packings
+exactly, against $0\%$ for the floor.
+\item Evidence from discrete coset-identity conditioning that the residual
+ceiling is inference-limited, not representational.
+\end{itemize}
+
+% =====================================================================
+\section{Results}
+% =====================================================================
+
+\subsection{Rigid-body factorization and the flow}
+
+SymMC-Flow represents a molecular crystal as a lattice $L\in\mathbb{R}^{3\times3}$,
+and, for each molecule $m$, a fractional centroid $c_m\in\mathbb{T}^3$ and an
+orientation $R_m\in\mathrm{SO}(3)$ acting on a shared, centered body-frame
+conformer $\text{local}_m$. Atom positions follow
+\begin{equation}
+\text{cart}_{m,a} = c_m L + R_m\,\text{local}_{m,a},
+\label{eq:factor}
+\end{equation}
+so every copy of a chemical species shares one conformer and differs only by its
+pose. A conditional flow-matching objective\cite{lipman2023flowmatching} is
+trained jointly on the three manifolds: a Euclidean path for a
+volume-normalized lattice parametrization, a torus geodesic for centroids, and
+an $\mathrm{SO}(3)$ geodesic for orientations, with the vector field conditioned
+on the space group. An $\mathrm{E}(n)$-equivariant
+encoder\cite{satorras2021egnn} embeds the conformer and pair-bias attention
+mixes molecules within the cell. Figure~\ref{fig:schematic} summarizes the
+factorization and the orientation decomposition developed below. Architecture,
+manifold operations, and data are detailed in Methods.
+
+\subsection{Lattice and centroid flows learn on real molecular crystals}
+
+We first establish that the pipeline learns the packing degrees of freedom.
+Table~\ref{tab:perhead} reports the held-out per-head flow-matching loss before
+and after training on the CSD corpus. The lattice loss falls by $94\%$ and the
+centroid loss by $30\%$, both converging within the first epoch. The absolute
+orientation loss moves by only $3.3\%$ and shows no downward trend over
+training. Lattice and centroid behave as on inorganic benchmarks; orientation
+is the outlier.
+
+\begin{table}[t]
+\centering
+\caption{Held-out per-head flow-matching loss, untrained $\rightarrow$ trained,
+on the CSD molecular-crystal corpus (noised conditioning). Lattice and centroid
+learn; the absolute orientation target stays at its predict-zero floor.}
+\label{tab:perhead}
+\begin{tabular}{lccc}
+\toprule
+head & untrained & trained & change \\
+\midrule
+lattice            & 1.24 & 0.08 & $+94\%$ \\
+centroid           & 0.36 & 0.25 & $+30\%$ \\
+orientation ($R_m$)& 5.37 & 5.18 & $+3.3\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The absolute orientation flow sits at a predict-zero floor}
+
+The orientation loss equals the expected squared tangent velocity
+$\mathbb{E}\lVert u_R\rVert^2\approx 5.24$ that a network outputting zero would
+incur. A trained orientation head that never beats this value has learned
+nothing. Three controls rule out the obvious explanations. First, the floor is
+unchanged when the corpus is scaled from $250$ to $1{,}127$ crystals, so it is
+not data sparsity. Second, a molecule-intrinsic orientation gauge (Methods),
+which removes the arbitrary cross-crystal reference frame that would otherwise
+make $R_m$ a rotation relative to some molecule in an unrelated structure, is
+necessary for a well-posed target but does not lift the floor. Third, a
+clean-packing control feeds the field the true (un-noised) lattice and
+centroids while still noising the orientation and keeping the orientation
+target, which is the best case for any two-stage scheme that generates packing
+first and orientation second. Orientation still moves by only $3.3\%$
+(Table~\ref{tab:twobytwo}, top row), so noised conditioning is not the cause and
+a two-stage architecture cannot help. The obstruction is in the target itself.
+
+\subsection{The orientation target decomposes into a learnable and a free part}
+
+Consider a molecule $m$ generated from an asymmetric-unit molecule by a
+space-group operation with rotation part $\mathrm{rot}(g_m)$. Its absolute pose
+factors as
+\begin{equation}
+R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}},
+\label{eq:decomp}
+\end{equation}
+where $R_{\text{asym}}$ is the orientation of the asymmetric unit in the cell.
+The first factor is determined by the space group and is shared structure across
+crystals; the second is a free, per-crystal choice with no relation to
+composition or packing, and it dominates the target. Because $R_{\text{asym}}$
+is gauge-arbitrary, no model can predict it, which is exactly the floor.
+
+To isolate the learnable factor we re-gauge each crystal so that the first copy
+of every species is a reference with $R=I$ and the remaining copies carry only
+the relative rotation $R'_m = R_m R_0^{-1}$, which cancels $R_{\text{asym}}$
+(Methods). The transformation leaves the reconstructed crystal unchanged. To
+avoid crediting a trivial ``predict identity'' solution, we split the
+orientation loss into reference copies (target $I$) and non-reference copies
+(the genuinely symmetry-determined targets), and report the latter.
+Table~\ref{tab:twobytwo} gives the full $2\times2$ over target and conditioning.
+The absolute target floors in both conditioning regimes. The relative target
+descends by $27\%$ on held-out non-reference copies and generalizes, with an
+identical result under noised and clean conditioning. The signal therefore
+rides on the space group, which is conditioned directly, together with the
+coarse centroid arrangement, and is robust to conditioning noise.
+
+\begin{table}[t]
+\centering
+\caption{Held-out non-reference orientation loss, untrained $\rightarrow$
+trained, across orientation target and conditioning. The absolute pose floors;
+the relative (symmetry-determined) orientation is learnable and robust to
+conditioning noise.}
+\label{tab:twobytwo}
+\begin{tabular}{lcc}
+\toprule
+target & noised conditioning & clean packing \\
+\midrule
+absolute $R_m$  & $5.37\!\rightarrow\!5.18$ ($+3.3\%$) & $5.35\!\rightarrow\!5.18$ ($+3.3\%$) \\
+relative $R'_m$ & $5.37\!\rightarrow\!3.91$ ($+27.1\%$) & $5.37\!\rightarrow\!3.94$ ($+26.7\%$) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Relative orientation reconstructs real packings}
+
+A drop in flow-matching loss need not correspond to correct geometry. We
+therefore evaluate the learned orientation by reconstruction. Holding the true
+lattice, centroid, and conformer fixed, we sample only the $\mathrm{SO}(3)$ field
+and rebuild each crystal, then test whether it matches the ground truth under
+pymatgen's StructureMatcher\cite{ong2013pymatgen}. The symmetry-induced relative
+rotations are large, clustering near $180^\circ$ because the dominant organic
+space groups relate copies by two-fold rotations and inversions, so a single
+deterministic integration of the field collapses to the conditional mean and
+underperforms. We therefore draw eight orientation samples per crystal and take
+the best, the appropriate generative read for a multimodal target. Reporting a
+controlled best-of-$k$ match alongside the geodesic orientation error, rather
+than a single headline rate, follows recent cautions on match-rate
+metrics\cite{martirossyan2025matching}.
+
+Table~\ref{tab:matchrate} reports the outcome on $131$ held-out multi-copy
+crystals. The oracle, which uses the true orientation, matches every structure,
+confirming the metric's tolerances. The trained flow reconstructs $16.8\%$ of
+held-out packings exactly, against $0\%$ for a random (predict-floor) field and
+$1.5\%$ for the naive choice of leaving every copy un-rotated. Its mean
+non-reference orientation error is $68^\circ$, below the $85^\circ$ of a random
+field. The $27\%$ loss reduction is real reconstructed geometry.
+
+\begin{table}[t]
+\centering
+\caption{Orientation-isolated reconstruction on $131$ held-out multi-copy
+crystals (true lattice, centroid, and conformer; only $\mathrm{SO}(3)$ sampled;
+best of eight draws). The learned field reconstructs packings the floor and
+naive baselines cannot.}
+\label{tab:matchrate}
+\begin{tabular}{lcc}
+\toprule
+condition & match rate & non-ref.\ orient.\ error \\
+\midrule
+oracle (true orientation) & $100.0\%$ & $0^\circ$ \\
+identity (naive, $R=I$)   & $1.5\%$   & $165^\circ$ \\
+untrained (predict-floor) & $0.0\%$   & $85^\circ$ \\
+trained                   & $16.8\%$  & $68^\circ$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The ceiling is inference-limited, not representational}
+
+Two experiments locate the remaining gap. Increasing model capacity and
+training (a wider model trained longer) raises the non-reference signal from
+$27\%$ to $33\%$, real but diminishing headroom that plateaus well above zero.
+The decisive test conditions the field on a discrete space-group coset
+identity. For a copy generated by a crystallographic operation, the relative
+rotation $R'_m$ equals that operation's rotation part, so within a space group
+the non-reference relative rotations fall into a small discrete set of cosets.
+We cluster them into a per-space-group codebook and condition each molecule on
+its coset index, a discrete label of the kind used in symmetry-conditioned
+crystal generation\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, rather
+than the continuous rotation itself. Table~\ref{tab:strengthen} shows that
+coset conditioning raises the non-reference signal to $51\%$, nearly doubling
+the learnable component relative to a paired control that reproduces the $27\%$
+baseline on the identical corpus. Most of the ceiling is therefore the
+difficulty of inferring which symmetry operation generated each copy from the
+noised packing, not an inability of the $\mathrm{SO}(3)$ head to represent the
+rotation. A residual remains, attributable to the free $R_{\text{asym}}$ and to
+the axial gauge freedom of symmetric-top molecules.
+
+\begin{table}[t]
+\centering
+\caption{Held-out non-reference orientation loss under model and conditioning
+changes. Coset conditioning nearly doubles the learnable signal; the paired
+control isolates the effect.}
+\label{tab:strengthen}
+\begin{tabular}{lcc}
+\toprule
+configuration & non-ref.\ loss & change \\
+\midrule
+baseline (relative target)        & $5.37\!\rightarrow\!3.91$ & $+27.1\%$ \\
+\quad + capacity and training     & $5.35\!\rightarrow\!3.56$ & $+33.4\%$ \\
+\quad + coset conditioning        & $5.36\!\rightarrow\!2.65$ & $+50.6\%$ \\
+\quad coset control (no coset)    & $5.37\!\rightarrow\!3.91$ & $+27.1\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Method validation on inorganic benchmarks}
+
+For completeness we validated the SymMC-Flow architecture on standard
+single-block inorganic benchmarks, where orientation is inactive. On carbon-24
+and MP-20 the method is competitive with joint equivariant
+diffusion\cite{jiao2023diffcsp} at roughly an order of magnitude fewer sampling
+steps, winning some match cells and losing others. Full numbers and the
+head-to-head protocol are given in Supplementary Information; these results
+confirm the flow and sampler are sound and are not the focus of this study.
+
+% =====================================================================
+\section{Discussion}
+% =====================================================================
+
+The orientation field of a rigid-body molecular-crystal flow is neither fully
+learnable nor uniformly broken. It splits into a space-group-determined relative
+orientation that a flow learns and reconstructs, and a gauge-free
+asymmetric-unit orientation that no model can predict. This split is a property
+of the representation, not of the optimizer or the architecture, which is why it
+survives gauge correction, data scaling, capacity increases, and clean
+conditioning.
+
+The decomposition reconciles the divergent design choices in the field. All-atom
+generators\cite{jin2025oxtal,subramanian2026packflow} never expose
+$R_{\text{asym}}$ as an explicit target and so do not encounter the floor,
+trading the low dimensionality of the rigid-body representation for a target
+without a gauge obstruction. MOFFlow\cite{kim2025mofflow} succeeds with a
+rigid-body $\mathrm{SE}(3)$ flow in part because framework connectivity
+constrains block orientations far more tightly than the free pose of a molecule
+in a van der Waals packing, shrinking the unlearnable component. The present
+analysis predicts that rigid-body $\mathrm{SO}(3)$ generation will be most
+effective precisely where orientation is constrained by the surrounding network
+or by high site symmetry, and least effective for low-symmetry organic packings.
+
+On evaluation, the gap between the flat orientation loss and the $16.8\%$
+reconstruction rate underscores why a single match-rate number is an unreliable
+summary\cite{martirossyan2025matching}: the learnable signal is visible only
+when the metric isolates orientation and samples the multimodal target. We
+report the geodesic error and a controlled best-of-$k$ match for this reason.
+
+This study has limits. A de-novo stable--unique--novel evaluation is not
+meaningful here because the universal interatomic potentials used to judge
+stability are trained on inorganic data\cite{deng2023chgnet} and do not transfer
+to organic molecular crystals; we therefore evaluate by reconstruction against
+known structures. Training is at CPU scale. The rigid-conformer gate excludes
+flexible molecules by construction, and the conformer registry is shared across
+crystals, so a species whose conformer differs between polymorphs beyond
+tolerance is rejected. These choices keep the rigid-body benchmark honest but
+narrow its coverage.
+
+Two directions follow. A hybrid that predicts a rigid pose and then refines the
+conformer would extend the approach to flexible molecules while keeping the
+fast pose flow. Conditioning the orientation field on Wyckoff or coset
+information at sampling time, suggested by the coset experiment, would convert
+the inference-limited component into a usable signal whenever the symmetry
+assignment is available, as it is in template-based generation.
+
+% =====================================================================
+\section{Methods}
+% =====================================================================
+
+\subsection{Rigid-body factorization and intrinsic gauge}
+Each crystal is parsed into rigid molecular blocks by a covalent-bond graph with
+periodic-boundary unwrapping. Molecules of one species are keyed by a
+Weisfeiler--Lehman hash of the element-labelled bond graph and share a single
+reference conformer; atom correspondence between a copy and its reference is the
+minimum-RMSD graph isomorphism, so a molecule's own automorphisms inject no
+spurious rotation. The reference conformer is rotated into a molecule-intrinsic
+frame given by the principal axes of its gyration tensor, with per-axis sign
+fixed by an element-weighted third moment and the frame forced right-handed.
+This removes the arbitrary cross-crystal reference that otherwise makes $R_m$ a
+rotation relative to an unrelated molecule, the gauge correction referenced in
+Results. The pose $R_m$ of each copy is then the Kabsch rotation aligning it to
+the intrinsic frame. Lattices are rebuilt from their six cell parameters to a
+canonical frame.
+
+\subsection{Manifolds and flow matching}
+The lattice is flowed in a ten-dimensional parametrization of per-atom
+log-volume and a determinant-one shape, with a straight-line conditional path.
+Centroids follow torus geodesics; orientations follow $\mathrm{SO}(3)$
+geodesics with the tangent velocity as target. We use conditional flow
+matching\cite{lipman2023flowmatching} with optimal-transport coupling of the
+exchangeable prior and data within each crystal\cite{pooladian2023multisample}.
+Sampling integrates the field from the prior to the data manifold with a
+deterministic Runge--Kutta scheme, using the $\mathrm{SO}(3)$ exponential map
+for the orientation update; molecular-crystal samples used here take fifty
+steps. The construction follows Riemannian flow
+matching\cite{chen2024riemannian} and parallels frame-based generative models
+for proteins\cite{yim2023se3diffusion,yim2023frameflow} and metal--organic
+frameworks\cite{kim2025mofflow}.
+
+\subsection{Network}
+An $\mathrm{E}(n)$-equivariant graph network\cite{satorras2021egnn} encodes each
+conformer into an invariant token. Tokens are augmented with the current
+centroid, orientation, lattice, time, and a space-group embedding, then mixed by
+pair-bias attention with pairwise features built from torus and Cartesian
+displacements. Three heads predict the lattice, centroid, and orientation
+velocities. The centroid field can be symmetrized over the space-group action.
+For the coset experiment a per-molecule coset embedding is added to each token
+when enabled.
+
+\subsection{Relative gauge and coset codebook}
+The relative gauge sets the first copy of each species to $R=I$ and replaces the
+others by $R'_m = R_m R_0^{-1}$, with the shared conformer transformed by
+$R_0$ so that reconstruction is unchanged; a reference mask records which copies
+are trivial. The coset codebook clusters non-reference relative rotations within
+each space group by geodesic distance into a shared set of discrete indices,
+which become the per-molecule coset labels.
+
+\subsection{Orientation-isolated match metric}
+Reconstruction holds the true lattice, centroid, and conformer fixed and
+integrates only the orientation field from a random $\mathrm{SO}(3)$ prior under
+clean-packing conditioning. Reconstructed crystals are built with
+Eq.~\eqref{eq:factor} and compared to the ground truth with StructureMatcher
+(fractional and site tolerances as in pymatgen
+defaults)\cite{ong2013pymatgen}. For each crystal we draw eight orientation
+samples and count a match if any draw matches; we also report the
+minimum mean geodesic error over draws on non-reference copies.
+
+\subsection{Data}
+The corpus is a seeded random sample of the CSD filtered to ordered, organic,
+three-dimensional, non-polymeric molecular crystals within size and
+$Z'$ bounds, yielding $1{,}127$ crystals and $5{,}048$ rigid blocks; $1{,}095$
+contain at least two copies of a species and define the multi-copy subset used
+for the relative and coset analyses. A fixed seed gives a $964/131$
+train/validation split. CSD structures are not redistributable; a refcode
+manifest and the export and analysis code reproduce the dataset from the CSD.
+
+\section*{Data availability}
+The CSD entries used cannot be redistributed under the CSD licence. A manifest
+of refcodes and all derived, non-redistributable quantities required to
+reproduce the analyses are available from the author on request, and the dataset
+can be regenerated from the manifest with the released code against a licensed
+CSD installation.
+
+\section*{Code availability}
+The SymMC-Flow implementation, the export and factorization pipeline, and the
+diagnostic and evaluation scripts are available at
+\url{https://github.com/fronkt/symmc-flow}.
+
+\section*{Author contributions}
+F.C. conceived the study, implemented the method and experiments, performed the
+analysis, and wrote the manuscript.
+
+\section*{Competing interests}
+The author declares no competing interests.
+
+\section*{Funding}
+This work received no external funding or grant support. Any cloud compute used
+for model training was funded personally by the author.
+
+\section*{Use of AI tools}
+The author used an AI coding and writing assistant to support software
+development and manuscript drafting. All scientific claims, results, and the
+final text were verified by the author, who takes full responsibility for the
+content.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+
+\end{document}
