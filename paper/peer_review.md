@@ -176,13 +176,46 @@ Revision). Roadmap status (details in `tasks/todo.md`, logs in `gpu_results/revi
   dependence) by direct test. → SI §S3 + main-text decomposition.
 - T1.4 — **match@1** reported beside best-of-k; de-novo match@1 = 0% (base & big), so the 0%
   is not a best-of-k artifact.
+- T1.3 — **all-atom + random-prior de-novo baseline** (`baseline_allatom_denovo.py`, GPU,
+  8000 steps, batch 64): trained all-atom flow reconstructs **match@1 0% / match@20 0%**
+  (Wilson CI 0–2.8%, n=131) = its random-prior floor, despite an 88% loss drop with normal
+  lattice/centroid heads. → end-to-end §2.8 head-to-head + new SI §S6. Shows the 0% end-to-end
+  is a scale property, not a rigid-body deficiency (the M1/C7 head-to-head the panel asked for).
+- T1.5 — **species-grouped split ×3** (`diag_orient_relative_grouped.py`, union-find on shared
+  species, GPU, batch 16 = published config): non-ref drop **+28.5 ± 2.9%** (seeds 26.9/31.8/26.8)
+  vs random-split +27.5 ± 2.7% — statistically indistinguishable, closing the shared-conformer
+  leakage critique. Grouped orientation-isolated matchrate (seed 0) **10.7%** (match@1 4.6%,
+  RMSD 0.140 Å) vs 0% floor. → relative-target §2.4 + matchrate §2.5 + new SI §S5.
+- T2.6 — **fit-based tolerance sweep** (`eval_orient_matchrate.py --sweep`, fit() criterion):
+  match@8 = 5.3 / 9.9 / 16.0 / 20.6% across tightening→loosening tolerances (oracle 100%
+  throughout), match@1 = 0 / 1.5 / 3.8 / 4.6%; default 0.3/0.5/10° row = 16.0% on this single
+  ckpt, consistent with the 3-seed 13.7% headline. → matchrate §2.5 + new SI §S4 (Table S3).
+  Confirms the headline is robust to the matcher tolerance and uses the strict fit() criterion.
 
-**Pending (blocked on a GPU-memory leak on the box; see tasks/todo.md).**
-- T1.3 all-atom + random-prior de-novo baseline (random floor 0% confirmed; trained run OOM'd).
-- T1.5 species-grouped split ×3 (union-find on shared species; OOM'd).
-- T2.6 fit-based tolerance sweep + matched RMSD (first run used the lenient `get_rms_dist`
-  criterion; `match_stats` fixed to `fit()` for consistency with the headline 13.7%).
+**Pending.**
 - T3.10 two-head PoC — optional, deferred.
+
+## Re-review (2026-06-21) — verification pass + residual fixes
+
+Re-ran the 5-reviewer panel in re-review mode against the revised DOCX. **Decision: Minor
+Revision (borderline Accept)** — all prior Major issues (M1–M4) and the full Tier 1–3
+non-optional roadmap (T1.1–T2.9) verified addressed in the manuscript; the Devil's-Advocate
+CRITICAL (uniform marginal ⇏ conditional unpredictability) is closed by the T1.2 probe, so the
+decision is unblocked from Accept. Four residual Minor items raised — **all now fixed:**
+- **R1 (all-atom framing) — DONE.** Added a sentence (main §2.8 + SI §S6) scoping the all-atom
+  baseline as *our own flow at the thousand-crystal scale*, not the published OXtal/PackFlow
+  models (trained on far larger corpora) — isolates the representation-at-scale effect, makes no
+  claim about those larger models.
+- **R2 (all-atom component breakdown) — DONE.** `scripts/eval_allatom_components.py` (loads
+  `baseline_allatom.pt`, best-of-20): median lattice-param **0.326**, frac-coord **0.457** —
+  as large as the rigid-body de-novo errors (0.46 / 0.35), confirming the SAME joint-packing
+  bottleneck. Folded into main §2.8 + SI Table S5 (extended with the two component columns).
+- **R3 (Fig 1 TikZ companion) — DONE.** `paper/figures/fig1_schematic.tex` standalone TikZ
+  source for proof-stage typesetting (m6). Not compiled locally (no LaTeX on this machine);
+  DOCX keeps the matplotlib PNG.
+- **R4 (sampling wall-clock) — DONE.** Measured 261.8 ms/structure (50 RK steps, RTX 5090,
+  batch 32); added to Methods (m7), substantiating the efficiency framing.
+Both DOCX rebuilt after these fixes.
 
 **Note (match criterion).** Confirmed `StructureMatcher.fit` (max-displacement ≤ stol) is
 stricter than `get_rms_dist is not None` (rms-based); the paper's headline orientation-isolated

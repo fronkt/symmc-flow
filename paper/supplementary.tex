@@ -158,6 +158,130 @@ probe (composition + packing features)  & $125.2^\circ$ \\
 \end{tabular}
 \end{table}
 
+% =====================================================================
+\section{StructureMatcher tolerance sweep for the orientation-isolated rate}
+% =====================================================================
+
+The main-text reconstruction rate uses a length tolerance of $0.3$, a site
+tolerance of $0.5$, and an angle tolerance of $10^\circ$. To show the result is
+not an artifact of that choice, Table~\ref{tab:sweep} sweeps the three
+StructureMatcher tolerances on a representative trained checkpoint, reporting both
+a single deterministic draw (match@1) and the best of eight draws (match@8). The
+match decision uses \texttt{StructureMatcher.fit} (maximum atomic displacement
+$\leq$ the site tolerance), the same strict criterion as the headline; the median
+root-mean-square displacement is computed only over structures that already pass.
+The rate rises monotonically from $5.3\%$ at the tightest setting to $20.6\%$ at
+the loosest, while the oracle that uses the true orientation matches every
+structure at all four settings, confirming the tolerances are not so loose as to
+admit spurious matches. The default row ($0.3/0.5/10^\circ$) gives $16.0\%$
+match@8 on this checkpoint; the main-text $13.7\pm2.0\%$ is the mean over three
+independent training seeds at this row.
+
+\begin{table}[h]
+\centering
+\caption{Orientation-isolated reconstruction under a StructureMatcher tolerance
+sweep (single trained checkpoint; $n=131$ held-out multi-copy crystals; true
+lattice, centroid, and conformer; only $\mathrm{SO}(3)$ sampled). The oracle
+matches every structure at every setting. Match decided by
+\texttt{StructureMatcher.fit}; RMSD is over matched structures only.}
+\label{tab:sweep}
+\begin{tabular}{ccccccc}
+\toprule
+$\ell$tol & stol & angle & match@1 & match@8 & med.\ RMSD (\AA) & oracle match@8 \\
+\midrule
+0.20 & 0.20 & $8^\circ$  & $0.0\%$ & $5.3\%$  & $0.089$ & $100\%$ \\
+0.30 & 0.30 & $10^\circ$ & $1.5\%$ & $9.9\%$  & $0.113$ & $100\%$ \\
+0.30 & 0.50 & $10^\circ$ & $3.8\%$ & $16.0\%$ & $0.128$ & $100\%$ \\
+0.50 & 0.70 & $15^\circ$ & $4.6\%$ & $20.6\%$ & $0.142$ & $100\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Leakage-controlled species-grouped split}
+% =====================================================================
+
+Because a single conformer registry is shared across crystals, a random
+train/validation split could place two crystals of the same species on opposite
+sides, raising the concern that the learnable relative-orientation signal reflects
+species memorization rather than transferable geometry. We rule this out with a
+species-grouped split (Methods): crystals sharing any species are grouped by
+union--find and whole groups are assigned to one side, so no species crosses the
+partition. Table~\ref{tab:grouped} compares the held-out non-reference
+orientation drop under the two split regimes over three seeds. The grouped split
+gives $28.5\pm2.9\%$, statistically indistinguishable from the random-split
+$27.5\pm2.7\%$, so the effect is not species leakage. An orientation-isolated
+reconstruction read on the grouped split (seed 0) recovers $10.7\%$ of held-out
+crystals (match@8; $4.6\%$ match@1; median RMSD $0.140$~\AA) against $0\%$ for the
+predict-floor field, confirming the reconstruction also survives the leakage
+control.
+
+\begin{table}[h]
+\centering
+\caption{Held-out non-reference orientation drop under random versus
+species-grouped train/validation splits (three seeds each, mean $\pm$ s.d.). The
+grouped split eliminates shared-species overlap; the signal is unchanged.}
+\label{tab:grouped}
+\begin{tabular}{lc}
+\toprule
+split & non-reference drop \\
+\midrule
+random (main text)        & $27.5\pm2.7\%$ \\
+species-grouped (no leakage) & $28.5\pm2.9\%$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{All-atom de-novo baseline}
+% =====================================================================
+
+To place the $0\%$ end-to-end rigid-body result in context, we trained an
+all-atom control that discards the rigid-body factorization: every atom is its own
+block and the orientation head is disabled ($\lambda_{\text{orient}}=0$), the
+representation used by all-atom molecular-crystal
+generators\cite{jin2025oxtal,subramanian2026packflow}. It is trained on the same
+$964/131$ split and evaluated for de-novo reconstruction (all manifolds sampled
+from the prior) against both a random-prior floor and the trained field, with
+match@20 best-of-twenty draws. Its lattice and centroid heads train normally (an
+$88\%$ drop in flow-matching loss over $8{,}000$ steps), yet it reconstructs no
+held-out crystal exactly: match@1 and match@20 are both $0\%$ (Wilson $95\%$ CI
+$0$--$2.8\%$, $n=131$), identical to the random-prior floor
+(Table~\ref{tab:allatom}). End-to-end molecular-crystal reconstruction at this
+corpus scale is therefore out of reach for the all-atom representation as well, so
+the $0\%$ reported for rigid-body generation reflects the corpus scale and compute
+budget rather than a deficiency unique to the rigid-body factorization. This is
+our own all-atom flow at the thousand-crystal scale, not one of the published
+all-atom generators\cite{jin2025oxtal,subramanian2026packflow} trained on far
+larger corpora; it isolates the effect of the representation at a fixed scale and
+makes no claim about those larger models.
+
+The best-of-twenty packing-component errors confirm the failure is the same joint
+packing that bottlenecks the rigid-body model, not a representation-specific
+pathology: the trained all-atom flow leaves a median lattice-parameter error of
+$0.33$ and a median fractional-coordinate error of $0.46$ (Table~\ref{tab:allatom}),
+comparable to the rigid-body de-novo errors reported in the main text (lattice
+$0.46$, centroid $0.35$). Both representations place molecules roughly a third to a
+half of a cell from their true positions, which is why neither reconstructs a
+crystal exactly.
+
+\begin{table}[h]
+\centering
+\caption{De-novo all-atom reconstruction on $131$ held-out crystals (all manifolds
+sampled, best of twenty draws). The trained all-atom flow does not beat its
+random-prior floor at this corpus scale, despite its packing heads training
+normally, and its best-of-twenty packing errors match the rigid-body model's.}
+\label{tab:allatom}
+\begin{tabular}{lcccc}
+\toprule
+field & match@1 & match@20 & med.\ lattice-param & med.\ frac.\ coord. \\
+\midrule
+random prior (floor)   & $0.0\%$ & $0.0\%$ & --- & --- \\
+trained all-atom flow  & $0.0\%$ & $0.0\%$ & $0.33$ & $0.46$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 

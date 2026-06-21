@@ -340,7 +340,14 @@ The absolute target floors in both conditioning regimes. The relative target
 descends by $27\%$ on held-out non-reference copies and generalizes, with an
 identical result under noised and clean conditioning. Across three random seeds
 the non-reference drop is $27.5\pm2.7\%$ (mean $\pm$ s.d.), so the effect is
-stable. The signal therefore rides on the space group, which is conditioned
+stable. Because the conformer registry is shared across crystals, a random split
+could in principle let a species seen in training reappear in validation; we
+therefore repeated the three-seed measurement under a stricter species-grouped
+split that assigns every crystal sharing a species to the same side of the
+partition (Methods). The non-reference drop is then $28.5\pm2.9\%$, statistically
+indistinguishable from the random-split value, so the learnable relative signal
+is not an artifact of species leakage between training and validation
+(Supplementary Information). The signal therefore rides on the space group, which is conditioned
 directly, together with the
 coarse centroid arrangement, and is robust to conditioning noise.
 
@@ -398,7 +405,14 @@ seeds) of held-out packings exactly, against $0\%$ for a random (predict-floor)
 field and $0.8\%$ for the naive choice of leaving every copy un-rotated. Its mean
 non-reference orientation error is $68^\circ$, below the $89^\circ$ of a random
 field (Fig.~\ref{fig:results}a). The $27\%$ loss reduction is real reconstructed
-geometry.
+geometry. The reconstruction is not an artifact of the chosen tolerances:
+sweeping the StructureMatcher length, site, and angle thresholds moves the rate
+monotonically from $5.3\%$ at the tightest setting to $20.6\%$ at the loosest,
+with the oracle matching every structure throughout, and a single deterministic
+draw (match@1) still reconstructs a nonzero fraction against the $0\%$ floor
+(Supplementary Information). Under the species-grouped split above, an
+orientation-isolated read reconstructs $10.7\%$ of the grouped held-out crystals,
+confirming the reconstruction survives the leakage control.
 
 \begin{table}[t]
 \centering
@@ -514,7 +528,25 @@ by roughly a third of a cell, and the orientation still carries the gauge-free
 component. Scaling does not lift the joint result: the higher-capacity model
 above, despite sharper components (median lattice-parameter error $0.41$,
 centroid $0.35$, orientation $50^\circ$), still yields $0\%$ end-to-end at both
-match@1 and match@20. The
+match@1 and match@20. To test whether this bottleneck is specific to the
+rigid-body factorization or instead reflects the corpus scale, we trained an
+all-atom control on the same corpus and split in which every atom is its own
+block and the orientation head is disabled, the representation used by all-atom
+generators\cite{jin2025oxtal,subramanian2026packflow}. Despite its lattice and
+centroid heads training normally (an $88\%$ drop in flow-matching loss), it
+likewise reconstructs no held-out crystal exactly (match@1 and match@20 both
+$0\%$, $n=131$), equal to its own random-prior floor. Its best-of-$20$
+packing-component errors are as large as the rigid-body model's (median
+lattice-parameter $0.33$ and fractional-coordinate $0.46$; Supplementary
+Information), locating the failure in the same joint packing. End-to-end reconstruction
+at this corpus scale is therefore out of reach for the all-atom representation as
+well, so the $0\%$ is a property of the scale and compute budget rather than a
+deficiency unique to rigid-body factorization. This control is our own all-atom
+flow trained on the same thousand-crystal corpus, not one of the published
+all-atom generators\cite{jin2025oxtal,subramanian2026packflow}, which are trained
+on far larger datasets with substantially more compute; the comparison therefore
+shows that the all-atom \emph{representation at this scale} does not rescue
+end-to-end generation, not that those larger models would fail. The
 orientation-isolated $13.7\%$ is therefore an upper bound that is attainable only
 when the packing is supplied, and end-to-end molecular-crystal generation at this
 corpus scale and compute budget remains open. This is consistent with the scope
@@ -631,7 +663,9 @@ exchangeable prior and data within each crystal\cite{pooladian2023multisample}.
 Sampling integrates the field from the prior to the data manifold with a
 deterministic Runge--Kutta scheme, using the $\mathrm{SO}(3)$ exponential map
 for the orientation update; molecular-crystal samples used here take fifty
-steps. The construction follows Riemannian flow
+steps, approximately $0.26$~s per structure on a single RTX 5090 GPU in batches
+of $32$, consistent with the order-of-magnitude step-count reduction that
+motivates flow matching over diffusion. The construction follows Riemannian flow
 matching\cite{chen2024riemannian} and parallels frame-based generative models
 for proteins\cite{yim2023se3diffusion,yim2023frameflow} and metal--organic
 frameworks\cite{kim2025mofflow}. The orientation target is the constant-velocity
@@ -687,6 +721,19 @@ layers and trains for $5{,}000$ steps. A non-finite-step guard skips any
 optimizer update whose loss or gradient norm is not finite, so a transient
 ill-conditioned batch in the higher-capacity model cannot corrupt the weights;
 the run reported here skipped a single step.
+
+\subsection{Species-grouped split and all-atom baseline}
+The species-grouped split guards against leakage from the shared conformer
+registry. We build an undirected graph whose nodes are crystals and whose edges
+join any two crystals that share a chemical species, take its connected
+components by union--find, and assign whole components to training or validation,
+so no species appears on both sides. The relative-orientation diagnostic is then
+rerun over three split seeds at the default network and batch size and compared to
+the random-split result. The all-atom baseline replaces the rigid-body
+factorization with one block per atom and disables the orientation head
+($\lambda_{\text{orient}}=0$), matching the all-atom representation; it is trained
+on the same corpus and split and evaluated for de-novo reconstruction against both
+its random-prior floor and the trained field.
 
 \subsection{Orientation-isolated match metric}
 Reconstruction holds the true lattice, centroid, and conformer fixed and
