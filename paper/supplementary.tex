@@ -109,6 +109,55 @@ copies.}
 \label{fig:rasym}
 \end{figure}
 
+% =====================================================================
+\section{Is $R_{\text{asym}}$ \emph{conditionally} predictable from packing?}
+% =====================================================================
+
+The uniformity test of the previous section concerns the \emph{marginal}
+distribution of $R_{\text{asym}}$. A uniform marginal is necessary but not
+sufficient for the operational claim that packing carries no signal about the
+free pose: a weak conditional dependence
+$p(R_{\text{asym}}\mid\text{packing})$ can coexist with a Haar marginal once the
+packing is marginalized out. We therefore test the conditional directly with a
+supervised probe. For each species we form a feature vector from the lattice cell
+parameters, the molecule's fractional centroid, the mean and spread of all
+centroids in the cell, the conformer's intrinsic shape (the gyration-tensor
+eigenvalues), the molecule and atom counts, and a learned space-group embedding,
+and we train a three-layer network to regress the reference-copy orientation
+(a continuous six-dimensional rotation parametrization with a Frobenius loss).
+The probe sees only composition and packing; the orientation is never an input.
+
+Table~\ref{tab:probe} reports the held-out geodesic error against two references:
+the single best feature-free predictor, which is the Fr\'echet (chordal) mean of
+the training orientations, and a random-rotation guess. Averaged over three
+splits the probe attains $125.2^\circ$, which does not improve on the
+feature-free constant at $122.4^\circ$ and is statistically indistinguishable from
+the random-guess level of $123.5^\circ$; the probe's mean ``improvement'' over the
+constant is $-2.4\%$, i.e.\ no improvement. The network can drive its training
+error well below these values, so the failure is one of generalization, not of
+capacity. The conditional test thus reaches the same conclusion as the marginal
+one by an independent route: under the composition-and-packing conditioning
+available here, $R_{\text{asym}}$ is not predictable, which is the precise,
+operational sense in which we call it unlearnable.
+
+\begin{table}[h]
+\centering
+\caption{Conditional-predictability probe for $R_{\text{asym}}$: held-out mean
+geodesic error (degrees, mean over three splits; lower is better). The probe,
+given composition and packing, does not beat the feature-free constant and sits
+at the no-information level.}
+\label{tab:probe}
+\begin{tabular}{lc}
+\toprule
+predictor & held-out geodesic error \\
+\midrule
+random guess (no information)        & $123.5^\circ$ \\
+constant (Fr\'echet mean, feature-free) & $122.4^\circ$ \\
+probe (composition + packing features)  & $125.2^\circ$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \bibliographystyle{unsrtnat}
 \bibliography{references}
 

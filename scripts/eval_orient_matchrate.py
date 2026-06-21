@@ -99,6 +99,8 @@ def main():
     ap.add_argument("--angle-tol", type=float, default=10.0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--limit", type=int, default=0, help="cap #val crystals (0 = all)")
+    ap.add_argument("--sweep", action="store_true",
+                    help="also report match rate + median matched RMSD across a stol sweep")
     args = ap.parse_args()
 
     if not os.path.exists(args.ckpt):
@@ -125,15 +127,11 @@ def main():
     torch.manual_seed(args.seed)
     untrained = SymMCFlow(mcfg).to(device).eval()  # fresh net = the predict-floor field
 
-    sm = StructureMatcher(ltol=args.ltol, stol=args.stol, angle_tol=args.angle_tol)
     keys = ("oracle", "identity", "untrained", "trained")
-    matched = {k: [] for k in keys}    # per-crystal best-of-k match (0/1)
     err = {k: [] for k in keys}        # per-crystal best-of-k non-ref orient error (deg)
+    all_refs = []                      # per-crystal ref Structure (len n)
+    all_gens = {k: [] for k in keys}   # per-crystal list of draw Structures (k=1 for det.)
     K = max(args.match_k, 1)
-
-    def fit_any(gens, refs):
-        return [1 if (r is not None and any(sm.fit(g, r) for g in gset)) else 0
-                for gset, r in zip(gens, refs)]
 
     torch.manual_seed(args.seed)
     emb_un = None
@@ -145,15 +143,16 @@ def main():
         mol_emb = trained.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
         emb_un = untrained.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
         nonref = (~batch["is_ref"]) & z1.mask          # the symmetry-determined targets
-        refs = structures_for(batch, z1, z1.orient)
+        all_refs += structures_for(batch, z1, z1.orient)
         I = torch.eye(3, device=device).expand_as(z1.orient).contiguous()
 
         # deterministic conditions (k=1)
         for k, R in (("oracle", z1.orient), ("identity", I)):
-            matched[k] += fit_any([[g] for g in structures_for(batch, z1, R)], refs)
+            for g in structures_for(batch, z1, R):
+                all_gens[k].append([g])
             err[k] += per_crystal_err_deg(R, z1.orient, nonref).tolist()
 
-        # stochastic flow conditions: best-of-k over orientation priors
+        # stochastic flow conditions: store all k draws (draw 0 = the match@1 draw)
         for k, net, emb in (("untrained", untrained, emb_un), ("trained", trained, mol_emb)):
             draws_struct = [[] for _ in range(B)]      # per crystal: list of k structures
             best_err = torch.full((B,), 1e9, device=device)
@@ -165,20 +164,71 @@ def main():
                 for b in range(B):
                     draws_struct[b].append(gs[b])
                 best_err = torch.minimum(best_err, per_crystal_err_deg(R, z1.orient, nonref))
-            matched[k] += fit_any(draws_struct, refs)
+            all_gens[k] += draws_struct
             err[k] += best_err.tolist()
 
-    n = len(matched["oracle"])
-    print(f"==== orientation-isolated reconstruction, best-of-{K} (true lattice+centroid+conformer) ====")
-    print(f"  matcher: ltol={args.ltol} stol={args.stol} angle_tol={args.angle_tol}\n")
-    print(f"  {'condition':10s}  {'match-rate':>10s}  {'non-ref orient err':>19s}")
+    n = len(all_refs)
+
+    def match_stats(gens, refs, ltol, stol, angle_tol, kcap=None):
+        """Return (match@1, match@kcap, median matched best-RMSD) at a tolerance.
+        The match DECISION uses StructureMatcher.fit (max-displacement <= stol, the strict
+        criterion the paper's headline rate uses); get_rms_dist is used ONLY to report the
+        RMSD of structures that already passed fit (it applies a more lenient rms-based
+        criterion, so 'get_rms_dist is not None' would over-count borderline matches).
+        Draw 0 of each crystal is the single-draw (match@1) candidate."""
+        sm = StructureMatcher(ltol=ltol, stol=stol, angle_tol=angle_tol)
+        hit1, hitk, rmsds = 0, 0, []
+        for gset, r in zip(gens, refs):
+            if r is None:
+                continue
+            cap = len(gset) if kcap is None else min(kcap, len(gset))
+            try:
+                if sm.fit(gset[0], r):
+                    hit1 += 1
+            except Exception:
+                pass
+            matched, best = False, None
+            for g in gset[:cap]:
+                try:
+                    if sm.fit(g, r):
+                        matched = True
+                        rms = sm.get_rms_dist(g, r)
+                        if rms is not None and (best is None or rms[0] < best):
+                            best = rms[0]
+                except Exception:
+                    pass
+            if matched:
+                hitk += 1
+                if best is not None:
+                    rmsds.append(best)
+        rmsds.sort()
+        med = rmsds[len(rmsds) // 2] if rmsds else float("nan")
+        return hit1 / max(n, 1), hitk / max(n, 1), med
+
+    print(f"==== orientation-isolated reconstruction (true lattice+centroid+conformer) ====")
+    print(f"  default matcher: ltol={args.ltol} stol={args.stol} angle_tol={args.angle_tol}; "
+          f"best-of-{K}\n")
+    print(f"  {'condition':10s}  {'match@1':>8s}  {'match@k':>8s}  {'med RMSD':>9s}  "
+          f"{'non-ref err':>12s}")
     for k in keys:
-        mr = sum(matched[k]) / max(n, 1)
+        m1, mk, med = match_stats(all_gens[k], all_refs, args.ltol, args.stol, args.angle_tol)
         me = sum(err[k]) / max(len(err[k]), 1)
         tag = {"oracle": "  (ceiling)", "identity": "  (naive R=I)",
                "untrained": "  (floor)", "trained": "  <-- RESULT"}[k]
-        print(f"  {k:10s}  {100*mr:9.1f}%  {me:16.1f} deg{tag}")
-    print(f"\n  (n={n} crystals; orient err = best-of-{K} mean SO(3) angle on non-ref copies)")
+        print(f"  {k:10s}  {100*m1:7.1f}%  {100*mk:7.1f}%  {med:9.3f}  {me:9.1f} deg{tag}")
+    print(f"\n  (n={n} crystals; match@1 = single deterministic-prior draw, "
+          f"match@k = best of {K}; med RMSD = median matched StructureMatcher RMS)")
+
+    if args.sweep:
+        print(f"\n==== StructureMatcher tolerance sweep (trained; best-of-{K}) ====")
+        print(f"  {'ltol':>5s} {'stol':>5s} {'angle':>5s}  {'match@1':>8s}  {'match@k':>8s}  "
+              f"{'med RMSD':>9s}")
+        for (lt, st, at) in [(0.2, 0.2, 8.0), (0.3, 0.3, 10.0), (0.3, 0.5, 10.0),
+                             (0.5, 0.7, 15.0)]:
+            m1, mk, med = match_stats(all_gens["trained"], all_refs, lt, st, at)
+            o1, ok, _ = match_stats(all_gens["oracle"], all_refs, lt, st, at)
+            print(f"  {lt:5.2f} {st:5.2f} {at:5.1f}  {100*m1:7.1f}%  {100*mk:7.1f}%  "
+                  f"{med:9.3f}   (oracle@k {100*ok:.0f}%)")
 
 
 if __name__ == "__main__":

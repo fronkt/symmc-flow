@@ -1,0 +1,1 @@
+no checkpoint at checkpoints/rel_grouped_s0.pt; run scripts/diag_orient_relative.py first

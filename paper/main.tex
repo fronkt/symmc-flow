@@ -2,11 +2,10 @@
 % What an SO(3) orientation flow can and cannot learn in
 % molecular-crystal structure prediction
 %
-% Formatted for npj Computational Materials (Nature Portfolio).
-% For submission, replace the preamble with the official Springer Nature
-% template:  \documentclass[pdflatex,sn-nature]{sn-jnl}  and move the
-% metadata into the SN \author/\affil macros. The section structure,
-% numbered references, and back-matter below already follow npj policy.
+% Formatted for Digital Discovery (Royal Society of Chemistry).
+% For submission, the RSC accepts a single-column author manuscript; the
+% numbered superscript citations (natbib [numbers,super]) already match the
+% RSC house style, and the back-matter headings below follow RSC policy.
 % Compiles standalone with pdflatex + bibtex (natbib / unsrtnat).
 % =====================================================================
 \documentclass[11pt]{article}
@@ -130,6 +129,20 @@ crystals is an open question. MOFFlow reports a working method but does not
 analyze the orientation field in isolation, and the all-atom approaches sidestep
 orientation altogether. No prior work asks what a rigid-body $\mathrm{SO}(3)$
 orientation flow actually learns on molecular crystals, or where it fails.
+
+This question has a classical antecedent. Established molecular-CSP codes do not
+search the orientation of every symmetry copy independently; they search only
+the contents of the asymmetric unit and then \emph{generate} the remaining
+copies by applying the space-group operators, so the relative pose between
+copies is fixed by symmetry and never a free
+variable\cite{price2023blindtest7,obrien2021dataefficient}. The decomposition
+we develop below is, in effect, a rediscovery of that division of labor for a
+learned flow: the symmetry-relative rotation that classical search obtains for
+free is what the flow can learn, and the asymmetric unit's free pose, which
+classical search does sample, is what the flow cannot regress. Framing the
+result this way both credits the long-standing classical practice and clarifies
+why a naive per-copy orientation flow is solving a problem that symmetry already
+solves in part.
 
 This paper answers that question. We build SymMC-Flow, a
 space-group-conditioned rigid-body flow on
@@ -300,7 +313,20 @@ slight deviation from uniformity ($D=0.04$), confined to a small near-identity
 excess attributable to the gauge-defining copies rather than to a broad preferred
 orientation. We therefore state the claim narrowly: $R_{\text{asym}}$ is not
 predictable from the conditioning available here, not that orientation is
-unlearnable in principle.
+unlearnable in principle. The distinction matters. A uniform \emph{marginal}
+does not by itself establish that $R_{\text{asym}}$ is conditionally
+independent of the packing; a weak dependence $p(R_{\text{asym}}\mid\text{packing})$
+can coexist with a Haar marginal. Our claim is the operational one that no
+exploitable signal survives our composition-and-packing conditioning. We test
+this directly rather than infer it from the marginal alone: a supervised probe
+trained to predict $R_{\text{asym}}$ from the lattice, the centroid arrangement,
+the conformer shape, and the space group does not improve on the best
+feature-free constant and sits at the no-information level (Supplementary
+Information), so a uniform marginal here reflects genuine conditional
+unpredictability rather than masking a hidden dependence. We distinguish this
+from an under-featurized model: a richer descriptor of the local environment,
+such as explicit hydrogen-bond topology or dipole alignment, could in principle
+expose residual signal that the present conditioning does not.
 
 To isolate the learnable factor we re-gauge each crystal so that the first copy
 of every species is a reference with $R=I$ and the remaining copies carry only
@@ -479,14 +505,16 @@ are sampled from the prior, that is, end-to-end rigid-body structure prediction
 given only the molecular composition and conformer. Generating complete crystals
 for the held-out molecules (match@20, three seeds) yields no exact match at the
 StructureMatcher tolerances above ($0\%$, Wilson $95\%$ CI $0$--$2.8\%$,
-$n=131$). The best-of-$20$ per-component errors locate the bottleneck: a median
-lattice-parameter error of $0.46$, a fractional centroid error of $0.35$, and an
-orientation error of $60^\circ$. Every head contributes; in particular the
+$n=131$); the single-draw rate (match@1) is likewise $0\%$, so the gap is not an
+artifact of the best-of-$k$ read. The best-of-$20$ per-component errors locate the
+bottleneck: a median lattice-parameter error of $0.46$, a fractional centroid
+error of $0.35$, and an orientation error of $57^\circ$. Every head contributes; in particular the
 centroid field, which improves by only $30\%$ in loss, leaves molecules displaced
 by roughly a third of a cell, and the orientation still carries the gauge-free
 component. Scaling does not lift the joint result: the higher-capacity model
-above, despite sharper components (median lattice-parameter error $0.37$,
-centroid $0.35$, orientation $48^\circ$), still yields $0\%$ end-to-end. The
+above, despite sharper components (median lattice-parameter error $0.41$,
+centroid $0.35$, orientation $50^\circ$), still yields $0\%$ end-to-end at both
+match@1 and match@20. The
 orientation-isolated $13.7\%$ is therefore an upper bound that is attainable only
 when the packing is supplied, and end-to-end molecular-crystal generation at this
 corpus scale and compute budget remains open. This is consistent with the scope
@@ -557,8 +585,15 @@ scale, so the absolute generation numbers should be read as a lower bound that
 more data and compute would improve. The rigid-conformer gate excludes flexible
 molecules by construction, and the conformer registry is shared across crystals,
 so a species whose conformer differs between polymorphs beyond tolerance is
-rejected. These choices keep the rigid-body benchmark honest but narrow its
-coverage.
+rejected. The corpus is therefore one of rigid, largely organic
+(C/H/N/O-dominated) molecules, and the conclusions should be read with that
+scope. The unlearnability statement is likewise scoped to molecules on
+\emph{general} positions, where the asymmetric-unit pose is genuinely free; a
+molecule sitting on a special position carries a site symmetry that constrains
+its orientation, and that constraint is in principle learnable, consistent with
+the prediction above that rigid-body $\mathrm{SO}(3)$ generation is most useful
+where site symmetry is high. These choices keep the rigid-body benchmark honest
+but narrow its coverage.
 
 Two directions follow. A hybrid that predicts a rigid pose and then refines the
 conformer would extend the approach to flexible molecules while keeping the

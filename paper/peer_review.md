@@ -157,3 +157,34 @@ Do not dilute them.
 > mechanistic study. The de-novo generation experiment (C) is what would move it
 > from "characterization study" to "characterization + working generator" and
 > pre-empt the most likely rejection reason.
+
+---
+
+## Digital Discovery revision (2026-06-21) — Tier 1–3 roadmap
+
+Retargeted to **Digital Discovery (RSC)** after a full 5-reviewer panel (decision: Major
+Revision). Roadmap status (details in `tasks/todo.md`, logs in `gpu_results/revision/`):
+
+**Done.**
+- T1.1/T2.7/T2.8/T2.9 — unlearnability scoping (marginal≠conditional + under-featurized),
+  rigid/CHNO + general-position scope with the special-position exception, classical-CSP
+  lineage paragraph, capacity→"capacity+training". (text)
+- T1.2 — **R_asym conditional probe** (`scripts/probe_rasym_conditional.py`): a probe given
+  composition+packing+space-group attains 125.2° held-out geodesic error, not beating the
+  feature-free Fréchet-mean constant (122.4°) and indistinguishable from Haar (123.5°);
+  3-seed mean −2.4%. Closes the Devil's-Advocate CRITICAL (uniform marginal ⇏ no conditional
+  dependence) by direct test. → SI §S3 + main-text decomposition.
+- T1.4 — **match@1** reported beside best-of-k; de-novo match@1 = 0% (base & big), so the 0%
+  is not a best-of-k artifact.
+
+**Pending (blocked on a GPU-memory leak on the box; see tasks/todo.md).**
+- T1.3 all-atom + random-prior de-novo baseline (random floor 0% confirmed; trained run OOM'd).
+- T1.5 species-grouped split ×3 (union-find on shared species; OOM'd).
+- T2.6 fit-based tolerance sweep + matched RMSD (first run used the lenient `get_rms_dist`
+  criterion; `match_stats` fixed to `fit()` for consistency with the headline 13.7%).
+- T3.10 two-head PoC — optional, deferred.
+
+**Note (match criterion).** Confirmed `StructureMatcher.fit` (max-displacement ≤ stol) is
+stricter than `get_rms_dist is not None` (rms-based); the paper's headline orientation-isolated
+rate uses `fit`, and the eval scripts now use `fit` for the decision and `get_rms_dist` only to
+report RMSD of already-matched structures.
