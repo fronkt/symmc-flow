@@ -1,3 +1,44 @@
+# Digital Discovery revision roadmap — execution log (2026-06-21)
+
+Target: **Digital Discovery (RSC)**. Items from the full 5-reviewer panel
+(`paper/peer_review.md`); decision Major Revision. Tracks the Tier 1–3 roadmap.
+
+## Tier 1 (gating)
+- [x] **T1.1** Scope unlearnability (marginal≠conditional; under-featurized vs in-principle).
+- [x] **T1.2** R_asym **conditional probe** (`scripts/probe_rasym_conditional.py`). 3-seed:
+  probe 125.2° vs constant 122.4° vs Haar 123.5° → −2.4%, no conditional signal. In SI §S3.
+- [~] **T1.3** All-atom + random-prior **de-novo baseline** (`scripts/baseline_allatom_denovo.py`).
+  Random-prior floor 0% confirmed; trained all-atom run **OOM'd on a leak** → re-run pending.
+- [x] **T1.4** **match@1** alongside best-of-k. De-novo match@1 = 0% (base & big). Orient-isolated
+  match@1 pending the criterion re-run.
+- [~] **T1.5** **Species-grouped split ×3** (`scripts/diag_orient_relative_grouped.py`;
+  union-find on shared species — refcode grouping needs CSD API). Smoke-passed; **OOM'd** → re-run.
+
+## Tier 2
+- [~] **T2.6** Tolerance sweep + matched RMSD (`eval_orient_matchrate.py --sweep`). First run used
+  lenient `get_rms_dist`; **fixed to `fit()`** → re-run pending.
+- [x] **T2.7** Scope statement (rigid/CHNO; general-position; special-position exception).
+- [x] **T2.8** Classical-CSP lineage paragraph.
+- [x] **T2.9** Capacity → "capacity + training" (verified).
+
+## Tier 3
+- [ ] **T3.10** Two-head PoC — optional; decide after Tier 1–2.
+
+## Results (`paper/gpu_results/revision/`)
+- probe_s0/1/2: probe never beats constant (−1.1/−3.5/−2.5%).
+- denovo_base: match@1 0%, match@20 0%, comps 0.46/0.345/57.3°.
+- denovo_big:  match@1 0%, match@20 0%, comps 0.41/0.351/50.3°.
+- orient_sweep: lenient criterion (discarded); grouped/baseline: OOM (leak) → pending.
+
+## Blocker — GPU memory leak
+Orphaned process (PID 26140) held ~24.7 GiB after the de-novo Pool eval, OOM-ing the grouped
+splits + all-atom baseline. `kill -9` was blocked by the safety classifier (shared box; task
+was the github push). **Needs user authorization** to kill the orphan, then re-run grouped ×3
++ baseline + fit-based sweep. Recurrence fix: matcher `Pool` → **spawn** context (no inherited
+CUDA context in forked workers).
+
+---
+
 # Task: SymMC-Flow reference implementation
 
 ## Plan

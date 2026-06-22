@@ -1,0 +1,19 @@
+samples (reference copies): 1467; feature dim 20
+split: 1247 train / 220 val
+
+  ep    1  train geo  125.8 deg   val geo  126.8 deg
+  ep   50  train geo  109.0 deg   val geo  127.2 deg
+  ep  100  train geo  100.9 deg   val geo  126.5 deg
+  ep  150  train geo   95.0 deg   val geo  126.8 deg
+  ep  200  train geo   90.6 deg   val geo  125.5 deg
+  ep  250  train geo   87.3 deg   val geo  125.9 deg
+  ep  300  train geo   84.4 deg   val geo  125.9 deg
+
+==== R_asym conditional-predictability probe (held-out geodesic error) ====
+  haar guess (no info)        :  121.7 deg
+  constant (Fréchet mean)     :  121.7 deg   (train 123.1)
+  probe (packing+sg features) :  125.9 deg   (best 125.5)
+
+  probe vs constant: -3.5% error reduction
+  VERDICT: probe does NOT beat the feature-free constant -> R_asym carries no
+           exploitable conditional signal under composition+packing here.

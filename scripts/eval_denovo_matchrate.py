@@ -125,18 +125,25 @@ def main():
         lat_err += best_lat.tolist(); cen_err += best_cen.tolist(); ori_err += best_ori.tolist()
         print(f"  sampled {len(refs)}/{len(val_items)}", flush=True)
 
-    # match (parallel over crystals)
+    # match (parallel over crystals): best-of-k AND single-draw (match@1, draw 0 only)
     work = list(zip(refs, gens_per_crystal))
+    work1 = [(r, g[:1]) for r, g in work]
     fn = partial(_match_one, ltol=args.ltol, stol=args.stol, angle_tol=args.angle_tol)
     if args.workers > 1:
         import multiprocessing as mp
-        with mp.Pool(args.workers) as pool:
+        torch.cuda.empty_cache()  # release before forking matcher workers
+        # spawn (not fork) so workers do NOT inherit this process's CUDA context,
+        # which otherwise leaks ~1.5 GB/worker of GPU memory that outlives the pool
+        with mp.get_context("spawn").Pool(args.workers) as pool:
             hits = pool.map(fn, work)
+            hits1 = pool.map(fn, work1)
     else:
         hits = [fn(w) for w in work]
+        hits1 = [fn(w) for w in work1]
 
     n = len(hits)
     mr = sum(hits) / max(n, 1)
+    mr1 = sum(hits1) / max(n, 1)
     # Wilson 95% CI
     import math
     z = 1.96
@@ -149,6 +156,7 @@ def main():
         x = sorted(x); return x[len(x) // 2] if x else float("nan")
 
     print(f"\n==== DE-NOVO joint generation, match@{args.match_k} (n={n}) ====", flush=True)
+    print(f"  match@1 (single draw): {100*mr1:.1f}%")
     print(f"  match rate: {100*mr:.1f}%  (Wilson 95% CI {100*(centre-half):.1f}-{100*(centre+half):.1f}%)")
     print(f"  median best-of-k component error: lattice-param {med(lat_err):.3f}  "
           f"centroid(frac) {med(cen_err):.3f}  orient {med(ori_err):.1f} deg")

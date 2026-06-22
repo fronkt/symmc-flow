@@ -1,0 +1,60 @@
+corpus 1127 -> 1095 multi-copy; split 964/131; max atoms/cell 504
+all-atom vol/atom 9.9 A^3; building datasets...
+  [random-prior] sampled 64/131
+  [random-prior] sampled 128/131
+  [random-prior] sampled 131/131
+
+==== random-prior: de-novo all-atom, n=131 ====
+  match@1: 0.0%   match@20: 0.0%  (Wilson 95% CI 0.0-2.8%)
+
+training all-atom flow: d=256 attn=8 steps=8000 device=cuda
+
+Traceback (most recent call last):
+  File "/workspace/symmc-flow/scripts/baseline_allatom_denovo.py", line 223, in <module>
+    main()
+  File "/workspace/symmc-flow/scripts/baseline_allatom_denovo.py", line 212, in main
+    model, hist = train(mcfg, tcfg, verbose=True, train_dataset=train_ds, val_dataset=val_ds)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/train.py", line 98, in train
+    loss, parts = _step_loss(model, batch, weights, device,
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/train.py", line 44, in _step_loss
+    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/model.py", line 116, in forward
+    h = self.attn(tok, pair, mol_mask)                                    # (B,M,d)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/pair_bias_attention.py", line 74, in forward
+    x = blk(x, pair, mask)
+        ^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/pair_bias_attention.py", line 57, in forward
+    x = x + self.attn(self.n1(x), pair, mask)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1778, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/venv/main/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1789, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/symmc-flow/symmc_flow/pair_bias_attention.py", line 35, in forward
+    logits = logits + bias
+             ~~~~~~~^~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 498.00 MiB. GPU 0 has a total capacity of 31.36 GiB of which 118.50 MiB is free. Process 20636 has 24.66 GiB memory in use. Including non-PyTorch memory, this process has 6.57 GiB memory in use. Of the allocated memory 5.79 GiB is allocated by PyTorch, and 169.60 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
