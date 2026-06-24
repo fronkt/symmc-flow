@@ -196,9 +196,8 @@ volume-normalized lattice parametrization, a torus geodesic for centroids, and
 an $\mathrm{SO}(3)$ geodesic for orientations, with the vector field conditioned
 on the space group. An $\mathrm{E}(n)$-equivariant
 encoder\cite{satorras2021egnn} embeds the conformer and pair-bias attention
-mixes molecules within the cell. Figure~\ref{fig:schematic} summarizes the
-factorization and the orientation decomposition developed below. Architecture,
-manifold operations, and data are detailed in Methods.
+mixes molecules within the cell. Architecture, manifold operations, and data
+are detailed in Methods.
 
 Each manifold is given a parametrization that makes its conditional path
 well-conditioned. The lattice is not flowed as a raw $3\times3$ matrix, which
@@ -213,21 +212,6 @@ exponential map, which keeps every intermediate state on the manifold. This
 separation matters for the analysis: the three heads can be read independently,
 so a failure localized to orientation is visible against a backdrop of lattice
 and centroid that train normally.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/fig1_schematic.pdf}
-\caption{Rigid-body factorization and the orientation decomposition.
-(a) A molecular crystal is represented by a lattice $L$, a fractional centroid
-$c_m\in\mathbb{T}^3$ per molecule, and an orientation $R_m\in\mathrm{SO}(3)$
-acting on a shared body-frame conformer, with atoms reconstructed by
-Eq.~\eqref{eq:factor}. (b) The per-molecule orientation target factors as
-$R_m=\mathrm{rot}(g_m)\cdot R_{\text{asym}}$ into a space-group-determined
-relative rotation, which the flow learns, and the asymmetric unit's free
-orientation, which is gauge-arbitrary and not learnable from composition and
-packing.}
-\label{fig:schematic}
-\end{figure}
 
 \subsection{Lattice and centroid flows learn on real molecular crystals}
 
