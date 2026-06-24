@@ -1,66 +1,146 @@
-% Fig. 1 — Rigid-body factorization and the orientation decomposition.
-% TikZ companion for proof-stage typesetting (re-review m6/R3). Standalone:
+% Fig. 1 -- Rigid-body factorization and the orientation decomposition.
+% TikZ companion for proof-stage typesetting, kept in sync with the rendered
+% figure produced by fig1_schematic.py (which is what the DOCX/PDF embed).
+% Standalone:
 %   pdflatex fig1_schematic.tex   ->  fig1_schematic.pdf
-% Or \input{figures/fig1_schematic} inside the manuscript with a tikzpicture-aware preamble.
+% Or \input{figures/fig1_schematic} inside the manuscript with a
+% tikzpicture-aware preamble.
+%
+% NOTE: not compiled on the authoring machine (no local LaTeX); the build
+% embeds the matplotlib raster/vector. This source mirrors that layout 1:1 for
+% proof-stage redrawing.
 \documentclass[border=4pt]{standalone}
 \usepackage{tikz}
-\usepackage{amsmath}
-\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+\usepackage{amsmath,amssymb}
+\usetikzlibrary{arrows.meta,calc}
+
+% --- Okabe-Ito (colorblind-safe) palette, matching fig1_schematic.py ---------
+\definecolor{okblue}{HTML}{0072B2}
+\definecolor{okorange}{HTML}{E69F00}
+\definecolor{okgreen}{HTML}{009E73}
+\definecolor{okverm}{HTML}{D55E00}
+\definecolor{okgrey}{HTML}{8A8A8A}
+\definecolor{okink}{HTML}{1A1A1A}
+\definecolor{lblue}{HTML}{DCEBF7}
+\definecolor{lgreen}{HTML}{D5F0E5}
+\definecolor{lred}{HTML}{FBE2D5}
+\definecolor{cellface}{HTML}{F4F7FA}
+
+% --- rigid molecule glyph: #1 x  #2 y  #3 angle(deg)  #4 scale ---------------
+% Asymmetric body template (C,O,N,H) so the pose is visually unambiguous.
+\newcommand{\molecule}[4]{%
+  \begin{scope}[shift={(#1,#2)},rotate=#3,scale=#4]
+    \draw[okink,line width=0.5pt,line cap=round] (0,0)--(0.95,0.18);
+    \draw[okink,line width=0.5pt,line cap=round] (0,0)--(0.22,0.92);
+    \draw[okink,line width=0.5pt,line cap=round] (0,0)--(-0.72,0.36);
+    \filldraw[fill=okblue,draw=white,line width=0.3pt] (0,0) circle (0.16);
+    \filldraw[fill=okverm,draw=white,line width=0.3pt] (0.95,0.18) circle (0.185);
+    \filldraw[fill=okgreen,draw=white,line width=0.3pt] (0.22,0.92) circle (0.17);
+    \filldraw[fill=okgrey,draw=white,line width=0.3pt] (-0.72,0.36) circle (0.11);
+  \end{scope}}
+
+% --- SO(3) orientation frame (two body axes): #1 x #2 y #3 angle #4 length ---
+\newcommand{\soframe}[4]{%
+  \begin{scope}[shift={(#1,#2)},rotate=#3]
+    \draw[okverm,-{Stealth[length=1.6mm]},line width=0.9pt] (0,0)--(#4,0);
+    \draw[okblue,-{Stealth[length=1.6mm]},line width=0.9pt] (0,0)--(0,#4);
+  \end{scope}}
 
 \begin{document}
 \begin{tikzpicture}[
   font=\small,
   >={Stealth[length=2.2mm]},
-  mol/.style={regular polygon,regular polygon sides=5,draw,minimum size=6mm,inner sep=0pt,thick},
-  box/.style={rounded corners,draw,thick,inner sep=6pt},
-  lbl/.style={font=\footnotesize\itshape},
+  tok/.style={rounded corners=2pt,draw,line width=1.0pt,minimum width=2.9cm,
+              minimum height=0.95cm,anchor=center},
+  lbl/.style={font=\footnotesize\itshape,okgrey},
 ]
 
-% ---------------------------------------------------------------------------
-% Panel (a): factorization  cart_{m,a} = c_m L + R_m local_{m,a}
-% ---------------------------------------------------------------------------
-\node[lbl] at (-0.2,3.1) {(a) Rigid-body factorization};
+% ===========================================================================
+% PANEL (a): rigid-body factorization
+% ===========================================================================
+\node[anchor=west,font=\small] at (0,7.0) {(a) Rigid-body factorization};
 
-% unit cell
-\begin{scope}[shift={(0,0)}]
-  \draw[thick] (0,0) -- (3,0) -- (3.7,1.2) -- (0.7,1.2) -- cycle;       % bottom face
-  \draw[thick] (0,0) -- (0,2.4) (3,0) -- (3,2.4)
-               (3.7,1.2) -- (3.7,3.6) (0.7,1.2) -- (0.7,3.6);           % verticals
-  \draw[thick] (0,2.4) -- (3,2.4) -- (3.7,3.6) -- (0.7,3.6) -- cycle;   % top face
-  \node[lbl] at (1.55,-0.35) {lattice $L\in\mathbb{R}^{3\times3}$};
+% ---- unit cell (pseudo-3D) holding two oriented rigid molecules ----
+\fill[cellface] (0.95,4.05)--(3.15,4.05)--(3.15,6.05)--(0.95,6.05)--cycle; % back
+\draw[okgrey,line width=0.9pt] (0.95,4.05)--(3.15,4.05)--(3.15,6.05)--(0.95,6.05)--cycle;
+\draw[okgrey,line width=0.9pt]
+  (0.4,3.6)--(0.95,4.05) (2.6,3.6)--(3.15,4.05)
+  (2.6,5.6)--(3.15,6.05) (0.4,5.6)--(0.95,6.05);                          % edges
+\fill[cellface] (0.4,3.6)--(2.6,3.6)--(2.6,5.6)--(0.4,5.6)--cycle;        % front
+\draw[okink,line width=1.2pt] (0.4,3.6)--(2.6,3.6)--(2.6,5.6)--(0.4,5.6)--cycle;
+\molecule{1.2}{4.5}{22}{0.42}
+\molecule{1.9}{5.05}{158}{0.42}
+\node[font=\footnotesize] at (1.5,3.2) {molecular crystal};
+\node[lbl] at (1.5,2.82) {rigid molecules in a unit cell};
 
-  % two symmetry-related molecules (rigid pentagons) at fractional centroids
-  \node[mol,rotate=12,fill=blue!12] (m1) at (1.15,1.25) {};
-  \node[mol,rotate=-150,fill=red!12] (m2) at (2.35,2.05) {};
-  \fill (m1.center) circle (0.7pt); \fill (m2.center) circle (0.7pt);
-  \node[lbl,blue!55!black] at (0.65,1.7) {$c_1,R_1$};
-  \node[lbl,red!55!black]  at (2.95,1.75) {$c_2,R_2$};
-\end{scope}
+% ---- factorize arrow ----
+\draw[->,line width=1.2pt,okink] (3.4,4.6)--(4.2,4.6);
+\node[lbl] at (3.8,4.95) {factorize};
 
-\node[anchor=west] at (4.4,1.8)
-  {$\displaystyle \text{cart}_{m,a}=c_m L + R_m\,\text{local}_{m,a}$};
-\node[lbl,anchor=west] at (4.4,1.1)
-  {centroid $c_m\in\mathbb{T}^3$,\; orientation $R_m\in\mathrm{SO}(3)$};
+% ---- three manifold tokens (icon + exact label) ----
+\node[tok,fill=lblue,draw=okblue]  (tL) at (6.1,5.7) {};
+\node[tok,fill=lgreen,draw=okgreen](tC) at (6.1,4.55){};
+\node[tok,fill=lred,draw=okverm]   (tR) at (6.1,3.4) {};
+\node[anchor=west,font=\footnotesize] at (5.3,5.7) {lattice $L\in\mathbb{R}^{3\times3}$};
+\node[anchor=west,font=\footnotesize] at (5.3,4.55){centroid $c_m\in\mathbb{T}^3$};
+\node[anchor=west,font=\footnotesize] at (5.3,3.4) {orientation $R_m\in\mathrm{SO}(3)$};
 
-% ---------------------------------------------------------------------------
-% Panel (b): orientation decomposition  R_m = rot(g_m) . R_asym
-% ---------------------------------------------------------------------------
-\node[lbl] at (-0.2,-1.0) {(b) Orientation decomposition};
+% lattice icon: tiny wireframe cell
+\draw[okink,line width=0.7pt] (4.72,5.55)--(5.12,5.55)--(5.12,5.9)--(4.72,5.9)--cycle;
+\draw[okgrey,line width=0.6pt]
+  (4.72,5.55)--(4.86,5.66) (5.12,5.55)--(5.26,5.66)
+  (5.12,5.9)--(5.26,6.01) (4.72,5.9)--(4.86,6.01);
+\draw[okgrey,line width=0.6pt] (4.86,5.66)--(5.26,5.66)--(5.26,6.01)--(4.86,6.01);
+% centroid icon: torus square + point + periodic-wrap hints
+\draw[okgreen,line width=0.8pt] (4.75,4.35)--(5.15,4.35)--(5.15,4.8)--(4.75,4.8)--cycle;
+\fill[okgreen] (5.0,4.52) circle (0.045);
+\draw[okgreen,-{Stealth[length=1.1mm]},line width=0.6pt] (4.75,4.6)--(4.66,4.6);
+\draw[okgreen,-{Stealth[length=1.1mm]},line width=0.6pt] (4.95,4.8)--(4.95,4.92);
+% orientation icon: molecule + SO(3) frame
+\molecule{4.95}{3.4}{30}{0.22}
+\soframe{4.95}{3.4}{30}{0.36}
 
-\node[box,fill=black!4] (Rm) at (0.9,-2.2) {$R_m$};
-\node[box,fill=green!10] (rg) at (4.0,-1.6)
-  {$\mathrm{rot}(g_m)$};
-\node[box,fill=orange!12] (ra) at (4.0,-2.8)
-  {$R_{\text{asym}}$};
+% ---- reconstruction equation ----
+\node[font=\small] at (3.8,1.55)
+  {$\mathrm{cart}_{m,a}=c_m L + R_m\,\mathrm{local}_{m,a}$};
 
-\draw[->,thick] (Rm) -- (rg.west) node[midway,above,sloped,font=\scriptsize]{};
-\draw[->,thick] (Rm) -- (ra.west);
-\node at (2.45,-2.2) {$=$};
+% ===========================================================================
+% PANEL (b): orientation target decomposes
+% ===========================================================================
+\node[anchor=west,font=\small] at (9.3,7.0) {(b) Orientation target decomposes};
+\node[font=\large] at (13.7,6.45)
+  {$R_m \;=\; \mathrm{rot}(g_m)\;\cdot\;R_{\mathrm{asym}}$};
 
-\node[anchor=west,green!45!black,font=\footnotesize,align=left] at (5.7,-1.6)
-  {space-group--determined\\relative rotation \,\textbf{(learnable)}};
-\node[anchor=west,orange!55!black,font=\footnotesize,align=left] at (5.7,-2.8)
-  {asymmetric-unit free pose\\gauge-arbitrary \,\textbf{(not learnable here)}};
+% ---- LEFT: rot(g_m), learnable (two symmetry copies + C2 rotation) ----
+\draw[rounded corners=4pt,fill=lgreen,draw=okgreen,line width=1.4pt]
+  (9.9,2.3) rectangle (13.3,5.7);
+\node[font=\normalsize] at (11.6,5.25) {$\mathrm{rot}(g_m)$};
+\molecule{10.95}{4.15}{18}{0.28}
+\molecule{12.25}{4.15}{198}{0.28}
+\draw[okgreen,->,line width=1.0pt] (11.28,4.62) to[bend left=45] (11.92,4.62);
+\node[font=\scriptsize,okgreen] at (11.6,4.92) {$C_2$};
+\node[align=center,font=\scriptsize] at (11.6,3.25)
+  {space-group operation\\relating symmetry copies};
+\node[font=\footnotesize\bfseries,okgreen] at (11.6,2.62) {LEARNABLE};
+
+% ---- RIGHT: R_asym, free pose (one molecule + free-rotation arcs + ?) ----
+\draw[rounded corners=4pt,fill=lred,draw=okverm,line width=1.4pt]
+  (14.1,2.3) rectangle (17.5,5.7);
+\node[font=\normalsize] at (15.8,5.25) {$R_{\mathrm{asym}}$};
+\molecule{15.8}{4.15}{35}{0.28}
+\draw[okverm,dashed,line width=0.9pt] ([shift={(35:0.72)}]15.8,4.15) arc (35:150:0.72);
+\draw[okverm,dashed,-{Stealth[length=1.4mm]},line width=0.9pt]
+  ([shift={(215:0.72)}]15.8,4.15) arc (215:332:0.72);
+\node[font=\normalsize\bfseries,okverm] at (16.5,4.78) {?};
+\node[align=center,font=\scriptsize] at (15.8,3.25)
+  {free asymmetric-unit pose\\(gauge-arbitrary)};
+\node[font=\footnotesize\bfseries,okverm] at (15.8,2.62) {NOT LEARNABLE here};
+
+% ---- evidence strip ----
+\node[align=center,font=\scriptsize,okgreen] at (11.6,1.55)
+  {evidence:\ $+27\%$ held-out loss,\\$13.7\%$ packings reconstructed};
+\node[align=center,font=\scriptsize,okverm] at (15.8,1.55)
+  {evidence:\ $0\%$ beyond\\the predict-zero floor};
 
 \end{tikzpicture}
 \end{document}
