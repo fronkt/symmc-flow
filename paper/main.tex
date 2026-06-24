@@ -64,7 +64,7 @@ from packing rather than by the network's capacity to represent the rotation.
 End-to-end joint generation, which must also sample the lattice and centroids,
 does not yet reconstruct packings exactly, placing the orientation result as a
 characterization rather than a finished generator.
-The result delineates exactly what a rigid-body $\mathrm{SO}(3)$ flow can and
+The result maps out what a rigid-body $\mathrm{SO}(3)$ flow can and
 cannot contribute to molecular-crystal generation, and suggests that such
 generators should condition on crystal symmetry for the relative orientation and
 sample, rather than regress, the remaining free pose.
@@ -336,7 +336,7 @@ the relative rotation $R'_m = R_m R_0^{-1}$, which cancels $R_{\text{asym}}$
 (Methods). The transformation leaves the reconstructed crystal unchanged. To
 avoid crediting a trivial ``predict identity'' solution, we split the
 orientation loss into reference copies (target $I$) and non-reference copies
-(the genuinely symmetry-determined targets), and report the latter.
+(the symmetry-determined targets), and report the latter.
 Table~\ref{tab:twobytwo} gives the full $2\times2$ over target and conditioning.
 The absolute target floors in both conditioning regimes. The relative target
 descends by $27\%$ on held-out non-reference copies and generalizes, with an
@@ -593,7 +593,7 @@ effective precisely where orientation is constrained by the surrounding network
 or by high site symmetry, and least effective for low-symmetry organic packings.
 
 On evaluation, the gap between the flat orientation loss and the $13.7\%$
-reconstruction rate underscores why a single match-rate number is an unreliable
+reconstruction rate shows why a single match-rate number is an unreliable
 summary\cite{martirossyan2025matching}: the learnable signal is visible only
 when the metric isolates orientation and samples the multimodal target. We
 report the geodesic error and a controlled best-of-$k$ match for this reason.
@@ -606,7 +606,7 @@ generator that consumes this discrete label, as space-group- and
 Wyckoff-conditioned models already do for atomic
 sites\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025}, converts the
 inference-limited part of the orientation field into a near-deterministic
-lookup, leaving only the genuinely free pose to be sampled. This suggests that
+lookup, leaving only the free pose to be sampled. This suggests that
 the right division of labor for rigid-body molecular CSP is to condition on
 symmetry for the relative orientation and to sample, rather than regress, the
 remaining gauge-free degree of freedom.
