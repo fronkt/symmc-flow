@@ -126,26 +126,30 @@ axA.add_patch(FancyArrowPatch((4.55, 6.4), (5.35, 6.4), arrowstyle="-|>",
 axA.text(4.95, 6.92, "factorize", ha="center", fontsize=6.9, style="italic",
          color=OK["grey"])
 
-# three manifold tokens (icon on the left, exact label on the right)
+# three manifold tokens: flatter, wider boxes with the icon in a left gutter
+# and the exact label pushed right so they never overlap.
+TX, TW, TH = 7.7, 4.4, 1.3
 def token(y, fc, ec, label):
-    box(axA, 7.72, y, 4.45, 1.55, fc, ec, lw=1.3)
-    axA.text(6.5, y, label, ha="left", va="center", fontsize=8.2, color=OK["ink"])
+    box(axA, TX, y, TW, TH, fc, ec, lw=1.3)
+    axA.plot([6.55, 6.55], [y - 0.46, y + 0.46], color=OK["grey"], lw=0.7,
+             alpha=0.5, zorder=3)                      # icon | text divider
+    axA.text(6.78, y, label, ha="left", va="center", fontsize=8.0, color=OK["ink"])
 
 token(8.15, OK["lblue"], OK["blue"], "lattice  $L\\in\\mathbb{R}^{3\\times3}$")
-cell(axA, 5.72, 7.78, 0.62, 0.6, dx=0.26, dy=0.22, lw=1.0, z=6, face=False)
+cell(axA, 5.74, 7.93, 0.5, 0.46, dx=0.2, dy=0.16, lw=1.0, z=6, face=False)
 
 token(6.05, OK["lgreen"], OK["green"], "centroid  $c_m\\in\\mathbb{T}^3$")
-axA.add_patch(Rectangle((5.66, 5.7), 0.78, 0.74, fill=False, ec=OK["green"],
+axA.add_patch(Rectangle((5.74, 5.83), 0.5, 0.46, fill=False, ec=OK["green"],
                         lw=1.2, zorder=6))
-axA.add_patch(Circle((6.18, 6.0), 0.085, fc=OK["green"], ec="none", zorder=7))
-for (sx, sy, ex, ey) in [(5.66, 6.25, 5.46, 6.25), (6.05, 6.44, 6.05, 6.64)]:
+axA.add_patch(Circle((5.99, 6.0), 0.075, fc=OK["green"], ec="none", zorder=7))
+for (sx, sy, ex, ey) in [(5.74, 6.06, 5.62, 6.06), (5.99, 6.29, 5.99, 6.41)]:
     axA.add_patch(FancyArrowPatch((sx, sy), (ex, ey), arrowstyle="-|>",
                                   mutation_scale=6, lw=0.9, color=OK["green"],
                                   zorder=7))  # periodic wrap hints
 
 token(3.95, OK["lred"], OK["verm"], "orientation  $R_m\\in\\mathrm{SO}(3)$")
-molecule(axA, 6.02, 3.95, 30, s=0.26, z=6)
-frame(axA, 6.02, 3.95, 30, L=0.62, z=8)
+molecule(axA, 5.97, 3.95, 30, s=0.22, z=6)
+frame(axA, 5.97, 3.95, 30, L=0.40, z=8)
 
 # reconstruction equation
 axA.text(5.0, 1.7, "$\\mathrm{cart}_{m,a}=c_mL+R_m\\,\\mathrm{local}_{m,a}$",
