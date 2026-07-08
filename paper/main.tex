@@ -26,8 +26,8 @@
 \title{\bfseries What an SO(3) orientation flow can and cannot learn in
 molecular-crystal structure prediction}
 
-\author[1]{Frank Cai\thanks{\texttt{cai495@purdue.edu};
-ORCID \href{https://orcid.org/0009-0004-7283-1915}{0009-0004-7283-1915}}}
+\author[1]{Frank Cai\thanks{\texttt{frankyc11223@gmail.com};
+ORCID \href{https://orcid.org/0009-0003-0041-1459}{0009-0003-0041-1459}}}
 \affil[1]{Purdue University, West Lafayette, IN, USA}
 \date{}
 
@@ -39,35 +39,30 @@ ORCID \href{https://orcid.org/0009-0004-7283-1915}{0009-0004-7283-1915}}}
 Rigid-body factorization is an appealing route to molecular-crystal structure
 prediction: freezing each molecule's conformer reduces a crystal to a lattice,
 a set of fractional centroids on the torus $\mathbb{T}^3$, and a per-molecule
-orientation on $\mathrm{SO}(3)$, a low-dimensional target amenable to fast
-flow-matching samplers. Whether the orientation field is actually learnable on
-real molecular crystals has not been examined. We introduce SymMC-Flow, a
-space-group-conditioned rigid-body flow on
-$\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$, and use it as a
-diagnostic study to characterize what the orientation field can and cannot
-learn on $1{,}127$ crystals exported from the
-Cambridge Structural Database. The lattice and centroid flows learn normally,
-but the absolute per-molecule orientation flow remains at its predict-zero
-floor. We trace this to a decomposition of the orientation target,
+orientation on $\mathrm{SO}(3)$. Whether the orientation field is actually
+learnable on real molecular crystals has not been examined. We introduce
+SymMC-Flow, a space-group-conditioned rigid-body flow on
+$\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$, used as a diagnostic
+study on $1{,}127$ crystals from the Cambridge Structural Database. The
+lattice and centroid flows learn normally, but the absolute per-molecule
+orientation flow remains at its predict-zero floor. We trace this to a
+decomposition of the orientation target,
 $R_m = \mathrm{rot}(g_m)\cdot R_{\text{asym}}$, into a space-group-determined
-relative rotation between symmetry copies and the asymmetric unit's free
-orientation in the cell. The free part is gauge-arbitrary and is not learnable
-from composition and packing here; the relative part is learnable. Re-gauging to
-cancel the free part lifts the
+relative rotation between symmetry copies and the asymmetric unit's
+gauge-arbitrary free orientation, which is not learnable from composition and
+packing; the relative part is. Re-gauging to cancel the free part lifts
 held-out non-reference orientation loss by $27\%$ (versus $\sim\!0\%$ for the
-absolute target) and, in an orientation-isolated evaluation, reconstructs
-$13.7\%$ (mean over three seeds) of held-out multi-copy packings exactly under
-StructureMatcher against $0\%$ for the predict-floor baseline. Conditioning on a discrete space-group
-coset identity raises the learnable signal to roughly $48\%$ (three-seed mean),
-showing the residual
-ceiling is set by the difficulty of \emph{inferring} the symmetry operation
-from packing rather than by the network's capacity to represent the rotation.
-End-to-end joint generation, which must also sample the lattice and centroids,
-does not yet reconstruct packings exactly, placing the orientation result as a
-characterization rather than a finished generator.
-The result maps out what a rigid-body $\mathrm{SO}(3)$ flow can and
-cannot contribute to molecular-crystal generation, and suggests that such
-generators should condition on crystal symmetry for the relative orientation and
+absolute target) and reconstructs $13.7\%$ (mean over three seeds) of
+held-out multi-copy packings exactly under StructureMatcher, against $0\%$
+for the predict-floor baseline. Conditioning on a discrete space-group coset
+identity raises the learnable signal to roughly $48\%$ (three-seed mean),
+showing the residual ceiling is set by the difficulty of \emph{inferring}
+the symmetry operation from packing rather than by network capacity.
+End-to-end joint generation does not yet reconstruct packings exactly,
+placing this as a characterization rather than a finished generator. The
+result maps what a rigid-body $\mathrm{SO}(3)$ flow can and cannot
+contribute to molecular-crystal generation, and suggests such generators
+should condition on crystal symmetry for the relative orientation and
 sample, rather than regress, the remaining free pose.
 \end{abstract}
 
@@ -772,8 +767,8 @@ diagnostic and evaluation scripts are available at
 F.C. conceived the study, implemented the method and experiments, performed the
 analysis, and wrote the manuscript.
 
-\section*{Competing interests}
-The author declares no competing interests.
+\section*{Conflicts of interest}
+The author declares no conflicts of interest.
 
 \section*{Funding}
 This work received no external funding or grant support. Any cloud compute used
