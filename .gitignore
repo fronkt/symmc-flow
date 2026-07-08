@@ -12,5 +12,6 @@ checkpoints/
 data/raw/
 data/cache/
 data/cod_mol/
-data/csd_mol/
+data/csd_mol/*
+!data/csd_mol/manifest.csv
 .DS_Store

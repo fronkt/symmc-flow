@@ -751,11 +751,17 @@ redistributable; a refcode manifest and the export and analysis code reproduce
 the dataset from a licensed CSD installation.
 
 \section*{Data availability}
-The CSD entries used cannot be redistributed under the CSD licence. A manifest
-of refcodes and all derived, non-redistributable quantities required to
-reproduce the analyses are available from the author on request, and the dataset
-can be regenerated from the manifest with the released code against a licensed
-CSD installation.
+The CIF structures underlying this study are drawn from the Cambridge
+Structural Database (CSD) and cannot be redistributed under the CSD licence.
+The manifest of refcodes and filter protocol used to select the corpus
+(3{,}501 candidate entries; formula, $Z'$, R-factor, atom count, and space
+group per entry) is openly available at
+\url{https://github.com/fronkt/symmc-flow/blob/master/data/csd_mol/manifest.csv}
+and lets anyone with a licensed CSD installation regenerate the exact CIF
+corpus via \texttt{scripts/csd\_export.py}. The factorized dataset (lattice,
+centroid, and orientation tensors derived from the CIFs) is itself derived
+from the licensed structures and is therefore available from the author on
+reasonable request, subject to the requester holding a CSD licence.
 
 \section*{Code availability}
 The SymMC-Flow implementation, the export and factorization pipeline, and the
