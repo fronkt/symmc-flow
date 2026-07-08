@@ -1,0 +1,1 @@
+A diagnostic rigid-body flow shows molecular-crystal orientation is unlearnable in the absolute frame, but becomes tractable once its gauge-free and symmetry-determined rotation components are separated.
