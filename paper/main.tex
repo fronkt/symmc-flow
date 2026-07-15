@@ -751,23 +751,34 @@ redistributable; a refcode manifest and the export and analysis code reproduce
 the dataset from a licensed CSD installation.
 
 \section*{Data availability}
-The CIF structures underlying this study are drawn from the Cambridge
-Structural Database (CSD) and cannot be redistributed under the CSD licence.
-The manifest of refcodes and filter protocol used to select the corpus
-(3{,}501 candidate entries; formula, $Z'$, R-factor, atom count, and space
-group per entry) is openly available at
-\url{https://github.com/fronkt/symmc-flow/blob/master/data/csd_mol/manifest.csv}
-and lets anyone with a licensed CSD installation regenerate the exact CIF
-corpus via \texttt{scripts/csd\_export.py}. The factorized dataset (lattice,
-centroid, and orientation tensors derived from the CIFs) is itself derived
-from the licensed structures and is therefore available from the author on
-reasonable request, subject to the requester holding a CSD licence.
+The molecular-crystal structures analysed in this work were obtained from the
+Cambridge Structural Database (CSD)\cite{groom2016csd} and are governed by the
+CSD licence. The underlying CIF structures, and the factorized tensors derived
+from them (lattice, centroid, and orientation representations), are derived from
+licence-restricted data and cannot be redistributed under the terms of that
+licence; this is the sole reason these primary data are not openly deposited.
+To enable full reproduction by any holder of a CSD licence, the manifest of the
+$3{,}500$ CSD refcodes used to construct the corpus, together with the per-entry
+selection metadata (formula, $Z'$, R-factor, atom count, and space group), is
+openly available as \texttt{data/csd\_mol/manifest.csv} in the archived code
+repository (see Code availability). The export and factorization pipeline that
+regenerates the exact CIF corpus and derived tensors from a licensed CSD
+installation is provided as \texttt{scripts/csd\_export.py} and
+\texttt{scripts/factorize\_cifs.py} in the same repository, and a fixed random
+seed reproduces the identical $964/131$ train/validation split used throughout.
+No other primary datasets were generated in this work; additional data
+supporting the results are provided in the SI.
 
 \section*{Code availability}
-The SymMC-Flow implementation, the export and factorization pipeline, and the
-diagnostic and evaluation scripts are available at
-\url{https://github.com/fronkt/symmc-flow} and archived at
-\href{https://doi.org/10.5281/zenodo.20822235}{https://doi.org/10.5281/zenodo.20822235}.
+The SymMC-Flow implementation and the complete data-preparation, training,
+diagnostic, and evaluation pipeline---including the CSD refcode manifest and the
+export and factorization scripts referenced above---are available at
+\url{https://github.com/fronkt/symmc-flow} and are permanently archived at
+Zenodo.\cite{cai2026symmcflow} The version underlying this study is v1.0.3
+(DOI \href{https://doi.org/10.5281/zenodo.21384130}{10.5281/zenodo.21384130});
+the concept DOI
+\href{https://doi.org/10.5281/zenodo.20822234}{10.5281/zenodo.20822234}
+always resolves to the latest version.
 
 \section*{Author contributions}
 F.C. conceived the study, implemented the method and experiments, performed the
