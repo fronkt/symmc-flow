@@ -25,7 +25,8 @@ from torch.utils.data import Subset
 
 from symmc_flow.config import ModelConfig, TrainConfig
 from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
-                                    species_multiplicity, assign_cosets)
+                                    species_multiplicity, assign_cosets,
+                                    assign_symmetry_cosets)
 from symmc_flow.model import SymMCFlow
 from symmc_flow.train import train, _step_loss, resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
@@ -99,6 +100,10 @@ def main():
     ap.add_argument("--val-frac", type=float, default=0.12)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--angle-tol", type=float, default=20.0, help="coset clustering tolerance (deg)")
+    ap.add_argument("--deployable", action="store_true",
+                    help="use the LEAK-FREE symmetry-derived coset (assign_symmetry_cosets: the "
+                         "generating space-group operation, available from a template at sampling "
+                         "time) instead of the observed-rotation clustering (assign_cosets)")
     ap.add_argument("--clean-packing", action="store_true")
     ap.add_argument("--no-coset", action="store_true", help="paired control: disable the embedding")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
@@ -111,11 +116,15 @@ def main():
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
     keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
     items = [rel[i] for i in keep]
-    items, n_cosets = assign_cosets(items, angle_tol_deg=args.angle_tol)
+    if args.deployable:
+        items, n_cosets = assign_symmetry_cosets(items)
+    else:
+        items, n_cosets = assign_cosets(items, angle_tol_deg=args.angle_tol)
     full.items = items
     n = len(full)
+    scheme = "DEPLOYABLE symmetry-op" if args.deployable else f"clustered (tol {args.angle_tol} deg)"
     print(f"corpus: {len(rel)} -> {n} multi-copy after relative re-gauge")
-    print(f"cosets: {n_cosets} distinct space-group cosets (tol {args.angle_tol} deg); "
+    print(f"cosets: {n_cosets} distinct space-group cosets [{scheme}]; "
           f"coset conditioning: {'OFF (control)' if args.no_coset else 'ON'}")
 
     g = torch.Generator().manual_seed(args.seed)
@@ -163,6 +172,7 @@ def main():
     torch.save({"model": model.state_dict(), "model_cfg": mcfg.__dict__, "vol_per_atom": vpa,
                 "val_idx": val_idx, "train_idx": train_idx, "pre_split": pre_split,
                 "post_split": post_split, "n_cosets": n_cosets,
+                "deployable": args.deployable, "clean_packing": args.clean_packing,
                 "no_coset": args.no_coset}, args.ckpt)
     print(f"checkpoint -> {args.ckpt}")
 

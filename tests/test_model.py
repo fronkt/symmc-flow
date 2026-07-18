@@ -69,6 +69,26 @@ def test_coset_conditioning_optional_and_active():
     assert not torch.allclose(v_no[real], v_cs[real]), "coset id must change the orient field"
 
 
+def test_rk4_sample_threads_coset():
+    # C3a: the sampler must forward the per-molecule coset id to the field, so symmetry-coset
+    # conditioning is usable at GENERATION time (not only in the training-loss diagnostic).
+    from symmc_flow.sampler import rk4_sample
+    batch = _batch()
+    z1 = batch_to_state(batch)
+    z0 = sample_prior(z1)
+    B, Mm = z1.mask.shape
+    coset = torch.randint(1, 6, (B, Mm)) * z1.mask.long()
+    cnet = SymMCFlow(ModelConfig(d_model=48, egnn_hidden=48, atom_embed_dim=32,
+                                 n_attn_layers=2, egnn_layers=2, n_heads=4, n_cosets=8))
+    with torch.no_grad():
+        torch.nn.init.normal_(cnet.coset_embed.weight, std=0.5)
+    emb = cnet.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    out_no = rk4_sample(cnet, emb, z0, batch["sg"], steps=3)
+    out_cs = rk4_sample(cnet, emb, z0, batch["sg"], steps=3, coset=coset)
+    assert not torch.allclose(out_no.orient[z1.mask], out_cs.orient[z1.mask]), \
+        "coset id supplied to rk4_sample must change the generated orientation"
+
+
 def test_backward_runs():
     model, _ = _small_model()
     batch = _batch()

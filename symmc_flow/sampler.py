@@ -19,8 +19,14 @@ from . import manifolds as M
 
 @torch.no_grad()
 def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
-               symmetrize: bool = False, churn: float = 0.0):
+               symmetrize: bool = False, churn: float = 0.0, coset=None):
     """Returns a CrystalState at t=1. `model` is a SymMCFlow.
+
+    `coset` (B,M long or None) is the per-molecule space-group coset id supplied to the field
+    at every step (constant along the trajectory, since the generating operation is fixed). It
+    is only used if the model was built with n_cosets>0; passing it makes symmetry-coset
+    conditioning available at GENERATION time (the deployable template-based setting), not just
+    in the training-loss diagnostic.
 
     churn>0 turns the deterministic centroid ODE into a Langevin-style
     predictor-corrector: after each step, wrapped-Gaussian noise scaled by
@@ -40,8 +46,8 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
         L_ = M.param_to_lattice(k_, n)
         if symmetrize:
-            return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask)
-        return model.forward(mol_emb, L_, x_, R_, t, sg, mask)
+            return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
+        return model.forward(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
 
     for i in range(steps):
         t0 = i * dt

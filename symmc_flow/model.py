@@ -124,10 +124,12 @@ class SymMCFlow(nn.Module):
         return v_L, v_x * m, v_R * m
 
     # -- SGFM-symmetrized centroid field --------------------------------------
-    def symmetrized_velocity(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask):
+    def symmetrized_velocity(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None):
         """Per-sample group-averaged centroid field; lattice/orient unaveraged.
-        Falls back to plain forward when all samples share trivial symmetry."""
-        v_L, v_x, v_R = self.forward(mol_emb, lattice, centroid, orient, t, sg, mol_mask)
+        Falls back to plain forward when all samples share trivial symmetry.
+        `coset` (B,M) is threaded through unchanged (main field) and tiled per group image
+        (averaged centroid field) so coset conditioning composes with SGFM symmetrization."""
+        v_L, v_x, v_R = self.forward(mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=coset)
         B = centroid.shape[0]
         out = v_x.clone()
         for b in range(B):
@@ -142,8 +144,9 @@ class SymMCFlow(nn.Module):
                 me = mol_emb[b:b + 1].repeat(1, k, 1)
                 ori = orient[b:b + 1].repeat(1, k, 1, 1)
                 mm = mol_mask[b:b + 1].repeat(1, k)
+                cs = coset[b:b + 1].repeat(1, k) if coset is not None else None
                 _, vxx, _ = self.forward(me, lattice[b:b + 1], xq, ori,
-                                         t[b:b + 1], sg[b:b + 1], mm)
+                                         t[b:b + 1], sg[b:b + 1], mm, coset=cs)
                 return vxx
 
             out[b:b + 1] = ops.symmetrize_field(predict_centroid, centroid[b:b + 1])

@@ -29,7 +29,8 @@ from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from symmc_flow.config import ModelConfig
 from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
-                                    rigid_to_structure, species_multiplicity)
+                                    rigid_to_structure, species_multiplicity,
+                                    assign_symmetry_cosets)
 from symmc_flow.model import SymMCFlow
 from symmc_flow.train import resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
@@ -38,10 +39,11 @@ from symmc_flow import manifolds as M
 
 
 @torch.no_grad()
-def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps):
+def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps, coset=None):
     """Orientation-only RK4 on SO(3): integrate dR/dt = v_R with lattice+centroid FROZEN at
     their true values (clean-packing conditioning). Mirrors the orient branch of rk4_sample so
-    the result is exactly the flow's orientation given the true packing."""
+    the result is exactly the flow's orientation given the true packing. `coset` (B,M) supplies
+    the per-molecule space-group coset id to the field when the model is coset-conditioned."""
     B = R0.shape[0]
     R = R0.clone()
     dt = 1.0 / steps
@@ -49,7 +51,7 @@ def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps):
 
     def vR(R_, t_scalar):
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
-        return model.forward(mol_emb, L_true, x_true, R_, t, sg, mask)[2]
+        return model.forward(mol_emb, L_true, x_true, R_, t, sg, mask, coset=coset)[2]
 
     for i in range(steps):
         t0 = i * dt
@@ -99,6 +101,9 @@ def main():
     ap.add_argument("--angle-tol", type=float, default=10.0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--limit", type=int, default=0, help="cap #val crystals (0 = all)")
+    ap.add_argument("--coset", action="store_true",
+                    help="supply the DEPLOYABLE symmetry-op coset to the trained field (needs a "
+                         "coset-conditioned checkpoint); the template-based orientation read")
     ap.add_argument("--sweep", action="store_true",
                     help="also report match rate + median matched RMSD across a stol sweep")
     args = ap.parse_args()
@@ -116,6 +121,11 @@ def main():
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
     keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
     full.items = [rel[i] for i in keep]
+    if args.coset:
+        if mcfg.n_cosets <= 0:
+            sys.exit("--coset needs a coset-conditioned checkpoint (n_cosets>0)")
+        # assign on the FULL multi-copy corpus (train+val) so ids match the trained model
+        assign_symmetry_cosets(full.items)
     val_items = [full.items[i] for i in val_idx]
     if args.limit:
         val_items = val_items[:args.limit]
@@ -152,6 +162,8 @@ def main():
                 all_gens[k].append([g])
             err[k] += per_crystal_err_deg(R, z1.orient, nonref).tolist()
 
+        cs = batch.get("coset") if args.coset else None
+
         # stochastic flow conditions: store all k draws (draw 0 = the match@1 draw)
         for k, net, emb in (("untrained", untrained, emb_un), ("trained", trained, mol_emb)):
             draws_struct = [[] for _ in range(B)]      # per crystal: list of k structures
@@ -159,7 +171,7 @@ def main():
             for _ in range(K):
                 R = sample_orient_only(net, emb, z1.lattice, z1.centroid,
                                        sample_prior(z1, vol_per_atom=vpa).orient,
-                                       batch["sg"], z1.mask, args.steps)
+                                       batch["sg"], z1.mask, args.steps, coset=cs)
                 gs = structures_for(batch, z1, R)
                 for b in range(B):
                     draws_struct[b].append(gs[b])

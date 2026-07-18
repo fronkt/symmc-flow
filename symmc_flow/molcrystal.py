@@ -32,6 +32,7 @@ import torch
 from torch.utils.data import Dataset
 
 from . import manifolds as M
+from .space_group import get_ops
 
 
 # ===================== CIF reading ===========================================
@@ -407,6 +408,67 @@ def assign_cosets(items, angle_tol_deg: float = 20.0):
             coset[m] = gid
         it["coset"] = coset
     return items, len(book)
+
+
+def assign_symmetry_cosets(items):
+    """Deployable, LEAK-FREE space-group coset id per molecule -- the strengthening replacement
+    for `assign_cosets`.
+
+    `assign_cosets` builds its codebook by clustering the OBSERVED relative rotations, so the id
+    is a function of the very target it predicts and has no source at sampling time (the paper's
+    "representability diagnostic, not a deployable conditioning"). Here the coset is the index of
+    the general-position operation h = g_m g_0^{-1} of the space group that maps the species'
+    reference copy (first-detected; orient:=I after `relative_gauge_item`) to copy m, identified
+    purely from the FRACTIONAL CENTROIDS:
+
+        c_m == W_h c_0 + t_h   (mod 1, minimum image).
+
+    On general positions this operation is unique (injective centroid orbit), so the label is
+    deterministic; and it is exactly the information a template-based generator already supplies
+    at sampling time (space group + Wyckoff + copy ordering), so conditioning on it is
+    DEPLOYABLE. Because the label lives in the finite, symmetry-defined set of the space group's
+    operations -- not a clustered codebook of the observed rotations -- it carries no target
+    leakage; matching uses centroids only, never the orientation it will help predict.
+
+    Writes `coset` (M,) long: 0 for reference/padding molecules, a global id>=1 per distinct
+    (space group, op index); ids are assigned in sorted (sg, op) order for reproducibility.
+    Also stashes `coset_resid` (M,) float: the min-image centroid residual of the chosen op
+    (small => confident; large => special position / disorder / numerical). Requires
+    relative-gauge items (needs `is_ref`, `centroid`, `sg`). Operates in place; returns
+    (items, n_cosets)."""
+    # --- pass 1: per-molecule generating-op index (0-based within its space group) + residual
+    keys: set[tuple[int, int]] = set()
+    per_item_opidx = []
+    for it in items:
+        sg = int(it["sg"])
+        ops = get_ops(sg)
+        Wt, tt = ops.W, ops.t                                   # (K,3,3), (K,3)
+        Mn = it["orient"].shape[0]
+        op_idx = torch.zeros(Mn, dtype=torch.long)
+        resid = torch.zeros(Mn)
+        for grp in _species_groups(it):
+            c0 = it["centroid"][grp[0]]                          # (3,) fractional
+            cand = torch.einsum("kij,j->ki", Wt, c0) + tt        # h(c_0) for every op
+            cand = cand - torch.floor(cand)                      # (K,3) in [0,1)
+            for m in grp[1:]:
+                d = it["centroid"][m].unsqueeze(0) - cand        # (K,3)
+                d = d - torch.round(d)                           # minimum image on the torus
+                dist = d.norm(dim=-1)                            # (K,)
+                k = int(torch.argmin(dist))
+                op_idx[m], resid[m] = k, float(dist[k])
+                keys.add((sg, k))
+        it["coset_resid"] = resid
+        per_item_opidx.append(op_idx)
+    # --- pass 2: deterministic global ids in sorted (sg, op) order
+    id_of = {key: i + 1 for i, key in enumerate(sorted(keys))}
+    for it, op_idx in zip(items, per_item_opidx):
+        sg = int(it["sg"])
+        coset = torch.zeros_like(op_idx)
+        for m in range(op_idx.shape[0]):
+            if bool(it["mol_mask"][m]) and not bool(it["is_ref"][m]):
+                coset[m] = id_of[(sg, int(op_idx[m]))]
+        it["coset"] = coset
+    return items, len(id_of)
 
 
 # ===================== reconstruction (the inverse) ==========================

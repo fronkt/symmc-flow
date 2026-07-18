@@ -228,6 +228,60 @@ def test_assign_cosets_labels_reference_zero_and_shares_codebook():
     assert n_cosets == 2
 
 
+def test_symmetry_cosets_recover_generating_operation():
+    # The deployable coset must recover the generating space-group operation from CENTROIDS
+    # alone (never the orientation). Place a second copy at exactly the image of the first under
+    # a chosen proper operation of P2_1/c and assert that operation's coset is labelled, with a
+    # zero centroid residual, and the reference/padding stay 0.
+    from symmc_flow.molcrystal import assign_symmetry_cosets
+    from symmc_flow.space_group import get_ops
+    sg, k_true, A = 14, 2, 3                       # P2_1/c; index 2 is the proper 2-fold
+    ops = get_ops(sg)
+    c0 = torch.tensor([0.11, 0.23, 0.37])
+    c1 = ops.act(c0)[k_true]                        # exact generating-op image of the reference
+    conf = torch.randn(1, A, 3)
+    item = {
+        "sg": torch.tensor(sg),
+        "local": torch.cat([conf, conf], 0),        # identical conformer -> one species group
+        "atom_mask": torch.ones(2, A, dtype=torch.bool),
+        "mol_mask": torch.ones(2, dtype=torch.bool),
+        "centroid": torch.stack([c0, c1]),
+        "orient": torch.eye(3).expand(2, 3, 3).clone(),
+    }
+    rel = relative_gauge_item(item)
+    items, n_cosets = assign_symmetry_cosets([rel])
+    it = items[0]
+    assert bool(it["is_ref"][0]) and not bool(it["is_ref"][1])
+    assert int(it["coset"][0]) == 0                 # reference -> 0
+    assert int(it["coset"][1]) >= 1                 # non-ref labelled
+    assert float(it["coset_resid"][1]) < 1e-4       # exact centroid match to the generating op
+    assert n_cosets == 1                            # exactly one distinct (sg, op) among non-refs
+
+
+def test_symmetry_cosets_are_leak_free_of_orientation():
+    # Rotating the copies' orientations arbitrarily must NOT change the coset labels: the label
+    # is a function of centroids + space group only, so it carries no orientation-target leakage.
+    from symmc_flow.molcrystal import assign_symmetry_cosets
+    from symmc_flow.space_group import get_ops
+    sg, A = 14, 4
+    ops = get_ops(sg)
+    c0 = torch.tensor([0.13, 0.29, 0.41])
+    cents = torch.stack([c0] + [ops.act(c0)[k] for k in (1, 2, 3)])   # 4 general-position copies
+    conf = torch.randn(1, A, 3)
+
+    def build(orients):
+        item = {"sg": torch.tensor(sg), "local": conf.expand(4, A, 3).clone(),
+                "atom_mask": torch.ones(4, A, dtype=torch.bool),
+                "mol_mask": torch.ones(4, dtype=torch.bool),
+                "centroid": cents.clone(), "orient": orients}
+        items, _ = assign_symmetry_cosets([relative_gauge_item(item)])
+        return items[0]["coset"]
+
+    identity = torch.eye(3).expand(4, 3, 3).clone()
+    scrambled = M.random_so3((4,))
+    assert torch.equal(build(identity), build(scrambled))
+
+
 def test_symmetric_molecule_automorphism_guard():
     # bent H-O-H (water): the two H are interchangeable (one automorphism). The min-RMSD
     # mapping must still give a clean round-trip despite the symmetry.
