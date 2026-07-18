@@ -20,7 +20,11 @@ OUT=gpu_results/phaseB
 mkdir -p $OUT checkpoints
 MK=${1:-20}        # match-k for the end-to-end template eval
 W=${2:-8}          # matcher worker processes (cap on many-core boxes)
-UNCOND=checkpoints/diag_orient_relative_noised.pt   # the no-coset relative baseline (MolCrystalFlow regime)
+# unconditioned baseline for the templated delta: prefer the paired no-coset control trained in
+# step 2 on the IDENTICAL corpus/split (n_cosets=0 -> eval runs it unconditioned); else a
+# standalone relative checkpoint if one exists.
+UNCOND=checkpoints/coset_deploy_off_s0.pt
+[ -f "$UNCOND" ] || UNCOND=checkpoints/diag_orient_relative_noised.pt
 ST=$OUT/_status.log
 echo "START $(date)  match-k=$MK workers=$W" | tee $ST
 
