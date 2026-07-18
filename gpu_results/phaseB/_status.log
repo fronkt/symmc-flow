@@ -1,0 +1,33 @@
+START Sat Jul 18 18:29:36 UTC 2026  match-k=20 workers=16
+[coset-deploy ON  seed 0] Sat Jul 18 18:29:36 UTC 2026
+cosets: 238 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: ON
+NON-REF drop (+43.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+[coset-deploy ON  seed 1] Sat Jul 18 18:33:17 UTC 2026
+cosets: 238 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: ON
+NON-REF drop (+37.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+[coset-deploy ON  seed 2] Sat Jul 18 18:36:59 UTC 2026
+cosets: 238 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: ON
+NON-REF drop (+42.9%): vs +27% without coset conditioning -> coset id helps but residual remains
+[coset-deploy OFF seed 0] Sat Jul 18 18:40:42 UTC 2026
+NON-REF drop (+29.4%): vs +27% without coset conditioning -> coset id does not materially help (residual is representational)
+[coset-deploy OFF seed 1] Sat Jul 18 18:44:25 UTC 2026
+NON-REF drop (+24.4%): vs +27% without coset conditioning -> coset id does not materially help (residual is representational)
+[coset-deploy OFF seed 2] Sat Jul 18 18:48:06 UTC 2026
+NON-REF drop (+28.8%): vs +27% without coset conditioning -> coset id does not materially help (residual is representational)
+[orient-isolated + deployable coset, seed 0] Sat Jul 18 18:51:46 UTC 2026
+  oracle        100.0%    100.0%      0.000        0.0 deg  (ceiling)
+  untrained       0.0%      0.0%        nan       91.0 deg  (floor)
+  trained         9.9%     27.5%      0.161       41.1 deg  <-- RESULT
+==== StructureMatcher tolerance sweep (trained; best-of-8) ====
+   0.20  0.20   8.0      0.8%      4.6%      0.090   (oracle@k 100%)
+   0.30  0.30  10.0      0.8%      7.6%      0.116   (oracle@k 100%)
+   0.30  0.50  10.0      9.9%     27.5%      0.161   (oracle@k 100%)
+   0.50  0.70  15.0     14.5%     37.4%      0.173   (oracle@k 100%)
+[templated end-to-end: conditioned] Sat Jul 18 19:24:29 UTC 2026
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  median best-of-k component error: lattice-param 0.442  centroid(frac) 0.346  orient 13.4 deg
+  TAG templated coset 1 k 20 match 0.00
+[skip unconditioned baseline: checkpoints/diag_orient_relative_noised.pt not present -- train diag_orient_relative first]
+ALL DONE Sat Jul 18 19:27:34 UTC 2026
+GATE: compare NON-REF drop  coset-ON (step 1)  vs  OFF control (step 2)  vs  48% clustered upper bound;
+      and templated (step 4 conditioned) match rate vs unconditioned baseline.
