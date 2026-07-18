@@ -32,6 +32,7 @@ from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
                                     rigid_to_structure, species_multiplicity,
                                     assign_symmetry_cosets)
 from symmc_flow.model import SymMCFlow
+from symmc_flow.coset_predictor import CosetPredictor
 from symmc_flow.train import resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
 from symmc_flow.flow import sample_prior
@@ -104,6 +105,9 @@ def main():
     ap.add_argument("--coset", action="store_true",
                     help="supply the DEPLOYABLE symmetry-op coset to the trained field (needs a "
                          "coset-conditioned checkpoint); the template-based orientation read")
+    ap.add_argument("--predictor-ckpt", default="",
+                    help="a trained CosetPredictor (C4); use its PREDICTED coset (from packing "
+                         "only, no template) instead of the ground-truth coset -- the de-novo read")
     ap.add_argument("--sweep", action="store_true",
                     help="also report match rate + median matched RMSD across a stol sweep")
     args = ap.parse_args()
@@ -121,9 +125,9 @@ def main():
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
     keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
     full.items = [rel[i] for i in keep]
-    if args.coset:
+    if args.coset or args.predictor_ckpt:
         if mcfg.n_cosets <= 0:
-            sys.exit("--coset needs a coset-conditioned checkpoint (n_cosets>0)")
+            sys.exit("--coset/--predictor-ckpt need a coset-conditioned checkpoint (n_cosets>0)")
         # assign on the FULL multi-copy corpus (train+val) so ids match the trained model
         assign_symmetry_cosets(full.items)
     val_items = [full.items[i] for i in val_idx]
@@ -136,6 +140,14 @@ def main():
     trained.load_state_dict(ck["model"])
     torch.manual_seed(args.seed)
     untrained = SymMCFlow(mcfg).to(device).eval()  # fresh net = the predict-floor field
+
+    predictor = None
+    if args.predictor_ckpt:
+        pk = torch.load(args.predictor_ckpt, map_location="cpu", weights_only=False)
+        predictor = CosetPredictor(ModelConfig(**pk["model_cfg"])).to(device).eval()
+        predictor.load_state_dict(pk["model"])
+        print(f"coset PREDICTOR {args.predictor_ckpt} (val acc {100*pk.get('acc', float('nan')):.1f}%)"
+              f" -> using PREDICTED coset (de-novo, no template)\n")
 
     keys = ("oracle", "identity", "untrained", "trained")
     err = {k: [] for k in keys}        # per-crystal best-of-k non-ref orient error (deg)
@@ -162,7 +174,13 @@ def main():
                 all_gens[k].append([g])
             err[k] += per_crystal_err_deg(R, z1.orient, nonref).tolist()
 
-        cs = batch.get("coset") if args.coset else None
+        if predictor is not None:                       # de-novo: coset PREDICTED from packing
+            pemb = predictor.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+            cs = predictor.predict(pemb, z1.lattice, z1.centroid, batch["sg"], z1.mask)
+        elif args.coset:                                 # template: ground-truth deployable coset
+            cs = batch.get("coset")
+        else:
+            cs = None
 
         # stochastic flow conditions: store all k draws (draw 0 = the match@1 draw)
         for k, net, emb in (("untrained", untrained, emb_un), ("trained", trained, mol_emb)):

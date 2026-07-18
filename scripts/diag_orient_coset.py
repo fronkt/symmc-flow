@@ -105,6 +105,8 @@ def main():
                          "generating space-group operation, available from a template at sampling "
                          "time) instead of the observed-rotation clustering (assign_cosets)")
     ap.add_argument("--clean-packing", action="store_true")
+    ap.add_argument("--so3-avg-k", type=int, default=1,
+                    help="C5: K for the SO(3)-averaged orientation objective (1 = standard CFM)")
     ap.add_argument("--no-coset", action="store_true", help="paired control: disable the embedding")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
@@ -140,7 +142,7 @@ def main():
     mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets)
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
-                       cond_clean_packing=args.clean_packing)
+                       cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k)
     device = resolve_device(tcfg.device)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
     print(f"  device={device}  steps={args.steps}  n_cosets(model)={mcfg.n_cosets}\n")

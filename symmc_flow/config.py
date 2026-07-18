@@ -51,3 +51,6 @@ class TrainConfig:
     sampler_churn: float = 0.0        # Langevin-style noise in the sampler (0 = deterministic)
     cond_clean_packing: bool = False  # diagnostic: condition the field on TRUE lattice+centroid
                                       # (not z_t) to test if noised packing is what floors orient
+    so3_avg_k: int = 1                # >1 enables the SO(3)-averaged orientation objective
+                                      # (average the orient FM residual over K prior rotations;
+                                      # variance-reduced SO(3) target, cf. arXiv:2507.09785)

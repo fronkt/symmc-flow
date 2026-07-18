@@ -89,6 +89,21 @@ def test_rk4_sample_threads_coset():
         "coset id supplied to rk4_sample must change the generated orientation"
 
 
+def test_so3_averaged_objective_runs_and_backprops():
+    # C5: the SO(3)-averaged orientation objective (so3_avg_k>1) must produce a finite loss with
+    # the same parts and backprop through the extra prior draws; k=1 is the untouched default.
+    from symmc_flow.train import _step_loss
+    model, _ = _small_model()
+    batch = _batch()
+    dev = torch.device("cpu")
+    l1, p1 = _step_loss(model, batch, (1.0, 1.0, 1.0), dev, so3_avg_k=1)
+    assert set(p1) == {"lattice", "centroid", "orient", "total"} and torch.isfinite(l1)
+    l3, p3 = _step_loss(model, batch, (1.0, 1.0, 1.0), dev, so3_avg_k=3)
+    assert torch.isfinite(l3) and set(p3) == set(p1)
+    l3.backward()
+    assert any(p.grad is not None for p in model.parameters() if p.requires_grad)
+
+
 def test_backward_runs():
     model, _ = _small_model()
     batch = _batch()
@@ -101,6 +116,23 @@ def test_backward_runs():
     (v_L.sum() + v_x.sum() + v_R.sum()).backward()
     grads = [p.grad is not None for p in model.parameters() if p.requires_grad]
     assert any(grads)
+
+
+def test_coset_predictor_shapes_and_argmax():
+    # C4: the de-novo predictor classifies each molecule over the coset codebook from packing
+    # only (its forward takes no orientation), returning (B,M,n_cosets+1) logits / (B,M) ids.
+    from symmc_flow.coset_predictor import CosetPredictor
+    batch = _batch()
+    z1 = batch_to_state(batch)
+    cp = CosetPredictor(ModelConfig(d_model=48, egnn_hidden=48, atom_embed_dim=32,
+                                    n_attn_layers=2, egnn_layers=2, n_heads=4, n_cosets=8))
+    emb = cp.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+    logits = cp(emb, z1.lattice, z1.centroid, batch["sg"], z1.mask)
+    B, Mm = z1.mask.shape
+    assert logits.shape == (B, Mm, 9)          # n_cosets + 1
+    pred = cp.predict(emb, z1.lattice, z1.centroid, batch["sg"], z1.mask)
+    assert pred.shape == (B, Mm) and pred.dtype == torch.long
+    assert int(pred.max()) <= 8 and int(pred.min()) >= 0
 
 
 def test_symmetrized_velocity_shapes():
