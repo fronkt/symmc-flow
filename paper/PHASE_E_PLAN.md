@@ -19,12 +19,14 @@ objections; Phase E neutralizes them, then we expand to a full paper.
 The deployment claim, as a same-model ablation. In the template regime (space group + coset
 supplied, as template-based CSP operates), does supplying the coset at *generation* improve the
 output vs the same model with coset off?
-- [ ] Run `eval_templated_matchrate.py --ckpt coset_deploy_s0.pt --ablate-no-coset` (the SKIPPED
-      half). Conditioned half already ran in Phase B (0% match; components lattice 0.44 /
-      centroid 0.35 / **orient 13.4°**). **STARTED locally 2026-07-18.**
-- [ ] Report conditioned vs coset-off: match@k **and** component errors. Even if both ~0% match
-      (lattice/centroid dominate), a lower *orientation* error with the coset reframes the 0%
-      from "doesn't work" to "conditioning improves the deployable pipeline where it acts."
+- [x] Run `eval_templated_matchrate.py --ckpt coset_deploy_s0.pt --ablate-no-coset` (the SKIPPED
+      half). **DONE locally 2026-07-18** (n=131, k=20; `gpu_results/phaseE/templated_unconditioned.log`).
+- [x] **RESULT (same model, coset template ON vs OFF, n=131 k=20):** orientation error
+      **13.4° (ON) vs 93.5° (OFF)** — a 7× collapse; centroid 0.346 vs 0.345 (identical — coset
+      does not touch centroid); lattice-param 0.442 vs 0.501; exact match 0% both. The coset
+      template makes the ORIENTATION component work end-to-end; lattice+centroid remain the
+      exact-match bottleneck. → answers O1 at the component level; scopes contribution to
+      orientation. **Strengthens the MoML "Scope" paragraph too (offer to fold in).**
 
 ### E2 — Scale  [O1+O3 · HIGH impact · HIGH compute → GPU/Vast]
 - [ ] Retrain coset-conditioned + no-coset control on a LARGER molecular-crystal corpus
