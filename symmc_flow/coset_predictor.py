@@ -88,3 +88,12 @@ class CosetPredictor(nn.Module):
     def predict(self, mol_emb, lattice, centroid, sg, mol_mask):
         """Argmax coset id per molecule (B,M) long -- the template-free coset for the sampler."""
         return self.forward(mol_emb, lattice, centroid, sg, mol_mask).argmax(-1)
+
+    @torch.no_grad()
+    def predict_topk(self, mol_emb, lattice, centroid, sg, mol_mask, k=3):
+        """Top-k coset ids per molecule (B,M,k) long, most-likely first. For template-free
+        MARGINALIZATION: when the argmax is wrong, the true coset may still sit in the top-k;
+        the sampler draws orientation under each hypothesis and keeps the best."""
+        logits = self.forward(mol_emb, lattice, centroid, sg, mol_mask)
+        k = max(1, min(k, logits.shape[-1]))
+        return logits.topk(k, dim=-1).indices                                 # (B,M,k)

@@ -108,6 +108,11 @@ def main():
     ap.add_argument("--predictor-ckpt", default="",
                     help="a trained CosetPredictor (C4); use its PREDICTED coset (from packing "
                          "only, no template) instead of the ground-truth coset -- the de-novo read")
+    ap.add_argument("--predictor-topk", type=int, default=0,
+                    help="E3 template-free MARGINALIZATION: condition on the predictor's top-k "
+                         "cosets per molecule and keep the best draw (needs --predictor-ckpt). "
+                         "Selection among the k hypotheses is by match -> an UPPER BOUND on top-k, "
+                         "answering 'is the true coset in the top-k?'")
     ap.add_argument("--sweep", action="store_true",
                     help="also report match rate + median matched RMSD across a stol sweep")
     args = ap.parse_args()
@@ -146,14 +151,21 @@ def main():
         pk = torch.load(args.predictor_ckpt, map_location="cpu", weights_only=False)
         predictor = CosetPredictor(ModelConfig(**pk["model_cfg"])).to(device).eval()
         predictor.load_state_dict(pk["model"])
+        mode = (f"top-{args.predictor_topk} MARGINALIZATION (best over hypotheses)"
+                if args.predictor_topk > 0 else "argmax (top-1)")
         print(f"coset PREDICTOR {args.predictor_ckpt} (val acc {100*pk.get('acc', float('nan')):.1f}%)"
-              f" -> using PREDICTED coset (de-novo, no template)\n")
+              f" -> PREDICTED coset, {mode} [de-novo, no template]\n")
+    elif args.predictor_topk > 0:
+        sys.exit("--predictor-topk needs --predictor-ckpt (it marginalizes the predictor's top-k)")
 
     keys = ("oracle", "identity", "untrained", "trained")
     err = {k: [] for k in keys}        # per-crystal best-of-k non-ref orient error (deg)
     all_refs = []                      # per-crystal ref Structure (len n)
     all_gens = {k: [] for k in keys}   # per-crystal list of draw Structures (k=1 for det.)
     K = max(args.match_k, 1)
+    COVERAGE_KS = (1, 3, 5, 10)        # E3: fraction of non-ref molecules whose TRUE coset is in top-k
+    cover_hit = {kk: 0 for kk in COVERAGE_KS}
+    cover_tot = 0
 
     torch.manual_seed(args.seed)
     emb_un = None
@@ -174,26 +186,40 @@ def main():
                 all_gens[k].append([g])
             err[k] += per_crystal_err_deg(R, z1.orient, nonref).tolist()
 
-        if predictor is not None:                       # de-novo: coset PREDICTED from packing
+        # coset hypotheses supplied to the trained (coset-conditioned) field
+        if predictor is not None:
             pemb = predictor.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
-            cs = predictor.predict(pemb, z1.lattice, z1.centroid, batch["sg"], z1.mask)
+            cst10 = predictor.predict_topk(pemb, z1.lattice, z1.centroid, batch["sg"], z1.mask,
+                                           k=max(COVERAGE_KS))                     # (B,M,<=10)
+            gt = batch.get("coset")                      # E3: cheap coverage = is the TRUE coset in top-k?
+            if gt is not None:
+                for kk in COVERAGE_KS:
+                    hit = (cst10[..., :kk] == gt.unsqueeze(-1)).any(-1) & nonref
+                    cover_hit[kk] += int(hit.sum())
+                cover_tot += int(nonref.sum())
+            topk = args.predictor_topk if args.predictor_topk > 0 else 1
+            coset_hyps = [cst10[..., r] for r in range(min(topk, cst10.shape[-1]))]
         elif args.coset:                                 # template: ground-truth deployable coset
-            cs = batch.get("coset")
+            coset_hyps = [batch.get("coset")]
         else:
-            cs = None
+            coset_hyps = [None]
 
-        # stochastic flow conditions: store all k draws (draw 0 = the match@1 draw)
-        for k, net, emb in (("untrained", untrained, emb_un), ("trained", trained, mol_emb)):
-            draws_struct = [[] for _ in range(B)]      # per crystal: list of k structures
+        # stochastic flow conditions: store every draw (draw 0 = the match@1 draw). The trained
+        # coset-conditioned net marginalizes over its coset hypotheses (best over hyps x K draws);
+        # the untrained floor field ignores the coset.
+        for k, net, emb, hyps in (("untrained", untrained, emb_un, [None]),
+                                  ("trained", trained, mol_emb, coset_hyps)):
+            draws_struct = [[] for _ in range(B)]      # per crystal: list of structures
             best_err = torch.full((B,), 1e9, device=device)
-            for _ in range(K):
-                R = sample_orient_only(net, emb, z1.lattice, z1.centroid,
-                                       sample_prior(z1, vol_per_atom=vpa).orient,
-                                       batch["sg"], z1.mask, args.steps, coset=cs)
-                gs = structures_for(batch, z1, R)
-                for b in range(B):
-                    draws_struct[b].append(gs[b])
-                best_err = torch.minimum(best_err, per_crystal_err_deg(R, z1.orient, nonref))
+            for cs_h in hyps:
+                for _ in range(K):
+                    R = sample_orient_only(net, emb, z1.lattice, z1.centroid,
+                                           sample_prior(z1, vol_per_atom=vpa).orient,
+                                           batch["sg"], z1.mask, args.steps, coset=cs_h)
+                    gs = structures_for(batch, z1, R)
+                    for b in range(B):
+                        draws_struct[b].append(gs[b])
+                    best_err = torch.minimum(best_err, per_crystal_err_deg(R, z1.orient, nonref))
             all_gens[k] += draws_struct
             err[k] += best_err.tolist()
 
@@ -248,6 +274,14 @@ def main():
         print(f"  {k:10s}  {100*m1:7.1f}%  {100*mk:7.1f}%  {med:9.3f}  {me:9.1f} deg{tag}")
     print(f"\n  (n={n} crystals; match@1 = single deterministic-prior draw, "
           f"match@k = best of {K}; med RMSD = median matched StructureMatcher RMS)")
+
+    if cover_tot > 0:                  # E3: is the true coset reachable by top-k marginalization?
+        print(f"\n  predictor top-k COVERAGE (true coset in top-k, non-ref molecules; "
+              f"n={cover_tot}):")
+        for kk in COVERAGE_KS:
+            print(f"    top-{kk:<2d}: {100*cover_hit[kk]/cover_tot:5.1f}%")
+        print(f"  (top-1 = argmax accuracy; high top-k with low top-1 => marginalizing the "
+              f"top-k predictions is the route to template-free use)")
 
     if args.sweep:
         print(f"\n==== StructureMatcher tolerance sweep (trained; best-of-{K}) ====")

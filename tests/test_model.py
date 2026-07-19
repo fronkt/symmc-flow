@@ -133,6 +133,12 @@ def test_coset_predictor_shapes_and_argmax():
     pred = cp.predict(emb, z1.lattice, z1.centroid, batch["sg"], z1.mask)
     assert pred.shape == (B, Mm) and pred.dtype == torch.long
     assert int(pred.max()) <= 8 and int(pred.min()) >= 0
+    # E3: top-k returns k ranked ids per molecule (rank 0 == argmax) for template-free marginalization
+    tk = cp.predict_topk(emb, z1.lattice, z1.centroid, batch["sg"], z1.mask, k=3)
+    assert tk.shape == (B, Mm, 3) and tk.dtype == torch.long
+    assert torch.equal(tk[..., 0], pred)               # rank-0 hypothesis is the argmax
+    assert (tk[..., 0] != tk[..., 1]).any()            # distinct ranks (non-degenerate)
+    assert cp.predict_topk(emb, z1.lattice, z1.centroid, batch["sg"], z1.mask, k=99).shape[-1] == 9
 
 
 def test_symmetrized_velocity_shapes():
