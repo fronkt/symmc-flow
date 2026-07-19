@@ -34,12 +34,20 @@ output vs the same model with coset off?
       absolute end-to-end + stronger orientation numbers → directly answers "modest scale."
 - [ ] Re-run the gate at scale: does the +41% coset gain hold or grow?
 
-### E3 — Template-free predictor  [O2 · MED impact · MED effort]
-- [ ] Push the 39.5% predictor: bigger model / richer features (local packing, H-bond topology,
-      dipole), OR **top-k marginalization** at sampling (condition on the k most-likely cosets,
-      take best-of-k). CPU-evaluable for the marginalization variant.
-- [ ] Goal: predicted-coset reconstruction BEATS the no-coset baseline (currently collapses
-      64.8° vs 41°). Even top-3 marginalization making it viable answers O2.
+### E3 — Template-free predictor  [O2 · MED impact · MED effort]  — POC DONE 2026-07-18
+- [x] **top-k marginalization POC (local, n=131; `gpu_results/phaseE/e3_predictor_top5.log`).**
+      **COVERAGE (true coset in predictor top-k, per non-ref molecule, n=438): top-1 39.5% /
+      top-3 75.8% / top-5 85.6% / top-10 90.9%.** → the packing DOES carry the symmetry-op signal;
+      the predictor just can't pin one answer. **Template-free is reachable by marginalizing the
+      top-k (downstream R_wp/energy selects) — O2 is largely answered.**
+- [x] Reconstruction via the SIMPLE marginalization (5 JOINT rank hypotheses, not per-molecule
+      combinatorial): orient error 64.8° (top-1) → **51.2° (top-5)**, toward the 41.1° template.
+      Real but capped by the weak joint scheme (all molecules share a rank).
+- [ ] **Close the coverage→reconstruction gap (next):** per-molecule combinatorial search over
+      top-k (or beam/greedy), AND/OR a sharper predictor from **E2 scale** (more data → higher
+      top-1, so fewer hypotheses needed). Both are the path from 51.2° to ~41°.
+- [ ] Optionally fold the coverage result into the MoML de-novo paragraph (strengthens O2 there
+      too; offer — Frank owns final text).
 
 ### E4 — Benchmark alignment vs MolCrystalFlow  [O3 · MED effort · CPU-local eval]
 - [ ] Mirror MolCrystalFlow's protocol (match@k at stol=0.8) so numbers are legible to the same
