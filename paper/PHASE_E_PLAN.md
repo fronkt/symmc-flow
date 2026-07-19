@@ -53,10 +53,14 @@ output vs the same model with coset off?
 - [ ] Mirror MolCrystalFlow's protocol (match@k at stol=0.8) so numbers are legible to the same
       reviewers; report ours alongside their ~6.8% match@10. Ideally on a comparable set.
 
-### E5 — Full journal manuscript  [writing]
-- [ ] Expand the 4pp workshop paper to a full JCIM paper: reuse the journal-length diagnostic
-      `main-archive-2026-07-18-diagnostic.tex` as the skeleton, fold in the deployable method +
-      E1–E4, full related work. JCIM/ACS format; author block per [[reference_author_identity]].
+### E5 — Full journal manuscript  [writing]  — SKELETON DONE 2026-07-18
+- [x] `paper/submissions/JCIM/main.tex` skeleton drafted + compiles (Tectonic). Method-framed,
+      full-length; DONE results folded in (decomposition, Phase B gate, C5, E1 7× end-to-end,
+      E3 top-k coverage). `\todo{...}` markers flag what's pending: [E2] scale \S, [E4]
+      MolCrystalFlow benchmark \S, and expansions from the archived diagnostic. Uses `article`
+      to compile now; FINAL should switch to ACS `achemso` + TOC graphic.
+- [ ] Fill [E2]/[E4] result sections once run_phaseE.sh lands; expand Methods/Limitations from
+      `main-archive-2026-07-18-diagnostic.tex`; switch to achemso. Frank owns final prose.
 
 ## Compute / sequencing
 - **CPU-local NOW** (this machine has torch 2.11 + pymatgen): E1 baseline, E3 top-k
