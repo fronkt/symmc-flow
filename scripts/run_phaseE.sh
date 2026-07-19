@@ -9,7 +9,7 @@
 set -u
 cd /workspace/symmc-flow
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
-PY=/venv/main/bin/python
+PY=${PY:-/venv/main/bin/python}   # override on a shared box, e.g. PY=/workspace/symmc-flow/.venv/bin/python
 DS=${1:-data/csd_mol_scale/ds.pt}
 STEPS=${2:-3000}          # more steps for the bigger corpus (workshop used 800 at N=1127)
 MK=${3:-20}
