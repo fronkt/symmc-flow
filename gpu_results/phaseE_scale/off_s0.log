@@ -1,0 +1,79 @@
+corpus: 2539 -> 2464 multi-copy after relative re-gauge
+cosets: 320 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: OFF (control)
+  split: 2168 train / 296 val
+  lattice prior vol/atom: 9.9 A^3
+
+  device=cuda  steps=3000  n_cosets(model)=0
+
+step     0  loss 6.7678  (L 1.380  x 0.375  R 5.012)
+step    50  loss 5.7586  (L 0.087  x 0.270  R 5.402)
+step   100  loss 5.3295  (L 0.088  x 0.253  R 4.988)
+step   150  loss 6.0411  (L 0.102  x 0.252  R 5.687)
+step   200  loss 4.7029  (L 0.104  x 0.249  R 4.350)
+step   250  loss 4.8971  (L 0.095  x 0.257  R 4.545)  | val 5.2456
+step   300  loss 4.4625  (L 0.086  x 0.255  R 4.122)
+step   350  loss 4.9513  (L 0.079  x 0.280  R 4.593)
+step   400  loss 5.3108  (L 0.095  x 0.261  R 4.955)
+step   450  loss 4.0483  (L 0.089  x 0.257  R 3.702)
+step   500  loss 5.6005  (L 0.118  x 0.251  R 5.232)  | val 4.4115
+step   550  loss 4.3792  (L 0.077  x 0.245  R 4.057)
+step   600  loss 4.8383  (L 0.058  x 0.258  R 4.522)
+step   650  loss 4.1227  (L 0.077  x 0.266  R 3.780)
+step   700  loss 3.9943  (L 0.088  x 0.271  R 3.635)
+step   750  loss 3.6413  (L 0.076  x 0.262  R 3.304)  | val 3.8873
+step   800  loss 3.4549  (L 0.051  x 0.248  R 3.156)
+step   850  loss 4.2553  (L 0.110  x 0.246  R 3.900)
+step   900  loss 3.9373  (L 0.045  x 0.245  R 3.647)
+step   950  loss 3.1070  (L 0.078  x 0.252  R 2.777)
+step  1000  loss 3.3373  (L 0.062  x 0.262  R 3.013)  | val 3.9681
+step  1050  loss 3.3488  (L 0.049  x 0.261  R 3.038)
+step  1100  loss 3.6657  (L 0.063  x 0.247  R 3.357)
+step  1150  loss 3.5320  (L 0.058  x 0.257  R 3.217)
+step  1200  loss 3.5450  (L 0.076  x 0.234  R 3.235)
+step  1250  loss 2.9216  (L 0.050  x 0.260  R 2.612)  | val 3.7933
+step  1300  loss 4.1890  (L 0.077  x 0.265  R 3.847)
+step  1350  loss 2.5514  (L 0.053  x 0.236  R 2.262)
+step  1400  loss 3.2624  (L 0.107  x 0.284  R 2.871)
+step  1450  loss 4.1091  (L 0.083  x 0.247  R 3.779)
+step  1500  loss 2.5042  (L 0.062  x 0.253  R 2.190)  | val 3.8535
+step  1550  loss 2.3020  (L 0.051  x 0.247  R 2.005)
+step  1600  loss 2.1503  (L 0.055  x 0.244  R 1.851)
+step  1650  loss 2.1591  (L 0.044  x 0.275  R 1.840)
+step  1700  loss 3.2809  (L 0.039  x 0.260  R 2.982)
+step  1750  loss 3.2795  (L 0.069  x 0.248  R 2.963)  | val 3.2575
+step  1800  loss 3.7019  (L 0.053  x 0.244  R 3.405)
+step  1850  loss 1.9910  (L 0.057  x 0.253  R 1.680)
+step  1900  loss 3.1263  (L 0.061  x 0.247  R 2.818)
+step  1950  loss 2.8598  (L 0.057  x 0.248  R 2.555)
+step  2000  loss 3.5445  (L 0.036  x 0.251  R 3.257)  | val 3.6192
+step  2050  loss 2.7925  (L 0.057  x 0.249  R 2.486)
+step  2100  loss 4.0263  (L 0.075  x 0.210  R 3.742)
+step  2150  loss 3.5972  (L 0.057  x 0.271  R 3.270)
+step  2200  loss 2.8233  (L 0.050  x 0.238  R 2.535)
+step  2250  loss 3.4137  (L 0.044  x 0.245  R 3.125)  | val 3.3632
+step  2300  loss 3.8456  (L 0.063  x 0.249  R 3.534)
+step  2350  loss 3.3724  (L 0.052  x 0.258  R 3.063)
+step  2400  loss 3.0681  (L 0.062  x 0.238  R 2.768)
+step  2450  loss 2.5436  (L 0.048  x 0.260  R 2.236)
+step  2500  loss 4.0042  (L 0.072  x 0.266  R 3.666)  | val 3.6067
+step  2550  loss 3.9820  (L 0.079  x 0.246  R 3.657)
+step  2600  loss 5.0117  (L 0.060  x 0.246  R 4.705)
+step  2650  loss 3.3975  (L 0.050  x 0.242  R 3.105)
+step  2700  loss 3.1289  (L 0.051  x 0.266  R 2.812)
+step  2750  loss 3.0568  (L 0.063  x 0.241  R 2.753)  | val 3.1869
+step  2800  loss 3.8480  (L 0.058  x 0.248  R 3.542)
+step  2850  loss 2.8242  (L 0.062  x 0.232  R 2.530)
+step  2900  loss 2.4773  (L 0.059  x 0.263  R 2.156)
+step  2950  loss 2.2989  (L 0.048  x 0.262  R 1.989)
+
+==== held-out validation, per head (untrained -> trained) ====
+  lattice  : 1.2708 -> 0.0628  (+95.1%)
+  centroid : 0.3645 -> 0.2521  (+30.8%)
+  orient   : 5.3758 -> 2.9447  (+45.2%)
+  total    : 7.0111 -> 3.2597  (+53.5%)
+  orient split:
+    ref    : 5.3832 -> 1.6954  (+68.5%)
+    nonref : 5.3700 -> 3.4824  (+35.2%)  <-- NON-REFERENCE (coset-conditioned target)
+
+NON-REF drop (+35.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+checkpoint -> checkpoints/scale_off_s0.pt
