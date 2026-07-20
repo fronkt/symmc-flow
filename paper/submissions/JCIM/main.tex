@@ -7,9 +7,9 @@
 % compiles standalone (Tectonic) while the E2/E4 results are filled in.
 %
 % STATUS: skeleton. Sections with real numbers are from commits e035b8d (Phase B),
-% 581723c (E1), 1224870 (E3). Marked [E2 ...] / [E4 ...] await the scale run
-% (run_phaseE.sh) and the MolCrystalFlow benchmark alignment. Frank writes/owns
-% the final prose; this is a scaffold to fill.
+% 581723c (E1), 1224870 (E3), and E2 scale (ce0e5d0, gpu_results/phaseE_scale, 2539-crystal
+% corpus on box 45370370). Only [E4 ...] (MolCrystalFlow benchmark alignment) remains open.
+% Frank writes/owns the final prose; this is a scaffold to fill.
 % =====================================================================
 \documentclass[11pt]{article}
 \usepackage[margin=1in]{geometry}
@@ -50,7 +50,9 @@ $\mathrm{SO}(3)$-averaged objective closes the gap ($47.7\%$). Supplying the cos
 collapses the end-to-end orientation error $7\times$ ($93.5^\circ\!\to\!13.4^\circ$). For
 template-free use, a packing-only predictor places the true coset in its top-5 for $85.6\%$ of
 molecules, so marginalizing the top-$k$ recovers most of the benefit without a template.
-\todo{E2: add scale numbers; E4: add head-to-head vs MolCrystalFlow.}
+At $2.2\times$ scale the coset advantage \emph{widens} (loss drop $+41.1\%\!\to\!+54.3\%$ over a
+$+36.8\%$ control) and the coset-supplied orientation error sharpens to $4.3^\circ$, while exact
+match stays lattice/centroid-limited. \todo{E4: add head-to-head vs MolCrystalFlow.}
 \end{abstract}
 
 % =====================================================================
@@ -82,7 +84,9 @@ an $\mathrm{SO}(3)$-averaged objective closes the rest.
 \item End-to-end, the coset collapses the orientation error $7\times$.
 \item A template-free path: a packing-only predictor whose top-$k$ covers the true coset for
 $86\%$ of molecules at $k{=}5$, made usable by top-$k$ marginalization.
-\item \todo{E2: at scale (\S\ref{sec:scale}); E4: vs MolCrystalFlow (\S\ref{sec:bench}).}
+\item The coset advantage \emph{widens} with data (\S\ref{sec:scale}; $2.2\times$ scale: gate
+$+41\%\!\to\!+54\%$, orientation-isolated match $27.5\%\!\to\!56.8\%$), while exact match stays
+lattice/centroid-limited. \todo{E4: vs MolCrystalFlow (\S\ref{sec:bench}).}
 \end{itemize}
 
 % =====================================================================
@@ -161,8 +165,9 @@ The packing-only predictor is $39.5\%$ top-1 ($4\times$ the $10.3\%$ majority), 
 is in its top-3 for $75.8\%$ of molecules, top-5 for $85.6\%$, top-10 for $90.9\%$
 (Table~\ref{tab:cover}). The signal is present; the argmax merely cannot commit. Marginalizing the
 top-5 pulls the predicted-coset orientation error from $64.8^\circ$ (top-1) to $51.2^\circ$, toward
-the $41.1^\circ$ template ceiling. \todo{E2: a sharper predictor at scale + per-molecule
-combinatorial search closes the residual.}
+the $41.1^\circ$ template ceiling. At the larger corpus (\S\ref{sec:scale}) the predictor sharpens
+only to $43.1\%$ top-1 and its predicted cosets still reconstruct well below template grade, so
+closing this residual---a sharper predictor or per-molecule combinatorial search---remains open.
 
 \begin{table}[t]\centering
 \caption{Predictor top-$k$ coverage: true coset in top-$k$ (non-ref molecules, $n{=}438$).}
@@ -174,9 +179,42 @@ coverage & $39.5\%$ & $75.8\%$ & $85.6\%$ & $90.9\%$ \\\bottomrule
 \end{table}
 
 \subsection{Scale}\label{sec:scale}
-\todo{E2 (run\_phaseE.sh on the $\sim$6k--50k corpus): does the $+41\%$ gate hold/grow, does
-end-to-end exact match lift with more data, and does the predictor top-1 sharpen (shrinking the
-\S\ref{sec:free} residual)? Fill Table + numbers from gpu\_results/phaseE\_scale.}
+Retraining the full pipeline on a $2{,}539$-crystal CSD corpus ($2{,}464$ multi-copy after
+re-gauge; $2{,}168$ train / $296$ validation; $320$ distinct operation-cosets), roughly
+$2.2\times$ the diagnostic set, sharpens every orientation metric while leaving the packing
+bottleneck untouched (Table~\ref{tab:scale}). The deployable-coset gate does not merely hold: the
+non-reference loss drop rises to $54.3\pm0.8\%$ (3 seeds; $53.5/54.4/55.1\%$) against a paired
+no-coset control at $36.8\pm2.1\%$ ($35.2/36.0/39.1\%$), \emph{widening} the coset advantage from
+$+13.6$ to $+17.5$ percentage points---the benefit is a property of the factorization, not a
+small-data artifact. End-to-end with the coset supplied, the median orientation error falls to
+$4.3^\circ$ (from $13.4^\circ$ at diagnostic scale), and orientation-isolated reconstruction
+climbs to $56.8\%$ best-of-8 at $31.7^\circ$ (from $27.5\%$ at $41.1^\circ$). Exact end-to-end
+match remains $0\%$ with the lattice ($0.42$) and centroid ($0.35$) component errors essentially
+unchanged: scaling data sharpens orientation but does not move the joint lattice--centroid
+bottleneck, cleanly isolating where the remaining work lies. The packing-only predictor sharpens
+only modestly (top-1 $43.1\%$ vs.\ $39.5\%$; majority $10.4\%$), and its predicted cosets do not
+yet reconstruct at template grade---top-5 marginalization reaches $6.1\%$ best-of-8 at $44.0^\circ$
+against $56.8\%$/$31.7^\circ$ with the true template---so a sharper predictor or per-molecule
+combinatorial search over the template-free path remains the open problem.
+
+\begin{table}[t]\centering
+\caption{Diagnostic ($N\!\approx\!1.1$k) vs.\ scale ($N\!=\!2.5$k) corpus: orientation metrics
+sharpen with data while end-to-end exact match stays lattice/centroid-limited. Gate is the
+held-out non-reference orientation-loss drop (deployable coset, $K{=}1$); orientation-isolated
+match is best-of-8 with true lattice+centroid supplied.}
+\label{tab:scale}
+\begin{tabular}{lcc}\toprule
+metric & diagnostic & scale \\\midrule
+coset gate: non-ref.\ loss drop (deployable) & $41.1\%$ & $\mathbf{54.3\%}$ \\
+\quad paired no-coset control                & $27.5\%$ & $36.8\%$ \\
+\quad coset advantage                        & $+13.6$ pp & $\mathbf{+17.5}$ pp \\
+end-to-end orientation error (coset supplied)& $13.4^\circ$ & $\mathbf{4.3^\circ}$ \\
+orient-isolated match (best-of-8)            & $27.5\%$ & $\mathbf{56.8\%}$ \\
+orient-isolated orientation error            & $41.1^\circ$ & $\mathbf{31.7^\circ}$ \\
+predictor top-1 (majority baseline)          & $39.5\%$ ($10.3\%$) & $43.1\%$ ($10.4\%$) \\
+end-to-end exact match                       & $0\%$ & $0\%$ \\\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Comparison to rigid-body baselines}\label{sec:bench}
 \todo{E4: mirror MolCrystalFlow's match@$k$-at-stol-$0.8$ protocol\cite{zeng2026molcrystalflow}
