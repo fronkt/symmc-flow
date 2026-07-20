@@ -15,3 +15,6 @@ data/cod_mol/
 data/csd_mol/*
 !data/csd_mol/manifest.csv
 .DS_Store
+
+# E4 (MolCrystalFlow alignment): keep the small logs as ledger, ignore the 33MB regenerable draws pickle
+gpu_results/**/*.pkl

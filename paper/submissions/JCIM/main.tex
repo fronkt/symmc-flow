@@ -7,8 +7,10 @@
 % compiles standalone (Tectonic) while the E2/E4 results are filled in.
 %
 % STATUS: skeleton. Sections with real numbers are from commits e035b8d (Phase B),
-% 581723c (E1), 1224870 (E3), and E2 scale (ce0e5d0, gpu_results/phaseE_scale, 2539-crystal
-% corpus on box 45370370). Only [E4 ...] (MolCrystalFlow benchmark alignment) remains open.
+% 581723c (E1), 1224870 (E3), E2 scale (ce0e5d0, gpu_results/phaseE_scale, 2539-crystal
+% corpus on box 45370370), and E4 (MolCrystalFlow benchmark alignment, \S\ref{sec:bench},
+% gpu_results/phaseE4, match@10 + RMAD in MCF units). Remaining open work is E5 prose
+% expansion (the \todo{} markers) + achemso conversion.
 % Frank writes/owns the final prose; this is a scaffold to fill.
 % =====================================================================
 \documentclass[11pt]{article}
@@ -52,7 +54,8 @@ template-free use, a packing-only predictor places the true coset in its top-5 f
 molecules, so marginalizing the top-$k$ recovers most of the benefit without a template.
 At $2.2\times$ scale the coset advantage \emph{widens} (loss drop $+41.1\%\!\to\!+54.3\%$ over a
 $+36.8\%$ control) and the coset-supplied orientation error sharpens to $4.3^\circ$, while exact
-match stays lattice/centroid-limited. \todo{E4: add head-to-head vs MolCrystalFlow.}
+match stays lattice/centroid-limited. Scored in MolCrystalFlow's own units, the coset supplies the
+orientation conditioning that symmetry-free rigid-body flows lack (\S\ref{sec:bench}).
 \end{abstract}
 
 % =====================================================================
@@ -86,7 +89,9 @@ an $\mathrm{SO}(3)$-averaged objective closes the rest.
 $86\%$ of molecules at $k{=}5$, made usable by top-$k$ marginalization.
 \item The coset advantage \emph{widens} with data (\S\ref{sec:scale}; $2.2\times$ scale: gate
 $+41\%\!\to\!+54\%$, orientation-isolated match $27.5\%\!\to\!56.8\%$), while exact match stays
-lattice/centroid-limited. \todo{E4: vs MolCrystalFlow (\S\ref{sec:bench}).}
+lattice/centroid-limited. In MolCrystalFlow's own units (\S\ref{sec:bench}) our diagnostic-scale
+generator is packing-limited end-to-end, but supplies the orientation lever the symmetry-free flows
+omit.
 \end{itemize}
 
 % =====================================================================
@@ -217,9 +222,51 @@ end-to-end exact match                       & $0\%$ & $0\%$ \\\bottomrule
 \end{table}
 
 \subsection{Comparison to rigid-body baselines}\label{sec:bench}
-\todo{E4: mirror MolCrystalFlow's match@$k$-at-stol-$0.8$ protocol\cite{zeng2026molcrystalflow}
-(they report $\sim$6.8\% match@10) on a comparable molecular set; report our conditioned numbers
-in the same units so the contribution is legible to the same reviewers.}
+To make the contribution legible to the same reviewers, we re-score held-out generations from the
+deployable coset model ($N\!\approx\!1.1$k) in MolCrystalFlow's exact
+units\cite{zeng2026molcrystalflow}: pymatgen \textsc{StructureMatcher} ($\text{ltol}{=}0.3$,
+$\text{atol}{=}10^\circ$, site tolerance swept $0.5$--$1.2$), best-of-$10$ match rate, and the
+relative cell-volume deviation (RMAD) over all ten samples. We report a paired de-novo pass (no
+template, coset off---the MolCrystalFlow/MOFFlow regime) against our symmetry-conditioned pass
+(coset on) on \emph{identical} prior draws (Table~\ref{tab:bench}).
+
+Two readings are deliberate and honest. First, end-to-end our diagnostic-scale model is \emph{not}
+competitive with the dedicated flows on either axis: best-of-$10$ match is at floor
+($0$--$0.8\%$) against MolCrystalFlow's $\sim\!6.8\%$ at $\text{stol}\,0.8$, and cell-volume RMAD
+($\sim\!31\%$) lands between MOFFlow ($18.8\%$) and raw Genarris-3 ($59\%$) but well above
+MolCrystalFlow ($3.9\%$). This is the lattice/centroid bottleneck of Table~\ref{tab:scale}
+($0\%$ exact match) now measured in the baselines' units: our lattice and centroid heads are
+diagnostic-grade and we make no end-to-end generation claim. Second, and the point of the paper,
+is the axis those baselines leave \emph{unconditioned}. The coset barely moves RMAD ($32.9\%\!\to\!
+30.7\%$)---it conditions orientation, not packing---but on the same prior draws it collapses the
+median best-of-$10$ orientation error from $103^\circ$ (de-novo) to $14^\circ$ (conditioned),
+consistent with the end-to-end collapse of \S\ref{sec:scale}. MolCrystalFlow and MOFFlow are both
+symmetry-free and have no such lever; MolCrystalFlow is itself only \emph{competitive} with the
+space-group-conditioned Genarris-3, corroborating that symmetry conditioning---not packing---is the
+remaining lever. Our contribution supplies exactly that for rigid-body orientation and composes
+with the strong packing these methods already have. \emph{Caveat:} identical matcher and match@10
+as MolCrystalFlow, but our corpus is a smaller CSD-derived molecular set (not Th\"urlemann/OMC25) at
+diagnostic scale---a comparable-task alignment, not a strict head-to-head.
+
+\begin{table}[t]\centering
+\caption{Held-out generations in MolCrystalFlow's units (best-of-$10$; \textsc{StructureMatcher}
+ltol$=0.3$/atol$=10^\circ$; RMAD${}_{\mathrm{vol}}$ = relative cell-volume deviation over all $10$
+samples). Baseline rows are as reported\cite{zeng2026molcrystalflow,kim2025mofflow} (Genarris-3 via
+the comparison in \cite{zeng2026molcrystalflow}). Our end-to-end match and RMAD are
+lattice/centroid-limited; the coset acts on orientation (last column)---the axis the symmetry-free
+baselines omit.}
+\label{tab:bench}
+\begin{tabular}{lcccc}\toprule
+ & \multicolumn{2}{c}{match@10} & RMAD$_{\mathrm{vol}}$ & orient.\ err. \\
+\cmidrule(lr){2-3}
+method & stol $0.8$ & stol $1.0$ & (all 10) & (best-of-10) \\\midrule
+MolCrystalFlow (sym-free)\cite{zeng2026molcrystalflow} & $\sim\!6.8\%$ & $\sim\!8\%$ & $3.9\%$ & -- \\
+MOFFlow (sym-free)\cite{kim2025mofflow}                & $\sim\!3.4\%$ & --          & $18.8\%$ & -- \\
+Genarris-3 (sym-cond.)                                 & \multicolumn{2}{c}{comp.\ w/ MCF} & $59\%$ & -- \\\midrule
+ours, de-novo (coset off)                              & $0\%$ & $0\%$   & $32.9\%$ & $103^\circ$ \\
+ours, conditioned (coset on)                           & $0\%$ & $0.8\%$ & $30.7\%$ & $\mathbf{14^\circ}$ \\\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Limitations}
 Evaluation is by reconstruction against known CSD structures on simulated conditioning; the analysis

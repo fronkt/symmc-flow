@@ -1,0 +1,30 @@
+[E4 gen] corpus 1127 -> 1095 multi-copy; val 131; device cpu; k=10 steps=50; n_cosets(model)=238
+  sampled 32/131  (50s)
+  sampled 64/131  (120s)
+  sampled 96/131  (174s)
+  sampled 128/131  (332s)
+  sampled 131/131  (375s)
+[E4] saved 131 refs + draws -> gpu_results/phaseE4\e4_draws.pkl
+
+==== E4: MolCrystalFlow-aligned match@10 (ltol=0.3, angle_tol=10.0; n=131) ====
+  protocol: pymatgen StructureMatcher, best-of-k, stol sweep -- mirrors MolCrystalFlow arXiv:2602.16020v3
+  CAVEAT: same matcher + same match@10 as MCF, but OUR corpus is a smaller CSD-derived
+          molecular set (not Thurlemann/OMC25) -> comparable-task, not strict head-to-head.
+  reference points (MCF paper): MolCrystalFlow ~6.8%@0.8 / ~8%@1.0; MOFFlow ~3.4%@0.8;
+          both symmetry-FREE. Genarris-3 (symmetry-conditioned) competitive with MCF.
+
+  condition                                   stol=0.5   stol=0.8   stol=1     stol=1.2 
+  --------------------------------------------------------------------------------------
+  de-novo (coset OFF)  [vs MCF/MOFFlow]          0.0%     0.0%     0.0%     0.0%
+      (median best-of-k orient err 103.2 deg)
+  conditioned (coset ON) [symmetry template]     0.0%     0.0%     0.8%     0.8%
+      (median best-of-k orient err 14.1 deg)
+
+  TAG e4 coset_off stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1.2 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1 match 0.76 ci 0.13-4.20
+  TAG e4 coset_on stol 1.2 match 0.76 ci 0.13-4.20
