@@ -166,7 +166,7 @@ def finish_and_score(args):
     if workers > 1:
         ctx = mp.get_context("spawn")
         with ctx.Pool(workers) as pool:
-            for i, r in enumerate(pool.imap(_finish_score_one, payloads)):
+            for i, r in enumerate(pool.imap_unordered(_finish_score_one, payloads)):
                 results.append(r)
                 if (i + 1) % 10 == 0 or i + 1 == len(payloads):
                     print(f"  finished {i+1}/{len(payloads)}  ({time.time()-t0:.0f}s)", flush=True)
