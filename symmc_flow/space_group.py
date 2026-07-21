@@ -108,6 +108,35 @@ def n_ops(sg_number: int) -> int:
     return int(_ops_frac_np(int(sg_number))[0].shape[0])
 
 
+# crystal-system id per space-group number (International Tables ranges). Trigonal (4) and
+# hexagonal (5) share the SAME lattice mask (conventional hexagonal setting, gamma=120); the
+# rhombohedral SETTING of R space groups is the documented exception (Phase F spec risk #3).
+_FAMILY_NAMES = ("triclinic", "monoclinic", "orthorhombic", "tetragonal",
+                 "trigonal", "hexagonal", "cubic")
+
+
+def family_of(sg_number: int) -> int:
+    """Crystal-system id 0..6 (triclinic..cubic) of `sg_number` (Phase F lattice masking)."""
+    n = int(sg_number)
+    if n <= 2:
+        return 0
+    if n <= 15:
+        return 1
+    if n <= 74:
+        return 2
+    if n <= 142:
+        return 3
+    if n <= 167:
+        return 4
+    if n <= 194:
+        return 5
+    return 6
+
+
+def family_name(sg_number: int) -> str:
+    return _FAMILY_NAMES[family_of(sg_number)]
+
+
 def cartesian_rotations(sg_number: int, lattice: torch.Tensor) -> torch.Tensor:
     """Cartesian linear parts R_cart(g) = L^T W_g L^{-T} of every operator, in the codebase's
     cart = frac @ lattice convention. `lattice` is (3,3) (rows = lattice vectors). Returns

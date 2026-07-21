@@ -35,7 +35,9 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
     mean-field under-dispersion that collapses atoms together."""
     mask = init.mask
     n = mask.sum(-1).clamp_min(1)
-    kL = M.lattice_to_param(init.lattice, n)
+    repr = getattr(model.cfg, "lattice_repr", "shape10")
+    fam = repr == "logmetric6" and getattr(model.cfg, "lattice_family_mask", False)
+    kL = M.lat_to_k(init.lattice, n, repr)
     x = init.centroid.clone()
     R = init.orient.clone()
     B = kL.shape[0]
@@ -44,7 +46,7 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
 
     def field(k_, x_, R_, t_scalar):
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
-        L_ = M.param_to_lattice(k_, n)
+        L_ = M.k_to_lat(k_, n, repr)
         if symmetrize:
             return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
         return model.forward(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
@@ -68,6 +70,8 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
         k4L, k4x, k4R = field(kL4, x4, R4, t0 + dt)
 
         kL = kL + (dt / 6.0) * (k1L + 2 * k2L + 2 * k3L + k4L)
+        if fam:
+            kL = M.apply_family_mask(kL, sg)   # re-project frozen family DOF to canonical
         x = M.wrap(x + (dt / 6.0) * (k1x + 2 * k2x + 2 * k3x + k4x))
         omega = (dt / 6.0) * (k1R + 2 * k2R + 2 * k3R + k4R)
         R = R @ M.so3_exp(omega)
@@ -78,4 +82,4 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
             x = M.wrap(x + scale * torch.randn_like(x) * mask.unsqueeze(-1).float())
 
     m = mask.unsqueeze(-1).float()
-    return CrystalState(M.param_to_lattice(kL, n), x * m, R, mask)
+    return CrystalState(M.k_to_lat(kL, n, repr), x * m, R, mask)

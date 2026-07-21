@@ -26,13 +26,21 @@ def n_atoms(state: CrystalState) -> torch.Tensor:
 
 
 def sample_prior(like: CrystalState, vol_per_atom: float = 10.0,
-                 centroid_prior_std: float | None = None) -> CrystalState:
+                 centroid_prior_std: float | None = None, sg: torch.Tensor | None = None,
+                 lattice_repr: str = "shape10", family_mask: bool = False,
+                 logvol_std: float = 0.3, dev_std: float = 0.3) -> CrystalState:
     B, Mmax = like.mask.shape
     dev, dt = like.lattice.device, like.lattice.dtype
     n = n_atoms(like)
-    k0 = M.prior_lattice_param(n, vol_per_atom).to(dt)
+    if lattice_repr == "logmetric6":
+        k0 = M.prior_logmetric(n, sg, vol_per_atom, logvol_std, dev_std,
+                               family_mask=family_mask).to(dt)
+        L = M.logmetric_to_lattice(k0)
+    else:
+        k0 = M.prior_lattice_param(n, vol_per_atom).to(dt)
+        L = M.param_to_lattice(k0, n)
     return CrystalState(
-        lattice=M.param_to_lattice(k0, n),
+        lattice=L,
         centroid=M.prior_centroid((B, Mmax), dev, dt, std=centroid_prior_std),
         orient=M.prior_orientation((B, Mmax), dev, dt),
         mask=like.mask,
@@ -47,18 +55,30 @@ class PriorCache:
     The cached priors are themselves draws from the base prior, so the dataset
     marginal still matches the test-time prior."""
 
-    def __init__(self, vol_per_atom: float = 10.0, centroid_prior_std: float | None = None):
+    def __init__(self, vol_per_atom: float = 10.0, centroid_prior_std: float | None = None,
+                 lattice_repr: str = "shape10", family_mask: bool = False,
+                 logvol_std: float = 0.3, dev_std: float = 0.3):
         self.store: dict[int, tuple] = {}
         self.vol = vol_per_atom
         self.std = centroid_prior_std
+        self.repr = lattice_repr
+        self.family_mask = family_mask
+        self.logvol_std = logvol_std
+        self.dev_std = dev_std
 
-    def _make_one(self, n: int, Mmax: int, dt):
-        k0 = M.prior_lattice_param(torch.tensor([float(n)]), self.vol).to(dt)[0]  # (10,)
+    def _make_one(self, n: int, Mmax: int, dt, sg: int = 1):
+        if self.repr == "logmetric6":
+            k0 = M.prior_logmetric(torch.tensor([float(n)]), torch.tensor([int(sg)]),
+                                   self.vol, self.logvol_std, self.dev_std,
+                                   family_mask=self.family_mask).to(dt)[0]        # (6,)
+        else:
+            k0 = M.prior_lattice_param(torch.tensor([float(n)]), self.vol).to(dt)[0]  # (10,)
         c = M.prior_centroid((Mmax,), None, dt, std=self.std)                     # (Mmax,3)
         R = M.prior_orientation((Mmax,), None, dt)                               # (Mmax,3,3)
         return k0, c, R
 
-    def assemble(self, like: CrystalState, idx: torch.Tensor) -> CrystalState:
+    def assemble(self, like: CrystalState, idx: torch.Tensor,
+                 sg: torch.Tensor | None = None) -> CrystalState:
         B, Mmax = like.mask.shape
         dev, dt = like.lattice.device, like.lattice.dtype
         n = n_atoms(like)
@@ -66,11 +86,12 @@ class PriorCache:
         for b in range(B):
             key = int(idx[b])
             if key not in self.store:
-                self.store[key] = self._make_one(int(n[b]), Mmax, dt)
+                self.store[key] = self._make_one(int(n[b]), Mmax, dt,
+                                                 int(sg[b]) if sg is not None else 1)
             k0, c, R = self.store[key]
             k0s.append(k0); cs.append(c); Rs.append(R)
         k0 = torch.stack(k0s).to(dev)
-        L = M.param_to_lattice(k0, n)
+        L = M.k_to_lat(k0, n, self.repr)
         return CrystalState(L, torch.stack(cs).to(dev), torch.stack(Rs).to(dev), like.mask)
 
 
@@ -105,15 +126,21 @@ def ot_couple(z0: CrystalState, z1: CrystalState) -> CrystalState:
     return CrystalState(z0.lattice, new_x0, new_R0, z0.mask)
 
 
-def interpolate(z0: CrystalState, z1: CrystalState, t: torch.Tensor):
-    """Return (z_t, targets) where targets = (u_lattice (B,10), u_centroid, u_orient).
-    The lattice path is a straight line in (log-volume, shape) param space.
-    t:(B,) in [0,1]."""
+def interpolate(z0: CrystalState, z1: CrystalState, t: torch.Tensor,
+                sg: torch.Tensor | None = None, lattice_repr: str = "shape10",
+                family_mask: bool = False):
+    """Return (z_t, targets) where targets = (u_lattice (B,D), u_centroid, u_orient).
+    The lattice path is a straight line in param space (shape10: log-vol+shape; logmetric6:
+    log-metric k in R^6). t:(B,) in [0,1]."""
     tx = t.view(-1, 1, 1)
     n = n_atoms(z1)
-    k0 = M.lattice_to_param(z0.lattice, n)
-    k1 = M.lattice_to_param(z1.lattice, n)
-    L_t = M.param_to_lattice((1.0 - t.view(-1, 1)) * k0 + t.view(-1, 1) * k1, n)
+    k0 = M.lat_to_k(z0.lattice, n, lattice_repr)
+    k1 = M.lat_to_k(z1.lattice, n, lattice_repr)
+    if lattice_repr == "logmetric6" and family_mask:
+        # snap both ends to the crystal family so frozen dims (and their velocity target) are 0
+        k0 = M.apply_family_mask(k0, sg)
+        k1 = M.apply_family_mask(k1, sg)
+    L_t = M.k_to_lat((1.0 - t.view(-1, 1)) * k0 + t.view(-1, 1) * k1, n, lattice_repr)
     u_L = k1 - k0
 
     x_t = M.torus_geodesic(z0.centroid, z1.centroid, tx)

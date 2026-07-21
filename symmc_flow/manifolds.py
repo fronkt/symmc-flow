@@ -7,8 +7,11 @@
 All ops are batched over a leading (...) shape and run on CPU or CUDA.
 """
 from __future__ import annotations
+import functools
 import math
 import torch
+
+from .space_group import family_of
 
 _EPS = 1e-7
 
@@ -195,6 +198,139 @@ def prior_lattice_param(n: torch.Tensor, vol_per_atom: float = 10.0,
     s = math.log(vol_per_atom) + logvol_std * torch.randn(B, device=dev)
     K = torch.eye(3, device=dev) + shape_std * torch.randn(B, 3, 3, device=dev)
     return torch.cat([s.unsqueeze(-1), K.reshape(B, 9)], dim=-1)
+
+
+# ===================== Lattice (log-metric k in R^6, Phase F) =================
+# Rotation-invariant cell repr for space-group family masking. The metric is G = L L^T (rows of
+# L are lattice vectors, cart = frac @ L), S = logm(G) symmetric, expanded in an ORTHONORMAL
+# symmetric basis {B_0..B_5}: k_i = <S, B_i>. Then:
+#   - k_0 = tr(S)/sqrt(3) = 2 ln(V)/sqrt(3)  is the sole VOLUME coordinate (always free)
+#   - crystal-family constraints become "freeze a subset of k to a canonical value" (verified in
+#     tasks/phaseF_spec.md): monoclinic freezes k3,k5; orthorhombic k3,k4,k5; tetragonal k2..k5;
+#     hexagonal k2,k3,k4 and k5=CANON_HEX (gamma=120, an a-independent constant in log-metric
+#     space); cubic k1..k5. This is the DiffCSP++/SGFM mechanism, ported to molecular flow.
+def _sym_basis(device=None, dtype=torch.float32) -> torch.Tensor:
+    s3, s6, s2 = math.sqrt(3.0), math.sqrt(6.0), math.sqrt(2.0)
+    B = torch.zeros(6, 3, 3, device=device, dtype=dtype)
+    B[0] = torch.eye(3, device=device, dtype=dtype) / s3
+    B[1] = torch.diag(torch.tensor([1.0, 1.0, -2.0], device=device, dtype=dtype)) / s6
+    B[2] = torch.diag(torch.tensor([1.0, -1.0, 0.0], device=device, dtype=dtype)) / s2
+    B[3, 1, 2] = B[3, 2, 1] = 1.0 / s2       # S_23  (alpha)
+    B[4, 0, 2] = B[4, 2, 0] = 1.0 / s2       # S_13  (beta)
+    B[5, 0, 1] = B[5, 1, 0] = 1.0 / s2       # S_12  (gamma)
+    return B
+
+
+SYM_BASIS = _sym_basis()
+CANON_HEX = -math.log(3.0) / math.sqrt(2.0)   # k5 for gamma=120 (a-independent); ~ -0.776836
+
+
+def _logm_spd(G: torch.Tensor) -> torch.Tensor:
+    """Matrix log of a symmetric positive-definite (...,3,3) via eigendecomposition."""
+    G = 0.5 * (G + G.transpose(-1, -2))
+    w, V = torch.linalg.eigh(G)
+    w = torch.log(w.clamp_min(_EPS))
+    return (V * w.unsqueeze(-2)) @ V.transpose(-1, -2)
+
+
+def _expm_sym(S: torch.Tensor) -> torch.Tensor:
+    """Matrix exp of a symmetric (...,3,3) via eigendecomposition (result is SPD)."""
+    S = 0.5 * (S + S.transpose(-1, -2))
+    w, V = torch.linalg.eigh(S)
+    return (V * torch.exp(w).unsqueeze(-2)) @ V.transpose(-1, -2)
+
+
+def lattice_to_logmetric(L: torch.Tensor) -> torch.Tensor:
+    """L:(...,3,3) rows=lattice vectors -> k:(...,6) log-metric coordinates."""
+    Bmat = SYM_BASIS.to(L.device, L.dtype)
+    G = L @ L.transpose(-1, -2)
+    S = _logm_spd(G)
+    return torch.einsum("...ij,aij->...a", S, Bmat)
+
+
+def logmetric_to_lattice(k: torch.Tensor) -> torch.Tensor:
+    """k:(...,6) -> L:(...,3,3) lower-triangular (rows=lattice vectors), det>0.
+    Frame differs from a from_parameters matrix but the METRIC L L^T is identical, so it is
+    gauge-consistent everywhere the codebase uses the lattice (round-tripped through k; pair
+    distances are frac^T G frac; StructureMatcher is frame-invariant)."""
+    Bmat = SYM_BASIS.to(k.device, k.dtype)
+    S = torch.einsum("...a,aij->...ij", k, Bmat)
+    G = _expm_sym(S)
+    return torch.linalg.cholesky(G)
+
+
+@functools.lru_cache(maxsize=256)
+def _family_free_canon(sg: int) -> tuple[tuple[bool, ...], tuple[float, ...]]:
+    """(free[6], canon[6]) for a space group: free=True dims are generated; the rest are frozen
+    at canon. k0 (volume) is always free. See the table in tasks/phaseF_spec.md."""
+    fam = family_of(int(sg))
+    free = [True] * 6
+    canon = [0.0] * 6
+    if fam == 1:                    # monoclinic: freeze k3 (alpha), k5 (gamma)
+        free[3] = free[5] = False
+    elif fam == 2:                  # orthorhombic: freeze all off-diagonals
+        free[3] = free[4] = free[5] = False
+    elif fam == 3:                  # tetragonal: a=b, all 90
+        free[2] = free[3] = free[4] = free[5] = False
+    elif fam in (4, 5):             # trigonal/hexagonal: a=b, gamma=120
+        free[2] = free[3] = free[4] = free[5] = False
+        canon[5] = CANON_HEX
+    elif fam == 6:                  # cubic: a=b=c, all 90
+        free[1] = free[2] = free[3] = free[4] = free[5] = False
+    return tuple(free), tuple(canon)
+
+
+def _free_canon_batch(sg: torch.Tensor):
+    """sg:(B,) long -> (free (B,6) bool, canon (B,6) float) on sg.device."""
+    frees, canons = [], []
+    for s in sg.tolist():
+        f, c = _family_free_canon(int(s))
+        frees.append(f)
+        canons.append(c)
+    free = torch.tensor(frees, dtype=torch.bool, device=sg.device)
+    canon = torch.tensor(canons, dtype=torch.float32, device=sg.device)
+    return free, canon
+
+
+def apply_family_mask(k: torch.Tensor, sg: torch.Tensor) -> torch.Tensor:
+    """Freeze crystal-family-constrained coords of k:(B,6) to their canonical values."""
+    free, canon = _free_canon_batch(sg)
+    return torch.where(free, k, canon.to(k.dtype))
+
+
+def mask_velocity(v: torch.Tensor, sg: torch.Tensor) -> torch.Tensor:
+    """Zero the velocity on frozen (non-free) lattice coords so integration never moves them."""
+    free, _ = _free_canon_batch(sg)
+    return v * free.to(v.dtype)
+
+
+def prior_logmetric(n: torch.Tensor, sg: torch.Tensor, vol_per_atom: float = 10.0,
+                    logvol_std: float = 0.3, dev_std: float = 0.3,
+                    family_mask: bool = True) -> torch.Tensor:
+    """Data-informed lattice prior in log-metric space. n:(B,) sg:(B,) -> k:(B,6).
+    k0 (volume) ~ N(2 ln(vol_per_atom*n)/sqrt3, (2 logvol_std/sqrt3)^2); deviatoric dims ~ N(0,
+    dev_std^2); with family_mask the crystal-family mask is applied so the cell starts on-family."""
+    B = n.shape[0]
+    dev = n.device
+    lnV = math.log(vol_per_atom) + torch.log(n.to(torch.float32).clamp_min(1.0)) \
+        + logvol_std * torch.randn(B, device=dev)
+    k0 = 2.0 * lnV / math.sqrt(3.0)
+    kdev = dev_std * torch.randn(B, 5, device=dev)
+    k = torch.cat([k0.unsqueeze(-1), kdev], dim=-1)
+    return apply_family_mask(k, sg) if family_mask else k
+
+
+# ----- repr dispatch (shape10 default vs logmetric6 Phase F) ------------------
+def lat_to_k(L: torch.Tensor, n: torch.Tensor, repr: str = "shape10") -> torch.Tensor:
+    return lattice_to_logmetric(L) if repr == "logmetric6" else lattice_to_param(L, n)
+
+
+def k_to_lat(k: torch.Tensor, n: torch.Tensor, repr: str = "shape10") -> torch.Tensor:
+    return logmetric_to_lattice(k) if repr == "logmetric6" else param_to_lattice(k, n)
+
+
+def lattice_param_dim(repr: str = "shape10") -> int:
+    return 6 if repr == "logmetric6" else 10
 
 
 # ===================== Priors ================================================

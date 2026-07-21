@@ -22,6 +22,12 @@ class ModelConfig:
     sg_embed_dim: int = 64
     time_embed_dim: int = 64
     n_cosets: int = 0  # >0 enables per-molecule space-group coset embedding (2c diagnostic)
+    # lattice representation (Phase F): "shape10" = (log-vol, det-1 shape) default; "logmetric6"
+    # = O(3)-invariant log-metric k in R^6 that supports crystal-family masking.
+    lattice_repr: str = "shape10"
+    lattice_family_mask: bool = False  # freeze crystal-family-constrained lattice DOF (needs
+                                       # lattice_repr="logmetric6"); the deployable extension of
+                                       # coset orientation conditioning to the unit cell
     # flow head loss weights
     lambda_lattice: float = 1.0
     lambda_centroid: float = 1.0
@@ -46,6 +52,9 @@ class TrainConfig:
     use_group_averaging: bool = True
     use_ot_coupling: bool = False     # optimal-transport prior<->data atom pairing
     prior_vol_per_atom: float = 10.0  # mean cell volume per atom (A^3) of the lattice prior
+    prior_logvol_std: float = 0.3     # std of ln(V) in the lattice prior (data-informed ~0.11 for
+                                      # molecular crystals; shape10 path keeps the 0.3 default)
+    prior_dev_std: float = 0.3        # std of the deviatoric log-metric prior dims (logmetric6)
     centroid_prior_std: float | None = None  # None -> uniform torus prior; float -> wrapped-normal
     fixed_prior: bool = False         # cache one prior per structure (sharper OT target)
     sampler_churn: float = 0.0        # Langevin-style noise in the sampler (0 = deterministic)
