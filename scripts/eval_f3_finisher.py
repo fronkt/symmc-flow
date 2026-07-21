@@ -106,56 +106,12 @@ def generate(args):
 
 
 # ------------------------------------------------------------------ finish + score (CPU, no model)
-def finish_and_score(args):
-    from symmc_flow.molcrystal import rigid_to_structure
-    from symmc_flow.rigid_press import finish_structure
-    blob = torch.load(args.from_tensors, map_location="cpu", weights_only=False)
-    crystals = blob["crystals"]; k = blob["match_k"]; vpa = blob["vol_per_atom"]
-    fammask_lat = blob["lat_repr"] == "logmetric6"
-    if args.limit:
-        crystals = crystals[:args.limit]
-    relax_cell = not args.no_relax_cell
-    print(f"[F3 finish] {len(crystals)} crystals x {k} draws; steps={args.finish_steps} "
-          f"relax_cell={relax_cell} contact={args.contact} cutoff={args.cutoff}", flush=True)
-
-    refs, raw_on, fin_on = [], [], []
-    t0 = time.time()
-    for ci, c in enumerate(crystals):
-        Z, loc = c["Z"], c["local"]; am, mm = c["atom_mask"], c["mol_mask"]
-        refs.append(c["ref"]); raws, fins = [], []
-        for (L, cen, ori) in c["draws"]:
-            raws.append(rigid_to_structure(L, Z, loc, cen, ori, am, mm).as_dict())
-            Lf, cf, Rf = finish_structure(L, cen, ori, loc, Z, am, mm, c["sg"],
-                                          groups=c["groups"], op_idx=c["op_idx"],
-                                          steps=args.finish_steps, contact=args.contact,
-                                          cutoff=args.cutoff, relax_cell=relax_cell,
-                                          family_mask=fammask_lat, vol_per_atom=vpa)
-            fins.append(rigid_to_structure(Lf, Z, loc, cf, Rf, am, mm).as_dict())
-        raw_on.append(raws); fin_on.append(fins)
-        if (ci + 1) % 10 == 0 or ci + 1 == len(crystals):
-            print(f"  finished {ci+1}/{len(crystals)}  ({time.time()-t0:.0f}s)", flush=True)
-
-    os.makedirs(args.out, exist_ok=True)
-    with open(os.path.join(args.out, "f3_scored.pkl"), "wb") as f:
-        pickle.dump({"refs": refs, "raw_on": raw_on, "fin_on": fin_on, "match_k": k}, f)
-    _report(refs, raw_on, fin_on, k)
-
-
-def _matchrate(refs, gens, stol):
-    from pymatgen.core import Structure
-    from pymatgen.analysis.structure_matcher import StructureMatcher
-    sm = StructureMatcher(ltol=0.3, stol=stol, angle_tol=10)
-    hit = sum(any(sm.fit(Structure.from_dict(g), Structure.from_dict(rd)) for g in gs)
-              for rd, gs in zip(refs, gens))
-    return hit / max(len(refs), 1)
-
-
-def _min_rms(sm, ref_struct, draws):
+def _min_rms_S(sm, refS, draw_dicts):
     from pymatgen.core import Structure
     best = None
-    for gd in draws:
+    for gd in draw_dicts:
         try:
-            rd = sm.get_rms_dist(Structure.from_dict(gd), ref_struct)
+            rd = sm.get_rms_dist(Structure.from_dict(gd), refS)
         except Exception:
             rd = None
         if rd is not None:
@@ -163,26 +119,93 @@ def _min_rms(sm, ref_struct, draws):
     return best
 
 
-def _report(refs, raw_on, fin_on, k):
+def _finish_score_one(payload):
+    """One crystal end-to-end (finish k draws + score vs ref). Runs in a worker process."""
+    torch.set_num_threads(1)                               # avoid thread oversubscription in the pool
     from pymatgen.core import Structure
     from pymatgen.analysis.structure_matcher import StructureMatcher
-    n = len(refs)
+    from symmc_flow.molcrystal import rigid_to_structure
+    from symmc_flow.rigid_press import finish_structure
+    c, fk = payload
+    Z, loc, am, mm = c["Z"], c["local"], c["atom_mask"], c["mol_mask"]
+    raws, fins = [], []
+    for (L, cen, ori) in c["draws"]:
+        raws.append(rigid_to_structure(L, Z, loc, cen, ori, am, mm).as_dict())
+        Lf, cf, Rf = finish_structure(L, cen, ori, loc, Z, am, mm, c["sg"],
+                                      groups=c["groups"], op_idx=c["op_idx"], **fk)
+        fins.append(rigid_to_structure(Lf, Z, loc, cf, Rf, am, mm).as_dict())
+    refS = Structure.from_dict(c["ref"])
+    res = {"ref": c["ref"], "raws": raws, "fins": fins}
+    for stol in STOLS:
+        sm = StructureMatcher(ltol=0.3, stol=stol, angle_tol=10)
+        res[f"raw_{stol}"] = int(any(sm.fit(Structure.from_dict(g), refS) for g in raws))
+        res[f"fin_{stol}"] = int(any(sm.fit(Structure.from_dict(g), refS) for g in fins))
+    sm2 = StructureMatcher(ltol=0.5, stol=2.0, angle_tol=20)
+    res["raw_rms"] = _min_rms_S(sm2, refS, raws)
+    res["fin_rms"] = _min_rms_S(sm2, refS, fins)
+    return res
+
+
+def finish_and_score(args):
+    import multiprocessing as mp
+    blob = torch.load(args.from_tensors, map_location="cpu", weights_only=False)
+    crystals = blob["crystals"]; k = blob["match_k"]; vpa = blob["vol_per_atom"]
+    fammask_lat = blob["lat_repr"] == "logmetric6"
+    if args.limit:
+        crystals = crystals[:args.limit]
+    relax_cell = not args.no_relax_cell
+    fk = dict(steps=args.finish_steps, contact=args.contact, cutoff=args.cutoff,
+              relax_cell=relax_cell, family_mask=fammask_lat, vol_per_atom=vpa)
+    workers = args.workers if args.workers > 0 else max(1, mp.cpu_count() - 1)
+    print(f"[F3 finish] {len(crystals)} crystals x {k} draws; steps={args.finish_steps} "
+          f"relax_cell={relax_cell} contact={args.contact} cutoff={args.cutoff}; workers={workers}",
+          flush=True)
+
+    payloads = [(c, fk) for c in crystals]
+    t0 = time.time(); results = []
+    if workers > 1:
+        ctx = mp.get_context("spawn")
+        with ctx.Pool(workers) as pool:
+            for i, r in enumerate(pool.imap(_finish_score_one, payloads)):
+                results.append(r)
+                if (i + 1) % 10 == 0 or i + 1 == len(payloads):
+                    print(f"  finished {i+1}/{len(payloads)}  ({time.time()-t0:.0f}s)", flush=True)
+    else:
+        for i, p in enumerate(payloads):
+            results.append(_finish_score_one(p))
+            if (i + 1) % 10 == 0 or i + 1 == len(payloads):
+                print(f"  finished {i+1}/{len(payloads)}  ({time.time()-t0:.0f}s)", flush=True)
+
+    refs = [r["ref"] for r in results]
+    raw_on = [r["raws"] for r in results]; fin_on = [r["fins"] for r in results]
+    os.makedirs(args.out, exist_ok=True)
+    with open(os.path.join(args.out, "f3_scored.pkl"), "wb") as f:
+        pickle.dump({"refs": refs, "raw_on": raw_on, "fin_on": fin_on, "match_k": k}, f)
+    _report_agg(results, k)
+
+
+def _report_agg(results, k):
+    """Aggregate per-crystal worker results into the paired RAW-vs-FINISHED report."""
+    n = len(results)
+    raw_on = [r["raws"] for r in results]; fin_on = [r["fins"] for r in results]
+    refs = [r["ref"] for r in results]
     print(f"\n==== F3a: RAW vs FINISHED (coset ON), n={n}, best-of-{k} ====")
     print(f"  {'stol':>6} {'RAW match':>11} {'FIN match':>11}   FIN 95% CI")
     for stol in STOLS:
-        mr = _matchrate(refs, raw_on, stol); mf = _matchrate(refs, fin_on, stol)
+        mr = sum(r[f"raw_{stol}"] for r in results) / max(n, 1)
+        mf = sum(r[f"fin_{stol}"] for r in results) / max(n, 1)
         clo, chi = E4.wilson(mf, n)
         print(f"  {stol:>6} {100*mr:>9.1f}% {100*mf:>9.1f}%   {100*clo:.2f}-{100*chi:.2f}")
         print(f"  TAG f3 match stol {stol} raw {100*mr:.2f} fin {100*mf:.2f} ci {100*clo:.2f}-{100*chi:.2f}")
     r_raw, r_fin = E4.rmad(refs, raw_on), E4.rmad(refs, fin_on)
     as_raw, as_fin, as_ref = E4.angle_spike(raw_on), E4.angle_spike(fin_on), E4.angle_spike(refs)
-    sm = StructureMatcher(ltol=0.5, stol=2.0, angle_tol=20)
-    rr = [x for x in (_min_rms(sm, Structure.from_dict(refs[i]), raw_on[i]) for i in range(n)) if x is not None]
-    rf = [x for x in (_min_rms(sm, Structure.from_dict(refs[i]), fin_on[i]) for i in range(n)) if x is not None]
-    mr_, mf_ = (statistics.median(rr) if rr else float("nan")), (statistics.median(rf) if rf else float("nan"))
+    rr = [r["raw_rms"] for r in results if r["raw_rms"] is not None]
+    rf = [r["fin_rms"] for r in results if r["fin_rms"] is not None]
+    mr_ = statistics.median(rr) if rr else float("nan")
+    mf_ = statistics.median(rf) if rf else float("nan")
+    drop = f"{100*(1-mf_/mr_):+.1f}%" if rr and rf and mr_ else "n/a"
     print(f"\n  cell-vol RMAD   RAW {r_raw[0]:.2f}%   FIN {r_fin[0]:.2f}%")
     print(f"  angle-spike     RAW {as_raw:.1f}%   FIN {as_fin:.1f}%   (ref {as_ref:.1f}%)")
-    drop = f"{100*(1-mf_/mr_):+.1f}%" if rr and rf and mr_ else "n/a"
     print(f"  median min-RMSD RAW {mr_:.3f} (n={len(rr)})   FIN {mf_:.3f} (n={len(rf)})   -> {drop}")
     print(f"  TAG f3 rmad raw {r_raw[0]:.2f} fin {r_fin[0]:.2f}")
     print(f"  TAG f3 anglespike raw {as_raw:.1f} fin {as_fin:.1f} ref {as_ref:.1f}")
@@ -204,6 +227,7 @@ def main():
     ap.add_argument("--contact", type=float, default=0.90)
     ap.add_argument("--cutoff", type=float, default=6.0)
     ap.add_argument("--no-relax-cell", action="store_true")
+    ap.add_argument("--workers", type=int, default=0, help="finish+score processes (0 = cpu_count-1)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="gpu_results/phaseF3")
     args = ap.parse_args()
