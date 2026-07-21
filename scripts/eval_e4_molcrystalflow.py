@@ -88,6 +88,29 @@ def rmad(refs, gens):
     return 100.0 * float(devs.mean()), 100.0 * float(devs.std())
 
 
+def _cell_angles(struct_dict):
+    """(alpha,beta,gamma) degrees from a Structure.as_dict() lattice matrix."""
+    import numpy as np
+    Lm = np.array(struct_dict["lattice"]["matrix"])
+    a, b, c = np.linalg.norm(Lm, axis=1)
+    def ang(u, v):
+        return np.degrees(np.arccos(np.clip(np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v)
+                                                            + 1e-12), -1, 1)))
+    return ang(Lm[1], Lm[2]), ang(Lm[0], Lm[2]), ang(Lm[0], Lm[1])
+
+
+def angle_spike(structs, tol=2.0):
+    """Fraction (%) of cell angles within `tol` deg of 90 -- the crystal-family gate metric.
+    `structs`: list of per-crystal single dicts OR lists of dicts (all samples pooled)."""
+    import numpy as np
+    angs = []
+    for entry in structs:
+        for sd in (entry if isinstance(entry, list) else [entry]):
+            angs.extend(_cell_angles(sd))
+    angs = np.array(angs) if angs else np.array([0.0])
+    return 100.0 * float(np.mean(np.abs(angs - 90.0) < tol))
+
+
 def wilson(mr, n):
     if n == 0:
         return (float("nan"), float("nan"))
@@ -129,6 +152,10 @@ def generate(args):
     mcfg = ModelConfig(**ck["model_cfg"])
     device = resolve_device("auto")
     has_coset = mcfg.n_cosets > 0
+    lat_repr = getattr(mcfg, "lattice_repr", "shape10")
+    fam_mask = getattr(mcfg, "lattice_family_mask", False)
+    lvstd = ck.get("prior_logvol_std", 0.3)
+    dvstd = ck.get("prior_dev_std", 0.3)
 
     full = MolCrystalDataset(cache_path=args.cache)
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
@@ -170,7 +197,9 @@ def generate(args):
         b_ori_on = torch.full((B,), 1e9); b_ori_off = torch.full((B,), 1e9)
         m = z1.mask.float()
         for _ in range(args.match_k):
-            z0 = sample_prior(z1, vol_per_atom=vpa)   # SAME prior draw feeds both passes
+            z0 = sample_prior(z1, vol_per_atom=vpa, sg=batch["sg"], lattice_repr=lat_repr,
+                              family_mask=fam_mask, logvol_std=lvstd, dev_std=dvstd)
+            # SAME prior draw feeds both passes
             # de-novo (no symmetry template) -- the MolCrystalFlow / MOFFlow regime
             samp0 = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps,
                                coset=None)
@@ -252,10 +281,21 @@ def report(blob, args):
         rmads[name] = (m, sd)
         print(f"  {name:<42s}  RMAD {m:6.2f} +/- {sd:.2f}%")
 
+    # --- Phase F gate: crystal-family angle spike (reference ~72%, unmasked ~3%) ------------
+    print("\n  -- cell-angle spike: fraction within 2deg of 90 (ref real ~72%; unmasked ~3%) --")
+    ref_spike = angle_spike(refs)
+    print(f"  {'reference (real crystals)':<42s}  {ref_spike:5.1f}%")
+    spikes = {}
+    for name, gens, ori in conds:
+        sp = angle_spike(gens)
+        spikes[name] = sp
+        print(f"  {name:<42s}  {sp:5.1f}%")
+
     print()
     for name, (m, sd) in rmads.items():
-        print(f"  TAG e4 rmad {('coset_on' if 'ON' in name else 'coset_off')} "
-              f"{m:.2f} std {sd:.2f}")
+        tag = "coset_on" if "ON" in name else "coset_off"
+        print(f"  TAG e4 rmad {tag} {m:.2f} std {sd:.2f}")
+        print(f"  TAG e4 anglespike {tag} {spikes[name]:.1f} ref {ref_spike:.1f}")
     for (name, stol), (mr, lo, hi, n_to) in results.items():
         print(f"  TAG e4 {('coset_on' if 'ON' in name else 'coset_off')} "
               f"stol {stol:g} match {100*mr:.2f} ci {100*lo:.2f}-{100*hi:.2f}"

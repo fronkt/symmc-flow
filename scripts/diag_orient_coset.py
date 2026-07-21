@@ -108,6 +108,15 @@ def main():
     ap.add_argument("--so3-avg-k", type=int, default=1,
                     help="C5: K for the SO(3)-averaged orientation objective (1 = standard CFM)")
     ap.add_argument("--no-coset", action="store_true", help="paired control: disable the embedding")
+    ap.add_argument("--lattice-logmetric", action="store_true",
+                    help="Phase F: use the O(3)-invariant log-metric k6 lattice repr")
+    ap.add_argument("--family-mask", action="store_true",
+                    help="Phase F: freeze crystal-family-constrained lattice DOF (needs "
+                         "--lattice-logmetric); the deployable lattice analogue of the coset")
+    ap.add_argument("--logvol-std", type=float, default=0.3,
+                    help="Phase F: informed lattice prior ln(V) std (~0.11 for molecular crystals)")
+    ap.add_argument("--dev-std", type=float, default=0.3,
+                    help="Phase F: deviatoric log-metric prior std (logmetric6)")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
 
@@ -139,10 +148,13 @@ def main():
     vpa = corpus_vol_per_atom(full.items)
     print(f"  lattice prior vol/atom: {vpa:.1f} A^3\n")
 
-    mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets)
+    mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets,
+                       lattice_repr="logmetric6" if args.lattice_logmetric else "shape10",
+                       lattice_family_mask=args.family_mask)
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
-                       cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k)
+                       cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k,
+                       prior_logvol_std=args.logvol_std, prior_dev_std=args.dev_std)
     device = resolve_device(tcfg.device)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
     print(f"  device={device}  steps={args.steps}  n_cosets(model)={mcfg.n_cosets}\n")
@@ -175,7 +187,8 @@ def main():
                 "val_idx": val_idx, "train_idx": train_idx, "pre_split": pre_split,
                 "post_split": post_split, "n_cosets": n_cosets,
                 "deployable": args.deployable, "clean_packing": args.clean_packing,
-                "no_coset": args.no_coset}, args.ckpt)
+                "no_coset": args.no_coset,
+                "prior_logvol_std": args.logvol_std, "prior_dev_std": args.dev_std}, args.ckpt)
     print(f"checkpoint -> {args.ckpt}")
 
 
