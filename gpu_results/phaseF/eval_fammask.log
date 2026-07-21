@@ -1,0 +1,43 @@
+[E4 gen] corpus 1127 -> 1095 multi-copy; val 131; device cuda; k=10 steps=50; n_cosets(model)=238
+  sampled 32/131  (47s)
+  sampled 64/131  (91s)
+  sampled 96/131  (134s)
+  sampled 128/131  (180s)
+  sampled 131/131  (214s)
+[E4] saved 131 refs + draws -> gpu_results/phaseF/e4_draws.pkl
+
+==== E4: MolCrystalFlow-aligned match@10 (ltol=0.3, angle_tol=10.0; n=131) ====
+  protocol: pymatgen StructureMatcher, best-of-k, stol sweep -- mirrors MolCrystalFlow arXiv:2602.16020v3
+  CAVEAT: same matcher + same match@10 as MCF, but OUR corpus is a smaller CSD-derived
+          molecular set (not Thurlemann/OMC25) -> comparable-task, not strict head-to-head.
+  reference points (MCF paper): MolCrystalFlow ~6.8%@0.8 / ~8%@1.0; MOFFlow ~3.4%@0.8;
+          both symmetry-FREE. Genarris-3 (symmetry-conditioned) competitive with MCF.
+
+  condition                                   stol=0.5   stol=0.8   stol=1     stol=1.2 
+  --------------------------------------------------------------------------------------
+  de-novo (coset OFF)  [vs MCF/MOFFlow]          0.0%     0.0%     0.0%     0.0%
+      (median best-of-k orient err 91.8 deg)
+  conditioned (coset ON) [symmetry template]     0.0%     0.0%     0.0%     0.8%
+      (median best-of-k orient err 18.0 deg)
+
+  -- cell-volume RMAD (over all k samples; MCF 3.86%, MOFFlow 18.8%, Genarris-3 raw 59%) --
+  de-novo (coset OFF)  [vs MCF/MOFFlow]       RMAD  26.07 +/- 16.88%
+  conditioned (coset ON) [symmetry template]  RMAD  24.43 +/- 21.04%
+
+  -- cell-angle spike: fraction within 2deg of 90 (ref real ~72%; unmasked ~3%) --
+  reference (real crystals)                    74.0%
+  de-novo (coset OFF)  [vs MCF/MOFFlow]        73.9%
+  conditioned (coset ON) [symmetry template]   73.6%
+
+  TAG e4 rmad coset_off 26.07 std 16.88
+  TAG e4 anglespike coset_off 73.9 ref 74.0
+  TAG e4 rmad coset_on 24.43 std 21.04
+  TAG e4 anglespike coset_on 73.6 ref 74.0
+  TAG e4 coset_off stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1.2 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1.2 match 0.76 ci 0.13-4.20
