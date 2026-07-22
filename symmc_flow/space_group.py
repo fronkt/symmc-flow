@@ -1,4 +1,4 @@
-"""Space-group symmetry operations and SGFM group averaging.
+"""Space-group symmetry operations (full, via pymatgen) and SGFM group averaging.
 
 A symmetry operation acts on fractional coordinates as g.x = (W x + t) mod 1.
 The averaged (group-equivariant) vector field is
@@ -8,31 +8,22 @@ The averaged (group-equivariant) vector field is
 so that v^G(h.x) = W_h v^G(x) for every h in G (the pushforward W_g^T = W_g^{-1}
 re-expresses each transported velocity in the frame of x).
 
-This reference ships a curated op subset (P1, P-1, 2-fold, mm2, ...). For the GPU
-benchmark phase, replace `get_ops` with full operations from
-`pymatgen.symmetry.groups.SpaceGroup(n).symmetry_ops`.
+Operations are the full general-position operators of the conventional cell, read from
+`pymatgen.symmetry.groups.SpaceGroup.from_int_number(n).symmetry_ops` and cached per space
+group in a deterministic order (identity first). This replaces the earlier six-group stub
+that fell back to P1 for everything else, so group averaging is now active for every space
+group, and the Cartesian rotation parts needed for symmetry-coset labelling are available
+(`cartesian_rotations`). If pymatgen is unavailable or a number is invalid, `get_ops` falls
+back to the P1 identity.
+
+Convention: the rest of the codebase uses cart = frac @ lattice (lattice rows are the
+lattice vectors), i.e. x_cart = L^T x_frac for column vectors, so the Cartesian linear part
+of a fractional operation W is R_cart = L^T W L^{-T}.
 """
 from __future__ import annotations
+import functools
+
 import torch
-
-_I = [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
-_INV = [[-1, 0, 0], [0, -1, 0], [0, 0, -1]]
-_C2Z = [[-1, 0, 0], [0, -1, 0], [0, 0, 1]]      # 2-fold about z
-_C2X = [[1, 0, 0], [0, -1, 0], [0, 0, -1]]      # 2-fold about x
-_C2Y = [[-1, 0, 0], [0, 1, 0], [0, 0, -1]]      # 2-fold about y
-_MZ = [[1, 0, 0], [0, 1, 0], [0, 0, -1]]        # mirror perpendicular to z
-
-# space-group number -> list of (W, t). Curated subset; identity fallback.
-_REGISTRY: dict[int, list[tuple[list, list]]] = {
-    1: [(_I, [0, 0, 0])],                                              # P1
-    2: [(_I, [0, 0, 0]), (_INV, [0, 0, 0])],                           # P-1
-    3: [(_I, [0, 0, 0]), (_C2Z, [0, 0, 0])],                           # P2
-    6: [(_I, [0, 0, 0]), (_MZ, [0, 0, 0])],                            # Pm
-    16: [(_I, [0, 0, 0]), (_C2Z, [0, 0, 0]),                           # P222
-         (_C2X, [0, 0, 0]), (_C2Y, [0, 0, 0])],
-    25: [(_I, [0, 0, 0]), (_C2Z, [0, 0, 0]),                           # Pmm2
-         (_MZ, [0, 0, 0]), ([[1, 0, 0], [0, -1, 0], [0, 0, 1]], [0, 0, 0])],
-}
 
 
 class SpaceGroupOps:
@@ -74,8 +65,85 @@ class SpaceGroupOps:
         return torch.einsum("kij,bmj->bmki", self.W, v).mean(dim=2)
 
 
+def _is_identity(W, t) -> bool:
+    import numpy as np
+    return bool(np.allclose(W, np.eye(3)) and np.allclose(np.mod(t, 1.0), 0.0))
+
+
+@functools.lru_cache(maxsize=512)
+def _ops_frac_np(sg_number: int):
+    """(W (K,3,3), t (K,3)) float64 numpy arrays for the full space group, deterministically
+    ordered (identity first, then lexicographic). Cached. P1 identity on any failure."""
+    import numpy as np
+    try:
+        from pymatgen.symmetry.groups import SpaceGroup
+        ops = list(SpaceGroup.from_int_number(int(sg_number)).symmetry_ops)
+        Ws = [np.asarray(o.rotation_matrix, dtype=np.float64) for o in ops]
+        ts = [np.mod(np.asarray(o.translation_vector, dtype=np.float64), 1.0) for o in ops]
+        if not Ws:
+            raise ValueError("no ops")
+    except Exception:
+        Ws, ts = [np.eye(3)], [np.zeros(3)]
+
+    def key(i):
+        return (0 if _is_identity(Ws[i], ts[i]) else 1,
+                tuple(np.round(Ws[i].ravel(), 3).tolist()),
+                tuple(np.round(ts[i], 3).tolist()))
+
+    order = sorted(range(len(Ws)), key=key)
+    W = np.stack([Ws[i] for i in order])
+    t = np.stack([ts[i] for i in order])
+    return W, t
+
+
 def get_ops(sg_number: int, device=None, dtype=torch.float32) -> SpaceGroupOps:
-    ops = _REGISTRY.get(int(sg_number), _REGISTRY[1])
-    W = torch.tensor([w for w, _ in ops], dtype=dtype, device=device)
-    t = torch.tensor([tt for _, tt in ops], dtype=dtype, device=device)
-    return SpaceGroupOps(W, t)
+    """Full general-position operators of space group `sg_number` (identity first)."""
+    W, t = _ops_frac_np(int(sg_number))
+    return SpaceGroupOps(torch.as_tensor(W, dtype=dtype, device=device),
+                         torch.as_tensor(t, dtype=dtype, device=device))
+
+
+def n_ops(sg_number: int) -> int:
+    """Number of general-position operators of `sg_number`."""
+    return int(_ops_frac_np(int(sg_number))[0].shape[0])
+
+
+# crystal-system id per space-group number (International Tables ranges). Trigonal (4) and
+# hexagonal (5) share the SAME lattice mask (conventional hexagonal setting, gamma=120); the
+# rhombohedral SETTING of R space groups is the documented exception (Phase F spec risk #3).
+_FAMILY_NAMES = ("triclinic", "monoclinic", "orthorhombic", "tetragonal",
+                 "trigonal", "hexagonal", "cubic")
+
+
+def family_of(sg_number: int) -> int:
+    """Crystal-system id 0..6 (triclinic..cubic) of `sg_number` (Phase F lattice masking)."""
+    n = int(sg_number)
+    if n <= 2:
+        return 0
+    if n <= 15:
+        return 1
+    if n <= 74:
+        return 2
+    if n <= 142:
+        return 3
+    if n <= 167:
+        return 4
+    if n <= 194:
+        return 5
+    return 6
+
+
+def family_name(sg_number: int) -> str:
+    return _FAMILY_NAMES[family_of(sg_number)]
+
+
+def cartesian_rotations(sg_number: int, lattice: torch.Tensor) -> torch.Tensor:
+    """Cartesian linear parts R_cart(g) = L^T W_g L^{-T} of every operator, in the codebase's
+    cart = frac @ lattice convention. `lattice` is (3,3) (rows = lattice vectors). Returns
+    (K,3,3) on lattice's device/dtype, ordered identity-first to match `get_ops`. These are
+    orthogonal (det +-1); the proper ones are the relative rotations between symmetry copies."""
+    W, _ = _ops_frac_np(int(sg_number))
+    Wt = torch.as_tensor(W, dtype=lattice.dtype, device=lattice.device)   # (K,3,3)
+    Lt = lattice.transpose(-1, -2)
+    LtInv = torch.linalg.inv(Lt)
+    return Lt @ Wt @ LtInv

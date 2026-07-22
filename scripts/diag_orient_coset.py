@@ -25,7 +25,8 @@ from torch.utils.data import Subset
 
 from symmc_flow.config import ModelConfig, TrainConfig
 from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
-                                    species_multiplicity, assign_cosets)
+                                    species_multiplicity, assign_cosets,
+                                    assign_symmetry_cosets)
 from symmc_flow.model import SymMCFlow
 from symmc_flow.train import train, _step_loss, resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
@@ -99,8 +100,33 @@ def main():
     ap.add_argument("--val-frac", type=float, default=0.12)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--angle-tol", type=float, default=20.0, help="coset clustering tolerance (deg)")
+    ap.add_argument("--deployable", action="store_true",
+                    help="use the LEAK-FREE symmetry-derived coset (assign_symmetry_cosets: the "
+                         "generating space-group operation, available from a template at sampling "
+                         "time) instead of the observed-rotation clustering (assign_cosets)")
     ap.add_argument("--clean-packing", action="store_true")
+    ap.add_argument("--so3-avg-k", type=int, default=1,
+                    help="C5: K for the SO(3)-averaged orientation objective (1 = standard CFM)")
     ap.add_argument("--no-coset", action="store_true", help="paired control: disable the embedding")
+    ap.add_argument("--lattice-logmetric", action="store_true",
+                    help="Phase F: use the O(3)-invariant log-metric k6 lattice repr")
+    ap.add_argument("--family-mask", action="store_true",
+                    help="Phase F: freeze crystal-family-constrained lattice DOF (needs "
+                         "--lattice-logmetric); the deployable lattice analogue of the coset")
+    ap.add_argument("--logvol-std", type=float, default=0.3,
+                    help="Phase F: informed lattice prior ln(V) std (~0.11 for molecular crystals)")
+    ap.add_argument("--dev-std", type=float, default=0.3,
+                    help="Phase F: deviatoric log-metric prior std (logmetric6)")
+    ap.add_argument("--ot-coupling", action="store_true",
+                    help="Phase F3b: optimal-transport prior<->data centroid pairing (fixes the "
+                         "under-trained centroid head -- the arbitrary pairing makes it unlearnable)")
+    ap.add_argument("--fixed-prior", action="store_true",
+                    help="Phase F3b: cache one prior per structure (lower-variance CFM target)")
+    ap.add_argument("--centroid-prior-std", type=float, default=None,
+                    help="Phase F3b: wrapped-normal centroid prior std (None -> uniform torus)")
+    ap.add_argument("--self-cond", action="store_true",
+                    help="Phase F3d: self-conditioning refinement (model sees its own terminal "
+                         "estimate; iterated at sampling) -- the novel positioning lever")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
 
@@ -111,11 +137,15 @@ def main():
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
     keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
     items = [rel[i] for i in keep]
-    items, n_cosets = assign_cosets(items, angle_tol_deg=args.angle_tol)
+    if args.deployable:
+        items, n_cosets = assign_symmetry_cosets(items)
+    else:
+        items, n_cosets = assign_cosets(items, angle_tol_deg=args.angle_tol)
     full.items = items
     n = len(full)
+    scheme = "DEPLOYABLE symmetry-op" if args.deployable else f"clustered (tol {args.angle_tol} deg)"
     print(f"corpus: {len(rel)} -> {n} multi-copy after relative re-gauge")
-    print(f"cosets: {n_cosets} distinct space-group cosets (tol {args.angle_tol} deg); "
+    print(f"cosets: {n_cosets} distinct space-group cosets [{scheme}]; "
           f"coset conditioning: {'OFF (control)' if args.no_coset else 'ON'}")
 
     g = torch.Generator().manual_seed(args.seed)
@@ -128,10 +158,15 @@ def main():
     vpa = corpus_vol_per_atom(full.items)
     print(f"  lattice prior vol/atom: {vpa:.1f} A^3\n")
 
-    mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets)
+    mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets,
+                       lattice_repr="logmetric6" if args.lattice_logmetric else "shape10",
+                       lattice_family_mask=args.family_mask, self_cond=args.self_cond)
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
-                       cond_clean_packing=args.clean_packing)
+                       cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k,
+                       prior_logvol_std=args.logvol_std, prior_dev_std=args.dev_std,
+                       use_ot_coupling=args.ot_coupling, fixed_prior=args.fixed_prior,
+                       centroid_prior_std=args.centroid_prior_std)
     device = resolve_device(tcfg.device)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
     print(f"  device={device}  steps={args.steps}  n_cosets(model)={mcfg.n_cosets}\n")
@@ -163,7 +198,9 @@ def main():
     torch.save({"model": model.state_dict(), "model_cfg": mcfg.__dict__, "vol_per_atom": vpa,
                 "val_idx": val_idx, "train_idx": train_idx, "pre_split": pre_split,
                 "post_split": post_split, "n_cosets": n_cosets,
-                "no_coset": args.no_coset}, args.ckpt)
+                "deployable": args.deployable, "clean_packing": args.clean_packing,
+                "no_coset": args.no_coset,
+                "prior_logvol_std": args.logvol_std, "prior_dev_std": args.dev_std}, args.ckpt)
     print(f"checkpoint -> {args.ckpt}")
 
 

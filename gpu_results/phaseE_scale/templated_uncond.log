@@ -1,0 +1,14 @@
+[scale_uncond] UNCONDITIONED (no symmetry template)
+  corpus 2539 -> 2464 multi-copy; val 296; device cuda; k=20 steps=50; n_cosets(model)=320
+  sampled 32/296
+  sampled 64/296
+  sampled 96/296
+  sampled 128/296
+  sampled 160/296
+  sampled 192/296
+  sampled 224/296
+  sampled 256/296
+  sampled 288/296
+  sampled 296/296
+/opt/conda/lib/python3.11/multiprocessing/resource_tracker.py:254: UserWarning: resource_tracker: There appear to be 6 leaked semaphore objects to clean up at shutdown
+  warnings.warn('resource_tracker: There appear to be %d '

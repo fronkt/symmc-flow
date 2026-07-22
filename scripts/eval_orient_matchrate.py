@@ -29,8 +29,10 @@ from pymatgen.analysis.structure_matcher import StructureMatcher
 
 from symmc_flow.config import ModelConfig
 from symmc_flow.molcrystal import (MolCrystalDataset, relative_gauge_item,
-                                    rigid_to_structure, species_multiplicity)
+                                    rigid_to_structure, species_multiplicity,
+                                    assign_symmetry_cosets)
 from symmc_flow.model import SymMCFlow
+from symmc_flow.coset_predictor import CosetPredictor
 from symmc_flow.train import resolve_device, move_batch
 from symmc_flow.data import collate, batch_to_state
 from symmc_flow.flow import sample_prior
@@ -38,10 +40,11 @@ from symmc_flow import manifolds as M
 
 
 @torch.no_grad()
-def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps):
+def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps, coset=None):
     """Orientation-only RK4 on SO(3): integrate dR/dt = v_R with lattice+centroid FROZEN at
     their true values (clean-packing conditioning). Mirrors the orient branch of rk4_sample so
-    the result is exactly the flow's orientation given the true packing."""
+    the result is exactly the flow's orientation given the true packing. `coset` (B,M) supplies
+    the per-molecule space-group coset id to the field when the model is coset-conditioned."""
     B = R0.shape[0]
     R = R0.clone()
     dt = 1.0 / steps
@@ -49,7 +52,7 @@ def sample_orient_only(model, mol_emb, L_true, x_true, R0, sg, mask, steps):
 
     def vR(R_, t_scalar):
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
-        return model.forward(mol_emb, L_true, x_true, R_, t, sg, mask)[2]
+        return model.forward(mol_emb, L_true, x_true, R_, t, sg, mask, coset=coset)[2]
 
     for i in range(steps):
         t0 = i * dt
@@ -99,6 +102,17 @@ def main():
     ap.add_argument("--angle-tol", type=float, default=10.0)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--limit", type=int, default=0, help="cap #val crystals (0 = all)")
+    ap.add_argument("--coset", action="store_true",
+                    help="supply the DEPLOYABLE symmetry-op coset to the trained field (needs a "
+                         "coset-conditioned checkpoint); the template-based orientation read")
+    ap.add_argument("--predictor-ckpt", default="",
+                    help="a trained CosetPredictor (C4); use its PREDICTED coset (from packing "
+                         "only, no template) instead of the ground-truth coset -- the de-novo read")
+    ap.add_argument("--predictor-topk", type=int, default=0,
+                    help="E3 template-free MARGINALIZATION: condition on the predictor's top-k "
+                         "cosets per molecule and keep the best draw (needs --predictor-ckpt). "
+                         "Selection among the k hypotheses is by match -> an UPPER BOUND on top-k, "
+                         "answering 'is the true coset in the top-k?'")
     ap.add_argument("--sweep", action="store_true",
                     help="also report match rate + median matched RMSD across a stol sweep")
     args = ap.parse_args()
@@ -116,6 +130,11 @@ def main():
     rel = [relative_gauge_item(full.items[i]) for i in range(len(full))]
     keep = [i for i, it in enumerate(rel) if species_multiplicity(it) >= 2]
     full.items = [rel[i] for i in keep]
+    if args.coset or args.predictor_ckpt:
+        if mcfg.n_cosets <= 0:
+            sys.exit("--coset/--predictor-ckpt need a coset-conditioned checkpoint (n_cosets>0)")
+        # assign on the FULL multi-copy corpus (train+val) so ids match the trained model
+        assign_symmetry_cosets(full.items)
     val_items = [full.items[i] for i in val_idx]
     if args.limit:
         val_items = val_items[:args.limit]
@@ -127,11 +146,26 @@ def main():
     torch.manual_seed(args.seed)
     untrained = SymMCFlow(mcfg).to(device).eval()  # fresh net = the predict-floor field
 
+    predictor = None
+    if args.predictor_ckpt:
+        pk = torch.load(args.predictor_ckpt, map_location="cpu", weights_only=False)
+        predictor = CosetPredictor(ModelConfig(**pk["model_cfg"])).to(device).eval()
+        predictor.load_state_dict(pk["model"])
+        mode = (f"top-{args.predictor_topk} MARGINALIZATION (best over hypotheses)"
+                if args.predictor_topk > 0 else "argmax (top-1)")
+        print(f"coset PREDICTOR {args.predictor_ckpt} (val acc {100*pk.get('acc', float('nan')):.1f}%)"
+              f" -> PREDICTED coset, {mode} [de-novo, no template]\n")
+    elif args.predictor_topk > 0:
+        sys.exit("--predictor-topk needs --predictor-ckpt (it marginalizes the predictor's top-k)")
+
     keys = ("oracle", "identity", "untrained", "trained")
     err = {k: [] for k in keys}        # per-crystal best-of-k non-ref orient error (deg)
     all_refs = []                      # per-crystal ref Structure (len n)
     all_gens = {k: [] for k in keys}   # per-crystal list of draw Structures (k=1 for det.)
     K = max(args.match_k, 1)
+    COVERAGE_KS = (1, 3, 5, 10)        # E3: fraction of non-ref molecules whose TRUE coset is in top-k
+    cover_hit = {kk: 0 for kk in COVERAGE_KS}
+    cover_tot = 0
 
     torch.manual_seed(args.seed)
     emb_un = None
@@ -152,18 +186,40 @@ def main():
                 all_gens[k].append([g])
             err[k] += per_crystal_err_deg(R, z1.orient, nonref).tolist()
 
-        # stochastic flow conditions: store all k draws (draw 0 = the match@1 draw)
-        for k, net, emb in (("untrained", untrained, emb_un), ("trained", trained, mol_emb)):
-            draws_struct = [[] for _ in range(B)]      # per crystal: list of k structures
+        # coset hypotheses supplied to the trained (coset-conditioned) field
+        if predictor is not None:
+            pemb = predictor.encode_molecules(batch["Z"], batch["local"], batch["atom_mask"])
+            cst10 = predictor.predict_topk(pemb, z1.lattice, z1.centroid, batch["sg"], z1.mask,
+                                           k=max(COVERAGE_KS))                     # (B,M,<=10)
+            gt = batch.get("coset")                      # E3: cheap coverage = is the TRUE coset in top-k?
+            if gt is not None:
+                for kk in COVERAGE_KS:
+                    hit = (cst10[..., :kk] == gt.unsqueeze(-1)).any(-1) & nonref
+                    cover_hit[kk] += int(hit.sum())
+                cover_tot += int(nonref.sum())
+            topk = args.predictor_topk if args.predictor_topk > 0 else 1
+            coset_hyps = [cst10[..., r] for r in range(min(topk, cst10.shape[-1]))]
+        elif args.coset:                                 # template: ground-truth deployable coset
+            coset_hyps = [batch.get("coset")]
+        else:
+            coset_hyps = [None]
+
+        # stochastic flow conditions: store every draw (draw 0 = the match@1 draw). The trained
+        # coset-conditioned net marginalizes over its coset hypotheses (best over hyps x K draws);
+        # the untrained floor field ignores the coset.
+        for k, net, emb, hyps in (("untrained", untrained, emb_un, [None]),
+                                  ("trained", trained, mol_emb, coset_hyps)):
+            draws_struct = [[] for _ in range(B)]      # per crystal: list of structures
             best_err = torch.full((B,), 1e9, device=device)
-            for _ in range(K):
-                R = sample_orient_only(net, emb, z1.lattice, z1.centroid,
-                                       sample_prior(z1, vol_per_atom=vpa).orient,
-                                       batch["sg"], z1.mask, args.steps)
-                gs = structures_for(batch, z1, R)
-                for b in range(B):
-                    draws_struct[b].append(gs[b])
-                best_err = torch.minimum(best_err, per_crystal_err_deg(R, z1.orient, nonref))
+            for cs_h in hyps:
+                for _ in range(K):
+                    R = sample_orient_only(net, emb, z1.lattice, z1.centroid,
+                                           sample_prior(z1, vol_per_atom=vpa).orient,
+                                           batch["sg"], z1.mask, args.steps, coset=cs_h)
+                    gs = structures_for(batch, z1, R)
+                    for b in range(B):
+                        draws_struct[b].append(gs[b])
+                    best_err = torch.minimum(best_err, per_crystal_err_deg(R, z1.orient, nonref))
             all_gens[k] += draws_struct
             err[k] += best_err.tolist()
 
@@ -218,6 +274,14 @@ def main():
         print(f"  {k:10s}  {100*m1:7.1f}%  {100*mk:7.1f}%  {med:9.3f}  {me:9.1f} deg{tag}")
     print(f"\n  (n={n} crystals; match@1 = single deterministic-prior draw, "
           f"match@k = best of {K}; med RMSD = median matched StructureMatcher RMS)")
+
+    if cover_tot > 0:                  # E3: is the true coset reachable by top-k marginalization?
+        print(f"\n  predictor top-k COVERAGE (true coset in top-k, non-ref molecules; "
+              f"n={cover_tot}):")
+        for kk in COVERAGE_KS:
+            print(f"    top-{kk:<2d}: {100*cover_hit[kk]/cover_tot:5.1f}%")
+        print(f"  (top-1 = argmax accuracy; high top-k with low top-1 => marginalizing the "
+              f"top-k predictions is the route to template-free use)")
 
     if args.sweep:
         print(f"\n==== StructureMatcher tolerance sweep (trained; best-of-{K}) ====")

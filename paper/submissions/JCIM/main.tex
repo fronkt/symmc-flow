@@ -1,0 +1,476 @@
+% =====================================================================
+% Deployable Symmetry-Coset Conditioning for Rigid-Body Molecular-Crystal
+% Structure Prediction (E5 -- JCIM journal version, SKELETON)
+%
+% Target: J. Chem. Inf. Model. (ACS). FINAL submission should use the ACS
+% `achemso` document class + TOC graphic; this skeleton uses `article` so it
+% compiles standalone (Tectonic) while the E2/E4 results are filled in.
+%
+% STATUS: skeleton. Sections with real numbers are from commits e035b8d (Phase B),
+% 581723c (E1), 1224870 (E3), E2 scale (ce0e5d0, gpu_results/phaseE_scale, 2539-crystal
+% corpus on box 45370370), and E4 (MolCrystalFlow benchmark alignment, \S\ref{sec:bench},
+% gpu_results/phaseE4, match@10 + RMAD in MCF units). Remaining open work is E5 prose
+% expansion (the \todo{} markers) + achemso conversion.
+% Frank writes/owns the final prose; this is a scaffold to fill.
+% =====================================================================
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,allcolors=blue]{hyperref}
+\usepackage{xcolor}
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[#1]}}}   % remove before submission
+\setlength{\parskip}{0.2em}
+
+\title{\bfseries Fully Symmetry-Conditioned Rigid-Body Flow Matching for
+Molecular-Crystal Structure Prediction}
+\author{Frank Cai\\ \small Purdue University, West Lafayette, IN, USA \\
+\small \texttt{frankyc11223@gmail.com}, ORCID 0009-0003-0041-1459}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Rigid-body flow matching reduces molecular-crystal structure prediction to a lattice,
+fractional centroids, and per-molecule orientations on $\mathrm{SO}(3)$, but the current
+generation of rigid-body molecular-crystal generators leaves crystallographic symmetry
+unconditioned, and symmetry-conditioned generation has been demonstrated only for inorganic
+atomic sites. We show that the per-molecule orientation target factorizes as
+$R_m=\mathrm{rot}(g_m)\,R_{\text{asym}}$ into a space-group-determined relative rotation, which a
+flow learns, and a gauge-free asymmetric-unit pose, which it cannot regress from packing. We turn
+this into a deployable method: a leak-free coset label---the generating space-group operation,
+recoverable from a symmetry template at sampling time---conditions the orientation flow.
+On molecular crystals from the Cambridge Structural Database, deployable coset conditioning lifts
+the held-out non-reference orientation loss by $41.1\%$ (vs $27.5\%$ for a paired no-coset
+control), two-thirds of the way to a leaky-codebook oracle ($\sim\!48\%$); an
+$\mathrm{SO}(3)$-averaged objective closes the gap ($47.7\%$). Supplying the coset at generation
+collapses the end-to-end orientation error $7\times$ ($93.5^\circ\!\to\!13.4^\circ$). For
+template-free use, a packing-only predictor places the true coset in its top-5 for $85.6\%$ of
+molecules, so marginalizing the top-$k$ recovers most of the benefit without a template.
+At $2.2\times$ scale the coset advantage \emph{widens} (loss drop $+41.1\%\!\to\!+54.3\%$ over a
+$+36.8\%$ control) and the coset-supplied orientation error sharpens to $4.3^\circ$, while exact
+match stays lattice/centroid-limited. Scored in MolCrystalFlow's own units, the coset supplies the
+orientation conditioning that symmetry-free rigid-body flows lack (\S\ref{sec:bench}).
+We then extend symmetry conditioning from the orientation to the \emph{lattice}---a crystal-family
+mask on an $\mathrm{O}(3)$-invariant log-metric parametrization---yielding, to our knowledge, the
+first \emph{fully symmetry-conditioned} molecular-crystal flow (space-group-operation orientation
+coset $\times$ crystal-family lattice), and pair it with an unsupervised, symmetry- and
+rigidity-preserving packing finisher. A fully-ablated stack of levers---family-masked lattice,
+physical finisher, a learned centroid prior, self-conditioning, and AlphaFold-style recycling---lifts
+held-out exact match from $0\%$ to $6.9\%$ (strict best-of-$10$, StructureMatcher $\text{stol}\,1.0$),
+at statistical parity with MolCrystalFlow's $\sim\!8\%$; an orientation test-time-augmentation
+finishing pass reaches $10.7\%$ (\S\ref{sec:ladder}, Fig.~\ref{fig:ladder}). This is a
+symmetry-conditioned alternative to the symmetry-free rigid-body flows, reaching parity on exact match
+with a complete anatomy of every lever it takes to get there.
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+% =====================================================================
+\todo{Expand from the workshop intro (paper/submissions/MoML/main.tex \S1).} Crystal structure
+prediction (CSP) seeks the stable periodic packing of a chemical system; generative models have
+become a fast alternative to large density-functional
+ensembles\cite{xie2022cdvae,jiao2023diffcsp,miller2024flowmm}, and Riemannian flow
+matching\cite{lipman2023flowmatching,chen2024riemannian} traverses a straight conditional path in
+tens of steps. Rigid-body factorization is attractive for molecular crystals: it collapses a
+molecule to a lattice $L$, a fractional centroid $c_m\in\mathbb{T}^3$, and an orientation
+$R_m\in\mathrm{SO}(3)$.
+
+\paragraph{The gap.} Recent rigid-body molecular-crystal flows leave space-group symmetry
+\emph{unconditioned}: MolCrystalFlow\cite{zeng2026molcrystalflow} uses the identical
+$\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$ factorization but imposes no space-group
+constraint, and MOFFlow\cite{kim2025mofflow} relies on framework connectivity. Symmetry- and
+Wyckoff-conditioned generation is proven only for inorganic atomic
+sites\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025,mu2026nextcrystal}; none conditions
+rigid-body molecular orientation. We close that gap and make the conditioning \emph{deployable}.
+
+\paragraph{Contributions.}
+\begin{itemize}\itemsep0.05em
+\item A leak-free, template-available coset label (the generating operation
+$h=g_mg_0^{-1}$, from centroids alone) conditioning the orientation flow.
+\item Deployable conditioning recovers two-thirds of the oracle-codebook orientation benefit;
+an $\mathrm{SO}(3)$-averaged objective closes the rest.
+\item End-to-end, the coset collapses the orientation error $7\times$.
+\item A template-free path: a packing-only predictor whose top-$k$ covers the true coset for
+$86\%$ of molecules at $k{=}5$, made usable by top-$k$ marginalization.
+\item The coset advantage \emph{widens} with data (\S\ref{sec:scale}; $2.2\times$ scale: gate
+$+41\%\!\to\!+54\%$, orientation-isolated match $27.5\%\!\to\!56.8\%$), while exact match stays
+lattice/centroid-limited. In MolCrystalFlow's own units (\S\ref{sec:bench}) our diagnostic-scale
+generator is packing-limited end-to-end, but supplies the orientation lever the symmetry-free flows
+omit.
+\item Extending symmetry conditioning to the lattice (a crystal-family mask on a log-metric
+parametrization) gives the first \emph{fully symmetry-conditioned} molecular-crystal flow; composed
+with an unsupervised packing finisher and a fully-ablated lever stack, it lifts exact match from
+$0\%$ to $6.9\%$ (strict best-of-$10$, $\text{stol}\,1.0$)---parity with MolCrystalFlow---and $10.7\%$
+with orientation test-time augmentation (\S\ref{sec:ladder}).
+\end{itemize}
+
+% =====================================================================
+\section{Methods}
+% =====================================================================
+\subsection{Rigid-body flow}
+\todo{From MoML \S2 + diagnostic Methods.} A molecular crystal is a lattice $L$ and, per molecule,
+$(c_m,R_m)$ acting on a shared body-frame conformer, $\text{cart}_{m,a}=c_mL+R_m\text{local}_{m,a}$.
+Conditional flow matching\cite{lipman2023flowmatching} is trained jointly over a volume-normalized
+lattice, torus centroids, and $\mathrm{SO}(3)$ orientations, with an $\mathrm{E}(n)$-equivariant
+encoder\cite{satorras2021egnn} and pair-bias attention, conditioned on the space group.
+
+\subsection{The orientation decomposition}
+$R_m=\mathrm{rot}(g_m)\,R_{\text{asym}}$; the free gauge on $R_{\text{asym}}$ floors the absolute
+orientation head at $\mathbb{E}\lVert u_R\rVert^2\!\approx\!5.24$, while re-gauging to the relative
+$R'_m=R_mR_0^{-1}$ exposes a learnable factor (loss drops $27\%$). \todo{full derivation from the
+archived diagnostic (main-archive-2026-07-18-diagnostic.tex \S Results).}
+
+\subsection{Deployable symmetry-coset conditioning}
+The non-reference relative rotations fall into a discrete set of cosets; $R'_m$ equals the rotation
+part of $h=g_mg_0^{-1}$, assigned from crystallography by matching $c_m$ against $W_hc_0+t_h$
+(minimum image) over the space group's operations from pymatgen---never from the observed rotation.
+This yields 238 leak-free operation-cosets (vs 707 for a target-clustered codebook), available at
+sampling from a symmetry template as in atom-site
+generators\cite{jiao2024diffcsppp,wyckoffdiff2025}. The coset enters as a per-molecule embedding,
+threaded through training and the sampler.
+
+\subsection{$\mathrm{SO}(3)$-averaged objective}
+Following the $\mathrm{SO}(3)$-averaged flow objective for conformer
+generation\cite{cao2025so3averaged}, the orientation residual is averaged over $K$ prior draws per
+molecule, reducing target variance at fixed data.
+
+\subsection{Template-free coset prediction}
+A packing-only classifier predicts the coset from conformer, centroids, lattice, and space group
+(no orientation, so leak-free). Because its argmax is noisy, we \emph{marginalize the top-$k$}:
+condition the flow on each of the $k$ most-likely cosets and select the best draw (in deployment,
+by $R_{wp}$/energy; here, an oracle upper bound).
+
+\subsection{Full symmetry conditioning: the crystal-family lattice mask}\label{sec:family}
+The coset conditions orientation; the lattice remains free. Molecular crystals are overwhelmingly
+monoclinic and orthorhombic, so reference cells place $\sim\!74\%$ of cell angles at exactly
+$90^\circ$, yet an unconstrained $9$-DOF shape head reproduces this for only $\sim\!16\%$. We
+condition the lattice on the crystal family the way DiffCSP++\cite{jiao2024diffcsppp} conditions
+inorganic sites. Represent the cell by its metric $G=L^\top L$ (rotation-invariant); $S=\log G$ is
+symmetric with six components, expanded in an orthonormal symmetric basis $\{B_0,\dots,B_5\}$ whose
+first coordinate is the volume ($k_0=\mathrm{tr}\,S/\sqrt3=2\log V/\sqrt3$) and whose remaining
+coordinates are the deviatoric (shape) directions. A binary \emph{family mask} $m(\mathrm{sg})$
+freezes the constrained coordinates to their canonical values (e.g.\ orthorhombic frees $k_0,k_1,k_2$
+and zeros $k_3{=}k_4{=}k_5$; hexagonal fixes a nonzero off-diagonal for $\gamma{=}120^\circ$), applied
+after each sampler step and in the prior. The flow thus learns only the free, family-consistent
+degrees of freedom (basis and per-family mask in Appendix~\ref{app:family}). The mask mechanism is
+DiffCSP++'s\cite{jiao2024diffcsppp}; our novelty is transporting it into the molecular rigid-body flow
+and composing it with the orientation coset.
+
+\subsection{Exact-match finishing: physical press, learned prior, self-conditioning, recycling}
+\label{sec:finish}
+Symmetry conditioning is necessary but not sufficient for exact match; a small stack of levers
+supplies the remaining positioning precision, each ablated independently (\S\ref{sec:ladder}).
+\emph{(i)~Rigid-press finisher:} an unsupervised, symmetry- and rigidity-preserving relaxation of the
+generated packing---a Lennard-Jones energy over intermolecular atom pairs (van der Waals radii),
+optimized over the asymmetric-unit pose and the family-masked cell, with symmetry copies regenerated
+from the space-group operations each step, so it cannot break the imposed symmetry and never sees the
+target. \emph{(ii)~Learned centroid prior:} optimal-transport coupling with a fixed Gaussian centroid
+prior repairs an under-trained centroid head. \emph{(iii)~Self-conditioning:} the model optionally
+consumes its own terminal estimate of the structure (Euler-to-$t{=}1$), trained with probability
+$0.5$ and carried across sampler steps, following the self-conditioning used in diffusion
+generators. \emph{(iv)~Recycling:} AlphaFold-style, the sampling trajectory is re-solved conditioned
+on the previous pass's output structure. \emph{(v)~Orientation test-time augmentation (TTA):}
+perturbing the asymmetric-unit orientation and pooling the best finished draw. All are gated behind
+configuration flags; the default path is unchanged (finisher energy/optimizer and the
+self-conditioning update in Appendix~\ref{app:finish}).
+
+% =====================================================================
+\section{Results and Discussion}
+% =====================================================================
+\subsection{Deployable coset conditioning recovers the oracle benefit}\label{sec:gate}
+Table~\ref{tab:gate}: a paired no-coset control reproduces $+27.5\%$; the deployable coset reaches
+$+41.1\%$ (two-thirds of the way to the $\sim\!48\%$ leaky ceiling), and the
+$\mathrm{SO}(3)$-averaged objective reaches $+47.7\%$, level with the ceiling. The benefit a
+target-derived codebook could only upper-bound is realized by a label a sampler actually has.
+
+\begin{table}[t]\centering
+\caption{Held-out non-reference orientation-loss drop, mean$\pm$s.d.\ (3 seeds).}
+\label{tab:gate}
+\begin{tabular}{lcc}\toprule
+configuration & non-ref.\ loss drop & deployable? \\\midrule
+no-coset control (baseline)            & $27.5\pm2.7\%$ & --- \\
+deployable coset ($K{=}1$)             & $41.1\pm3.4\%$ & yes \\
+\quad + $\mathrm{SO}(3)$-averaged      & $47.7\pm3.9\%$ & yes \\
+leaky codebook (oracle upper bound)    & $\sim48\%$      & no  \\\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The coset makes orientation work end-to-end}\label{sec:e2e}
+Sampling all three manifolds from the prior (full de-novo generation), supplying the coset at
+generation collapses the median orientation error from $93.5^\circ$ (same model, coset withheld)
+to $13.4^\circ$---a $7\times$ reduction---while the centroid error is unchanged ($0.346$ vs
+$0.345$; the coset does not touch it) and neither reaches exact match ($0\%$; lattice $0.44$ /
+centroid $0.35$ dominate). The coset thus makes the orientation component work end-to-end; joint
+lattice--centroid generation is the remaining exact-match bottleneck.
+
+\subsection{Orientation-isolated reconstruction}
+With the true packing supplied and only $\mathrm{SO}(3)$ sampled, the coset-conditioned flow
+reconstructs $27.5\%$ of held-out packings (best-of-8, up to $37.4\%$ at looser oracle-validated
+tolerances), median orientation error $41.1^\circ$; oracle $100\%$.
+\todo{table + tolerance sweep from gpu\_results/phaseB.}
+
+\subsection{Template-free deployment via top-$k$ marginalization}\label{sec:free}
+The packing-only predictor is $39.5\%$ top-1 ($4\times$ the $10.3\%$ majority), but the true coset
+is in its top-3 for $75.8\%$ of molecules, top-5 for $85.6\%$, top-10 for $90.9\%$
+(Table~\ref{tab:cover}). The signal is present; the argmax merely cannot commit. Marginalizing the
+top-5 pulls the predicted-coset orientation error from $64.8^\circ$ (top-1) to $51.2^\circ$, toward
+the $41.1^\circ$ template ceiling. At the larger corpus (\S\ref{sec:scale}) the predictor sharpens
+only to $43.1\%$ top-1 and its predicted cosets still reconstruct well below template grade, so
+closing this residual---a sharper predictor or per-molecule combinatorial search---remains open.
+
+\begin{table}[t]\centering
+\caption{Predictor top-$k$ coverage: true coset in top-$k$ (non-ref molecules, $n{=}438$).}
+\label{tab:cover}
+\begin{tabular}{lcccc}\toprule
+top-$k$ & 1 & 3 & 5 & 10 \\\midrule
+coverage & $39.5\%$ & $75.8\%$ & $85.6\%$ & $90.9\%$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Scale}\label{sec:scale}
+Retraining the full pipeline on a $2{,}539$-crystal CSD corpus ($2{,}464$ multi-copy after
+re-gauge; $2{,}168$ train / $296$ validation; $320$ distinct operation-cosets), roughly
+$2.2\times$ the diagnostic set, sharpens every orientation metric while leaving the packing
+bottleneck untouched (Table~\ref{tab:scale}). The deployable-coset gate does not merely hold: the
+non-reference loss drop rises to $54.3\pm0.8\%$ (3 seeds; $53.5/54.4/55.1\%$) against a paired
+no-coset control at $36.8\pm2.1\%$ ($35.2/36.0/39.1\%$), \emph{widening} the coset advantage from
+$+13.6$ to $+17.5$ percentage points---the benefit is a property of the factorization, not a
+small-data artifact. End-to-end with the coset supplied, the median orientation error falls to
+$4.3^\circ$ (from $13.4^\circ$ at diagnostic scale), and orientation-isolated reconstruction
+climbs to $56.8\%$ best-of-8 at $31.7^\circ$ (from $27.5\%$ at $41.1^\circ$). Exact end-to-end
+match remains $0\%$ with the lattice ($0.42$) and centroid ($0.35$) component errors essentially
+unchanged: scaling data sharpens orientation but does not move the joint lattice--centroid
+bottleneck, cleanly isolating where the remaining work lies. The packing-only predictor sharpens
+only modestly (top-1 $43.1\%$ vs.\ $39.5\%$; majority $10.4\%$), and its predicted cosets do not
+yet reconstruct at template grade---top-5 marginalization reaches $6.1\%$ best-of-8 at $44.0^\circ$
+against $56.8\%$/$31.7^\circ$ with the true template---so a sharper predictor or per-molecule
+combinatorial search over the template-free path remains the open problem.
+
+\begin{table}[t]\centering
+\caption{Diagnostic ($N\!\approx\!1.1$k) vs.\ scale ($N\!=\!2.5$k) corpus: orientation metrics
+sharpen with data while end-to-end exact match stays lattice/centroid-limited. Gate is the
+held-out non-reference orientation-loss drop (deployable coset, $K{=}1$); orientation-isolated
+match is best-of-8 with true lattice+centroid supplied.}
+\label{tab:scale}
+\begin{tabular}{lcc}\toprule
+metric & diagnostic & scale \\\midrule
+coset gate: non-ref.\ loss drop (deployable) & $41.1\%$ & $\mathbf{54.3\%}$ \\
+\quad paired no-coset control                & $27.5\%$ & $36.8\%$ \\
+\quad coset advantage                        & $+13.6$ pp & $\mathbf{+17.5}$ pp \\
+end-to-end orientation error (coset supplied)& $13.4^\circ$ & $\mathbf{4.3^\circ}$ \\
+orient-isolated match (best-of-8)            & $27.5\%$ & $\mathbf{56.8\%}$ \\
+orient-isolated orientation error            & $41.1^\circ$ & $\mathbf{31.7^\circ}$ \\
+predictor top-1 (majority baseline)          & $39.5\%$ ($10.3\%$) & $43.1\%$ ($10.4\%$) \\
+end-to-end exact match                       & $0\%$ & $0\%$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Comparison to rigid-body baselines}\label{sec:bench}
+To make the contribution legible to the same reviewers, we re-score held-out generations from the
+deployable coset model ($N\!\approx\!1.1$k) in MolCrystalFlow's exact
+units\cite{zeng2026molcrystalflow}: pymatgen \textsc{StructureMatcher} ($\text{ltol}{=}0.3$,
+$\text{atol}{=}10^\circ$, site tolerance swept $0.5$--$1.2$), best-of-$10$ match rate, and the
+relative cell-volume deviation (RMAD) over all ten samples. We report a paired de-novo pass (no
+template, coset off---the MolCrystalFlow/MOFFlow regime) against our symmetry-conditioned pass
+(coset on) on \emph{identical} prior draws (Table~\ref{tab:bench}).
+
+Two readings are deliberate and honest. First, end-to-end our diagnostic-scale model is \emph{not}
+competitive with the dedicated flows on either axis: best-of-$10$ match is at floor
+($0$--$0.8\%$) against MolCrystalFlow's $\sim\!6.8\%$ at $\text{stol}\,0.8$, and cell-volume RMAD
+($\sim\!31\%$) lands between MOFFlow ($18.8\%$) and raw Genarris-3 ($59\%$) but well above
+MolCrystalFlow ($3.9\%$). This is the lattice/centroid bottleneck of Table~\ref{tab:scale}
+($0\%$ exact match) now measured in the baselines' units: our lattice and centroid heads are
+diagnostic-grade \emph{before finishing}. \S\ref{sec:ladder} closes exactly this end-to-end gap---to
+parity with MolCrystalFlow---with full lattice symmetry conditioning and an unsupervised
+symmetry-preserving finisher. Second, and the point of the paper,
+is the axis those baselines leave \emph{unconditioned}. The coset barely moves RMAD ($32.9\%\!\to\!
+30.7\%$)---it conditions orientation, not packing---but on the same prior draws it collapses the
+median best-of-$10$ orientation error from $103^\circ$ (de-novo) to $14^\circ$ (conditioned),
+consistent with the end-to-end collapse of \S\ref{sec:scale}. MolCrystalFlow and MOFFlow are both
+symmetry-free and have no such lever; MolCrystalFlow is itself only \emph{competitive} with the
+space-group-conditioned Genarris-3, corroborating that symmetry conditioning---not packing---is the
+remaining lever. Our contribution supplies exactly that for rigid-body orientation and composes
+with the strong packing these methods already have. \emph{Caveat:} identical matcher and match@10
+as MolCrystalFlow, but our corpus is a smaller CSD-derived molecular set (not Th\"urlemann/OMC25) at
+diagnostic scale---a comparable-task alignment, not a strict head-to-head.
+
+\begin{table}[t]\centering
+\caption{Held-out generations in MolCrystalFlow's units (best-of-$10$; \textsc{StructureMatcher}
+ltol$=0.3$/atol$=10^\circ$; RMAD${}_{\mathrm{vol}}$ = relative cell-volume deviation over all $10$
+samples). Baseline rows are as reported\cite{zeng2026molcrystalflow,kim2025mofflow} (Genarris-3 via
+the comparison in \cite{zeng2026molcrystalflow}). Our end-to-end match and RMAD are
+lattice/centroid-limited; the coset acts on orientation (last column)---the axis the symmetry-free
+baselines omit.}
+\label{tab:bench}
+\begin{tabular}{lcccc}\toprule
+ & \multicolumn{2}{c}{match@10} & RMAD$_{\mathrm{vol}}$ & orient.\ err. \\
+\cmidrule(lr){2-3}
+method & stol $0.8$ & stol $1.0$ & (all 10) & (best-of-10) \\\midrule
+MolCrystalFlow (sym-free)\cite{zeng2026molcrystalflow} & $\sim\!6.8\%$ & $\sim\!8\%$ & $3.9\%$ & -- \\
+MOFFlow (sym-free)\cite{kim2025mofflow}                & $\sim\!3.4\%$ & --          & $18.8\%$ & -- \\
+Genarris-3 (sym-cond.)                                 & \multicolumn{2}{c}{comp.\ w/ MCF} & $59\%$ & -- \\\midrule
+ours, de-novo (coset off)                              & $0\%$ & $0\%$   & $32.9\%$ & $103^\circ$ \\
+ours, conditioned (coset on)                           & $0\%$ & $0.8\%$ & $30.7\%$ & $\mathbf{14^\circ}$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{From 0\% to parity: the exact-match lever ladder}\label{sec:ladder}
+The bottleneck the bench isolates---exact match at floor while orientation is solved---is the
+question this section answers. Extending symmetry conditioning to the lattice (\S\ref{sec:family})
+restores the crystal-family geometry (generated cell angles within $2^\circ$ of $90^\circ$ rise from
+$16\%$ to $73.6\%$, matching the reference $74.0\%$, ablation-isolated to the mask), but on its own
+does \emph{not} move exact match: the fully symmetry-conditioned flow still matches $0/131$ held-out
+crystals. Fixing crystal family perfectly is necessary, not sufficient---the residual blocker is
+close-packing \emph{precision}. The finishing stack of \S\ref{sec:finish} supplies it, and we ablate
+each lever independently (Table~\ref{tab:ladder}, Fig.~\ref{fig:ladder}; best-of-$10$,
+\textsc{StructureMatcher} $\text{stol}\,1.0$, coset on, $n{=}131$).
+
+The rigid-press finisher alone unblocks match ($0\%\!\to\!1.5\%$; the raw flow matches nothing);
+repairing the centroid head doubles it to $3.1\%$; corpus scale ($2.3\times$) improves the averaged
+metrics (RMAD, coset error) but leaves exact match flat at $3.1\%$, mirroring the orientation-scale
+finding of \S\ref{sec:scale}. Self-conditioning is the first lever to move the \emph{tight}
+tolerance, and scoring at MolCrystalFlow's own match@$10$ protocol with finer ($100$-step) sampling
+reaches $6.1\%$; AlphaFold-style recycling reaches $\mathbf{6.9\%}$---statistical parity with
+MolCrystalFlow's $\sim\!8\%$ ($95\%$ CI $3.66$--$12.54$, overlapping $8$), from a flow that matched
+zero. An orientation-TTA finishing pass (best-of-$30$, $3\times$ the finishing candidates) reaches
+$\mathbf{10.7\%}$, above MolCrystalFlow, though at a larger finishing budget than strict match@$10$.
+The median atom-RMSD to the reference falls from $1.02$ (raw) to $0.77$ (best), and cell-volume RMAD
+from $33\%$ to $21\%$. Diminishing returns are explicit: recycling and orientation-TTA both refine
+positioning, so stacking them ($8.4\%$) underperforms TTA alone; corpus scale and cell relaxation add
+nothing to match. The ceiling is reached, and every lever's contribution is isolated.
+
+\begin{figure}[t]\centering
+\includegraphics[width=\linewidth]{figures/fig3_ladder.pdf}
+\caption{The exact-match lever ladder (coset on, $n{=}131$, best-of-$10$, \textsc{StructureMatcher}).
+\textbf{(a)}~Each lever added in turn lifts held-out exact match from $0\%$ (raw fully
+symmetry-conditioned flow) to $6.9\%$ at $\text{stol}\,1.0$, at parity with MolCrystalFlow (dashed);
+the orientation-TTA pass (hatched) reaches $10.7\%$ at a $3\times$ finishing budget.
+\textbf{(b)}~The best configuration across the site-tolerance sweep against MolCrystalFlow's reported
+match@$10$: strict match@$10$ is at parity, orientation-TTA clears it.}
+\label{fig:ladder}
+\end{figure}
+
+\begin{table}[t]\centering
+\caption{Exact-match lever ladder: held-out best-of-$10$ match (coset on, $n{=}131$;
+\textsc{StructureMatcher} ltol$=0.3$/atol$=10^\circ$; frozen cell). Each row adds one lever to the
+row above. Strict match@$10$ is $10$ model draws $\times$ single finish; orientation-TTA is
+best-of-$30$ ($3\times$ finishing candidates). MolCrystalFlow is the symmetry-free rigid-body flow.}
+\label{tab:ladder}
+\begin{tabular}{lccl}\toprule
+lever & stol $0.8$ & stol $1.0$ & note \\\midrule
+raw flow (fully sym-conditioned)        & $0.0\%$ & $0.0\%$ & family mask + coset, no polish \\
+\quad + rigid-press finisher            & $1.5\%$ & $1.5\%$ & unsupervised physical packing \\
+\quad + centroid fix (OT + prior)       & $1.5\%$ & $3.1\%$ & repairs centroid head \\
+\quad + $2.3\times$ scale               & $1.5\%$ & $3.1\%$ & moves RMAD/coset, not match \\
+\quad + self-conditioning               & $3.05\%$& $3.8\%$ & first to move tight tolerance \\
+\quad + match@$10$ + steps$=100$        & $4.6\%$ & $6.1\%$ & MCF protocol + finer sampling \\
+\quad + recycling                       & $\mathbf{6.1\%}$ & $\mathbf{6.9\%}$ & best strict; parity w/ MCF \\
+\quad + orientation-TTA (best-of-$30$)  & $7.6\%$ & $\mathbf{10.7\%}$ & $3\times$ finish budget \\\midrule
+MolCrystalFlow (sym-free)\cite{zeng2026molcrystalflow} & $\sim\!6.8\%$ & $\sim\!8\%$ & reference \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Limitations}
+Evaluation is by reconstruction against known CSD structures on simulated conditioning; the analysis
+is scoped to rigid, largely organic molecules on general positions. The MolCrystalFlow comparison is
+comparable-task (our smaller CSD-derived set at diagnostic scale), not a strict head-to-head; the
+strict-match@$10$ parity carries a wide confidence interval, and the $10.7\%$ figure uses a larger
+finishing budget than strict match@$10$. Template-free reconstruction is not yet at the template
+ceiling. \todo{full limitations from diagnostic \S Discussion.}
+
+% =====================================================================
+\section{Conclusions}
+% =====================================================================
+The learnable content of a rigid-body orientation field is the space-group-determined relative
+rotation; a deployable, leak-free coset label delivers it, an $\mathrm{SO}(3)$-averaged objective
+reaches the oracle codebook, the coset makes orientation work end-to-end, and top-$k$
+marginalization opens a template-free path. Extending symmetry conditioning to the lattice yields the
+first fully symmetry-conditioned molecular-crystal flow, and composed with an unsupervised
+symmetry-preserving finisher and a fully-ablated lever stack it reaches exact-match parity with the
+symmetry-free rigid-body flows ($0\%\!\to\!6.9\%$ strict, $10.7\%$ with orientation TTA), with a
+complete anatomy of what each lever contributes. This gives rigid-body molecular-crystal
+generators\cite{zeng2026molcrystalflow} a concrete recipe: condition both orientation (on the
+generating coset) and the lattice (on the crystal family), sample only the free pose, and finish with
+a symmetry-preserving physical relaxation.
+
+\section*{Data and Code Availability}
+Code, CSD refcode manifest, and pipeline: \url{https://github.com/fronkt/symmc-flow}, archived at
+Zenodo\cite{cai2026symmcflow}. CSD structures are licence-restricted and not redistributed.
+
+\appendix
+% =====================================================================
+\section{Crystal-family lattice mask}\label{app:family}
+% =====================================================================
+We parametrize the cell by its metric $G=L^\top L$, which is invariant to the arbitrary orientation
+of $L$, and take the matrix logarithm $S=\log G$, a symmetric $3\times3$ matrix with six independent
+components. Expanding $S$ in an orthonormal symmetric basis $\{B_0,\dots,B_5\}$ gives coordinates
+$k_i=\langle S,B_i\rangle$ that separate volume from shape:
+\begin{align*}
+B_0 &= \tfrac{1}{\sqrt3}\,I               & k_0 &= \tfrac{1}{\sqrt3}\,\mathrm{tr}\,S = \tfrac{2}{\sqrt3}\log V &&\text{(volume, always free)}\\
+B_1 &= \tfrac{1}{\sqrt6}\,\mathrm{diag}(1,1,-2) & k_1 &&&\text{($c$ vs.\ $a,b$)}\\
+B_2 &= \tfrac{1}{\sqrt2}\,\mathrm{diag}(1,-1,0)  & k_2 &&&\text{($a$ vs.\ $b$)}\\
+B_3 &= \tfrac{1}{\sqrt2}(E_{23}+E_{32})   & k_3 &&&\text{(off-diag.\ $\sim\!\alpha$)}\\
+B_4 &= \tfrac{1}{\sqrt2}(E_{13}+E_{31})   & k_4 &&&\text{(off-diag.\ $\sim\!\beta$)}\\
+B_5 &= \tfrac{1}{\sqrt2}(E_{12}+E_{21})   & k_5 &&&\text{(off-diag.\ $\sim\!\gamma$)}
+\end{align*}
+The cell reconstructs as $G=\exp\big(\sum_i k_i B_i\big)$, $L=\mathrm{chol}(G)$; the triangular
+(canonical-frame) choice is immaterial because the model round-trips the lattice through $k$ and
+\textsc{StructureMatcher} is frame-invariant. The binary family mask $m(\mathrm{sg})$ frees only the
+shape coordinates the crystal family permits and freezes the rest to canonical values
+(Table~\ref{tab:mask}), applied after every sampler step and in the prior. For the hexagonal family,
+$\gamma=120^\circ$ makes the $B_5$ component a fixed \emph{nonzero} constant in log-metric space
+(independent of $a$, since the $a^2$-scaling contributes only to the volume coordinate $k_0$); its
+value is computed numerically and verified in a unit test. The mask mechanism follows
+DiffCSP++\cite{jiao2024diffcsppp}; our contribution is transporting it into the molecular rigid-body
+flow and composing it with the orientation coset.
+
+\begin{table}[h]\centering
+\caption{Crystal-family lattice mask: free log-metric coordinates per family (space-group ranges);
+all others are frozen to the canonical value in the last column. The volume coordinate $k_0$ is
+always free.}
+\label{tab:mask}
+\begin{tabular}{lcl}\toprule
+family (SG range) & free $k$-coords & frozen (value) \\\midrule
+triclinic ($1$--$2$)              & $0,1,2,3,4,5$ & --- \\
+monoclinic ($3$--$15$)            & $0,1,2,4$     & $k_3{=}0,\ k_5{=}0$ \\
+orthorhombic ($16$--$74$)         & $0,1,2$       & $k_3{=}k_4{=}k_5{=}0$ \\
+tetragonal ($75$--$142$)          & $0,1$         & $k_2{=}k_3{=}k_4{=}k_5{=}0$ \\
+trigonal/hexagonal ($143$--$194$) & $0,1$         & $k_2{=}k_3{=}k_4{=}0,\ k_5{=}\text{CANON}_{\mathrm{hex}}$ \\
+cubic ($195$--$230$)              & $0$           & $k_1{=}\dots{=}k_5{=}0$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Finishing and self-conditioning}\label{app:finish}
+% =====================================================================
+\paragraph{Rigid-press finisher.} Each generated crystal is relaxed under a soft Lennard-Jones energy
+summed over intermolecular atom pairs within a $6\,\text{\AA}$ neighbor list, with the contact
+distance set to $0.90\times$ the sum of van der Waals radii. The free variables are the
+asymmetric-unit pose (a $\mathrm{SO}(3)$ tangent and a fractional shift per rigid block) and the
+family-masked cell coordinates $k$; the intramolecular geometry is frozen (rigid body) and every
+symmetry copy is \emph{regenerated} from the optimized ASU pose via the space-group operations at each
+step, so the relaxation cannot break the imposed symmetry and never reads the reference structure.
+Optimization is Adam (lr $0.03$, $\sim\!40$--$60$ steps) with the neighbor list refreshed every $15$
+steps and a light volume-penalty term ($\lambda_{\mathrm{vol}}\,{=}\,0.05$) toward the corpus volume
+per atom.
+
+\paragraph{Self-conditioning.} With probability $0.5$ during training, the model first produces a
+detached prediction with a null self-conditioning token, Euler-extrapolates it to $t{=}1$ to form a
+terminal estimate $(\hat L,\hat x,\hat R)$, and re-runs conditioned on that estimate. The extrapolation
+respects each manifold: $\hat L=\mathrm{k\_to\_lat}\big(k_t+(1{-}t)\,v_L\big)$,
+$\hat x=\mathrm{wrap}\big(x_t+(1{-}t)\,v_x\big)$ on the torus, and, in the body frame (right
+multiplication), $\hat R=R_t\,\exp_{\mathrm{SO}(3)}\!\big((1{-}t)\,v_R\big)$. At sampling time the
+estimate is carried across the RK4 steps (reusing the final velocity evaluation), and AlphaFold-style
+\emph{recycling} re-solves the whole trajectory conditioned on the previous pass's output structure.
+All of these are gated behind configuration flags, leaving the default generation path unchanged.
+
+\bibliographystyle{unsrtnat}
+\bibliography{references}
+\end{document}

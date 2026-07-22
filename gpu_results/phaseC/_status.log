@@ -1,0 +1,19 @@
+START Sat Jul 18 19:27:34 UTC 2026
+[C4 train coset predictor] Sat Jul 18 19:27:34 UTC 2026
+majority-class baseline (coset 46): 10.3% val accuracy
+  held-out top-1 accuracy: 39.5%   (majority baseline 10.3%)
+  => 39.5% of the generating operation is recoverable from packing without a template
+[C4 predicted-coset orient-isolated] Sat Jul 18 19:38:58 UTC 2026
+coset PREDICTOR checkpoints/coset_predictor.pt (val acc 39.5%) -> using PREDICTED coset (de-novo, no template)
+  oracle        100.0%    100.0%      0.000        0.0 deg  (ceiling)
+  untrained       0.0%      0.0%        nan       91.0 deg  (floor)
+  trained         0.0%      0.0%        nan       64.8 deg  <-- RESULT
+[C5 so3-avg K=4 seed 0] Sat Jul 18 19:49:51 UTC 2026
+NON-REF drop (+49.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+[C5 so3-avg K=4 seed 1] Sat Jul 18 19:54:06 UTC 2026
+NON-REF drop (+43.4%): vs +27% without coset conditioning -> coset id helps but residual remains
+[C5 so3-avg K=4 seed 2] Sat Jul 18 19:58:20 UTC 2026
+NON-REF drop (+50.5%): vs +27% without coset conditioning -> coset id helps but residual remains
+ALL DONE Sat Jul 18 20:02:46 UTC 2026
+READ: C4 predictor accuracy (closable inference gap) + predicted-vs-given-vs-none orient rate;
+      C5 so3-avg K=4 non-ref drop vs the K=1 deployable-coset baseline from phase B.

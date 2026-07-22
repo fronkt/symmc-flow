@@ -1,0 +1,50 @@
+START Tue Jul 21 18:46:44 UTC 2026  match-k=10 workers=8 logvol-std=0.11 steps=800
+[F train: coset-ON logmetric6 + family-mask] Tue Jul 21 18:46:44 UTC 2026
+cosets: 238 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: ON
+  lattice prior vol/atom: 9.9 A^3
+  lattice  : 3.3924 -> 0.1964  (+94.2%)
+NON-REF drop (+41.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+[F ablation: logmetric6, NO family-mask] Tue Jul 21 18:51:16 UTC 2026
+  reference points (MCF paper): MolCrystalFlow ~6.8%@0.8 / ~8%@1.0; MOFFlow ~3.4%@0.8;
+  -- cell-angle spike: fraction within 2deg of 90 (ref real ~72%; unmasked ~3%) --
+  reference (real crystals)                    74.0%
+  TAG e4 rmad coset_off 26.48 std 16.84
+  TAG e4 anglespike coset_off 15.4 ref 74.0
+  TAG e4 rmad coset_on 22.72 std 19.60
+  TAG e4 anglespike coset_on 16.3 ref 74.0
+  TAG e4 coset_off stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1.2 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1.2 match 0.76 ci 0.13-4.20
+[F eval: match@10 + RMAD + angle-spike] Tue Jul 21 19:05:55 UTC 2026
+  reference points (MCF paper): MolCrystalFlow ~6.8%@0.8 / ~8%@1.0; MOFFlow ~3.4%@0.8;
+  de-novo (coset OFF)  [vs MCF/MOFFlow]          0.0%     0.0%     0.0%     0.0%
+  conditioned (coset ON) [symmetry template]     0.0%     0.0%     0.0%     0.8%
+  de-novo (coset OFF)  [vs MCF/MOFFlow]       RMAD  26.07 +/- 16.88%
+  conditioned (coset ON) [symmetry template]  RMAD  24.43 +/- 21.04%
+  -- cell-angle spike: fraction within 2deg of 90 (ref real ~72%; unmasked ~3%) --
+  reference (real crystals)                    74.0%
+  de-novo (coset OFF)  [vs MCF/MOFFlow]        73.9%
+  conditioned (coset ON) [symmetry template]   73.6%
+  TAG e4 rmad coset_off 26.07 std 16.88
+  TAG e4 anglespike coset_off 73.9 ref 74.0
+  TAG e4 rmad coset_on 24.43 std 21.04
+  TAG e4 anglespike coset_on 73.6 ref 74.0
+  TAG e4 coset_off stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_off stol 1.2 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.5 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 0.8 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1 match 0.00 ci 0.00-2.85
+  TAG e4 coset_on stol 1.2 match 0.76 ci 0.13-4.20
+
+GATE (tasks/phaseF_spec.md): angle-spike should rise from ~3% toward the reference ~72%,
+     AND match@10 (coset ON, stol<=1.0) should move off 0 (E4 shape10 baseline ~0-0.8%),
+     OR cell-volume RMAD < ~10% with the angle-spike restored (partial win worth scaling).
+     Otherwise -> F4 fallback (E5 write-up + honest necessary-not-sufficient finding).
+ALL DONE Tue Jul 21 19:16:06 UTC 2026

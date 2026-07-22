@@ -19,8 +19,20 @@ from . import manifolds as M
 
 @torch.no_grad()
 def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
-               symmetrize: bool = False, churn: float = 0.0):
+               symmetrize: bool = False, churn: float = 0.0, coset=None, recycle: int = 0):
     """Returns a CrystalState at t=1. `model` is a SymMCFlow.
+
+    `coset` (B,M long or None) is the per-molecule space-group coset id supplied to the field
+    at every step (constant along the trajectory, since the generating operation is fixed). It
+    is only used if the model was built with n_cosets>0; passing it makes symmetry-coset
+    conditioning available at GENERATION time (the deployable template-based setting), not just
+    in the training-loss diagnostic.
+
+    `recycle`>0 (F3d/F3e, needs a self_cond model): AlphaFold-style recycling -- re-solve the whole
+    prior->data trajectory `recycle` extra times, each pass conditioned (via self-conditioning) on
+    the PREVIOUS pass's output structure. Pass 0 uses the usual intra-trajectory self-cond carry;
+    each subsequent pass holds the self-cond estimate fixed to the last output and re-integrates,
+    sharpening tail positioning. No-op if the model has no self_cond.
 
     churn>0 turns the deterministic centroid ODE into a Langevin-style
     predictor-corrector: after each step, wrapped-Gaussian noise scaled by
@@ -29,47 +41,56 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
     mean-field under-dispersion that collapses atoms together."""
     mask = init.mask
     n = mask.sum(-1).clamp_min(1)
-    kL = M.lattice_to_param(init.lattice, n)
-    x = init.centroid.clone()
-    R = init.orient.clone()
-    B = kL.shape[0]
+    repr = getattr(model.cfg, "lattice_repr", "shape10")
+    fam = repr == "logmetric6" and getattr(model.cfg, "lattice_family_mask", False)
+    B = init.lattice.shape[0]
     dt = 1.0 / steps
-    dev, dtp = kL.device, kL.dtype
+    dev, dtp = init.lattice.device, init.lattice.dtype
+
+    use_sc = getattr(model.cfg, "self_cond", False)        # F3d self-conditioning refinement
+    passes = (recycle + 1) if use_sc else 1
+    sc_recycle = None                                      # previous pass output -> next pass conditioning
+    sc = None                                              # self-cond estimate read by field() this pass
+    kL = M.lat_to_k(init.lattice, n, repr); x = init.centroid.clone(); R = init.orient.clone()
 
     def field(k_, x_, R_, t_scalar):
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
-        L_ = M.param_to_lattice(k_, n)
+        L_ = M.k_to_lat(k_, n, repr)
         if symmetrize:
-            return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask)
-        return model.forward(mol_emb, L_, x_, R_, t, sg, mask)
+            return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
+        return model.forward(mol_emb, L_, x_, R_, t, sg, mask, coset=coset, self_cond=sc)
 
-    for i in range(steps):
-        t0 = i * dt
-        # --- lattice & centroid: classic RK4 (param-space / torus tangent) ----
-        # --- orient: collect tangent estimates, apply one exp-map step --------
-        k1L, k1x, k1R = field(kL, x, R, t0)
-        kL2 = kL + 0.5 * dt * k1L
-        x2 = M.wrap(x + 0.5 * dt * k1x)
-        R2 = R @ M.so3_exp(0.5 * dt * k1R)
-        k2L, k2x, k2R = field(kL2, x2, R2, t0 + 0.5 * dt)
-        kL3 = kL + 0.5 * dt * k2L
-        x3 = M.wrap(x + 0.5 * dt * k2x)
-        R3 = R @ M.so3_exp(0.5 * dt * k2R)
-        k3L, k3x, k3R = field(kL3, x3, R3, t0 + 0.5 * dt)
-        kL4 = kL + dt * k3L
-        x4 = M.wrap(x + dt * k3x)
-        R4 = R @ M.so3_exp(dt * k3R)
-        k4L, k4x, k4R = field(kL4, x4, R4, t0 + dt)
+    for rec in range(passes):
+        kL = M.lat_to_k(init.lattice, n, repr); x = init.centroid.clone(); R = init.orient.clone()
+        recycling = use_sc and rec > 0                     # this pass fixes sc to the previous output
+        sc = sc_recycle if recycling else None
+        for i in range(steps):
+            t0 = i * dt
+            # --- lattice & centroid: classic RK4; orient: exp-map (Munthe-Kaas) ----
+            k1L, k1x, k1R = field(kL, x, R, t0)
+            kL2 = kL + 0.5 * dt * k1L; x2 = M.wrap(x + 0.5 * dt * k1x); R2 = R @ M.so3_exp(0.5 * dt * k1R)
+            k2L, k2x, k2R = field(kL2, x2, R2, t0 + 0.5 * dt)
+            kL3 = kL + 0.5 * dt * k2L; x3 = M.wrap(x + 0.5 * dt * k2x); R3 = R @ M.so3_exp(0.5 * dt * k2R)
+            k3L, k3x, k3R = field(kL3, x3, R3, t0 + 0.5 * dt)
+            kL4 = kL + dt * k3L; x4 = M.wrap(x + dt * k3x); R4 = R @ M.so3_exp(dt * k3R)
+            k4L, k4x, k4R = field(kL4, x4, R4, t0 + dt)
+            if use_sc and not recycling:                   # base pass carries the estimate intra-trajectory
+                t_end = torch.full((B,), t0 + dt, device=dev, dtype=dtp)
+                sc = model.terminal_estimate(M.k_to_lat(kL4, n, repr), x4, R4, t_end, n,
+                                             (k4L, k4x, k4R))
 
-        kL = kL + (dt / 6.0) * (k1L + 2 * k2L + 2 * k3L + k4L)
-        x = M.wrap(x + (dt / 6.0) * (k1x + 2 * k2x + 2 * k3x + k4x))
-        omega = (dt / 6.0) * (k1R + 2 * k2R + 2 * k3R + k4R)
-        R = R @ M.so3_exp(omega)
-        R = M.project_so3(R)  # guard against numerical drift
+            kL = kL + (dt / 6.0) * (k1L + 2 * k2L + 2 * k3L + k4L)
+            if fam:
+                kL = M.apply_family_mask(kL, sg)   # re-project frozen family DOF to canonical
+            x = M.wrap(x + (dt / 6.0) * (k1x + 2 * k2x + 2 * k3x + k4x))
+            R = M.project_so3(R @ M.so3_exp((dt / 6.0) * (k1R + 2 * k2R + 2 * k3R + k4R)))
 
-        if churn > 0 and i < steps - 1:
-            scale = churn * (1.0 - (t0 + dt)) * (dt ** 0.5)
-            x = M.wrap(x + scale * torch.randn_like(x) * mask.unsqueeze(-1).float())
+            if churn > 0 and i < steps - 1:
+                scale = churn * (1.0 - (t0 + dt)) * (dt ** 0.5)
+                x = M.wrap(x + scale * torch.randn_like(x) * mask.unsqueeze(-1).float())
+
+        if use_sc:                                         # output structure -> next recycle pass conditioning
+            sc_recycle = (M.k_to_lat(kL, n, repr), x.clone(), R.clone())
 
     m = mask.unsqueeze(-1).float()
-    return CrystalState(M.param_to_lattice(kL, n), x * m, R, mask)
+    return CrystalState(M.k_to_lat(kL, n, repr), x * m, R, mask)

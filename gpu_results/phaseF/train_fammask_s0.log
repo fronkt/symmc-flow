@@ -1,0 +1,35 @@
+corpus: 1127 -> 1095 multi-copy after relative re-gauge
+cosets: 238 distinct space-group cosets [DEPLOYABLE symmetry-op]; coset conditioning: ON
+  split: 964 train / 131 val
+  lattice prior vol/atom: 9.9 A^3
+
+  device=cuda  steps=800  n_cosets(model)=238
+
+step     0  loss 8.5039  (L 3.377  x 0.266  R 4.861)
+step    50  loss 5.3745  (L 0.230  x 0.256  R 4.888)
+step   100  loss 5.8810  (L 0.215  x 0.245  R 5.421)
+step   150  loss 5.5923  (L 0.279  x 0.238  R 5.076)
+step   200  loss 4.6428  (L 0.220  x 0.270  R 4.152)
+step   250  loss 4.4339  (L 0.171  x 0.255  R 4.009)  | val 4.4693
+step   300  loss 4.4798  (L 0.182  x 0.264  R 4.033)
+step   350  loss 4.6460  (L 0.181  x 0.245  R 4.220)
+step   400  loss 3.9087  (L 0.140  x 0.255  R 3.514)
+step   450  loss 3.5273  (L 0.164  x 0.254  R 3.109)
+step   500  loss 3.2916  (L 0.113  x 0.279  R 2.900)  | val 3.2194
+step   550  loss 2.5144  (L 0.142  x 0.248  R 2.125)
+step   600  loss 3.1550  (L 0.146  x 0.257  R 2.751)
+step   650  loss 2.6403  (L 0.229  x 0.240  R 2.172)
+step   700  loss 3.0169  (L 0.149  x 0.260  R 2.608)
+step   750  loss 2.8626  (L 0.185  x 0.215  R 2.463)  | val 2.9605
+
+==== held-out validation, per head (untrained -> trained) ====
+  lattice  : 3.3924 -> 0.1964  (+94.2%)
+  centroid : 0.2868 -> 0.2543  (+11.3%)
+  orient   : 5.3815 -> 2.5396  (+52.8%)
+  total    : 9.0607 -> 2.9904  (+67.0%)
+  orient split:
+    ref    : 5.3519 -> 0.7948  (+85.2%)
+    nonref : 5.3948 -> 3.1714  (+41.2%)  <-- NON-REFERENCE (coset-conditioned target)
+
+NON-REF drop (+41.2%): vs +27% without coset conditioning -> coset id helps but residual remains
+checkpoint -> checkpoints/coset_fammask_s0.pt

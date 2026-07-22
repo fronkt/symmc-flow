@@ -1,0 +1,22 @@
+corpus: 1127 -> 1095 multi-copy; val crystals: 131
+ckpt checkpoints/coset_deploy_s0.pt  clean_packing(train)=False  vol/atom 9.9
+
+coset PREDICTOR checkpoints/coset_predictor.pt (val acc 39.5%) -> PREDICTED coset, top-5 MARGINALIZATION (best over hypotheses) [de-novo, no template]
+
+==== orientation-isolated reconstruction (true lattice+centroid+conformer) ====
+  default matcher: ltol=0.3 stol=0.5 angle_tol=10.0; best-of-4
+
+  condition    match@1   match@k   med RMSD   non-ref err
+  oracle        100.0%    100.0%      0.000        0.0 deg  (ceiling)
+  identity        1.5%      1.5%      0.054      164.9 deg  (naive R=I)
+  untrained       0.0%      0.0%        nan       98.0 deg  (floor)
+  trained         0.0%      0.0%        nan       51.2 deg  <-- RESULT
+
+  (n=131 crystals; match@1 = single deterministic-prior draw, match@k = best of 4; med RMSD = median matched StructureMatcher RMS)
+
+  predictor top-k COVERAGE (true coset in top-k, non-ref molecules; n=438):
+    top-1 :  39.5%
+    top-3 :  75.8%
+    top-5 :  85.6%
+    top-10:  90.9%
+  (top-1 = argmax accuracy; high top-k with low top-1 => marginalizing the top-k predictions is the route to template-free use)

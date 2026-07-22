@@ -489,3 +489,105 @@ Ran the three follow-ups the partial positive needed, then reframed the docs.
       (model); fixed `test_cond_clean_packing` for new `coset=` kwarg. Suite **60 passed, 2 skipped**.
 - [x] **Reframe (task 1)**: MOLCRYSTAL.md (TL;DR 3-way characterization, 2a/2b/2c subsections,
       components table, next steps, artifacts) + PLAN.md §1 reframe note.
+
+---
+
+# Phase D — Reframe as a METHOD paper (PLAN for sign-off, 2026-07-18)
+
+**Status:** Phase B/C GPU runs DONE, gate PASSED (commit `e035b8d`, gpu_results/). This is the
+rewrite PLAN only; **awaiting Frank's sign-off before editing `paper/main.tex`.**
+
+## Venue recommendation (Claude's pick): MoML/MIT short paper (Sep 1) FIRST, then JCIM (archival)
+- **Why MoML first:** the result is a focused, positive method+analysis -> ideal workshop short
+  paper. MoML/MIT (Sep 1) is ALREADY committed for symmc-flow, is the exact domain audience
+  (molecular ML), is non-archival (does not burn a later journal), and Sep 1 is a clean deadline.
+- **Why not straight-to-journal (yet):** DD (AE Jung) and TMLR both desk-rejected the *negative*
+  version on general-interest triage. A domain-workshop review judges it on molecular-ML merit,
+  where SG-conditioning for rigid-body molecular-crystal flows is squarely on-topic. Land the
+  workshop result, THEN extend.
+- **Free second shot:** same paper co-submits to AI4Mat (NeurIPS ws, Aug 30) -- dual non-archival
+  workshops OK per the committed plan.
+- **Archival top-venue follow-on (Phase E):** extend to **JCIM (J. Chem. Inf. Model.)** -- strong
+  molecular-informatics journal, domain review, less general-interest triage than DD. (DD round-2
+  possible but already desk-rejected once; JCIM is the cleaner target.) Journal version wants the
+  optional extra runs below.
+
+## Target format
+- [ ] **Confirm MoML 2026 template + page limit** (likely ~4 pp + refs, workshop LaTeX style).
+- [ ] Rewrite from `paper/main.tex` (currently RSC single-column) into the MoML short format
+      (keep a copy; do NOT overwrite the TMLR/RSC package under paper/submissions/).
+
+## The reframe (diagnostic -> method)
+- OLD title: "What an SO(3) orientation flow can and cannot learn in molecular-crystal SP"
+- NEW title (draft): **"Deployable Symmetry-Coset Conditioning Recovers the Orientation Benefit
+  of Space-Group Symmetry in Molecular-Crystal Flow Matching"** (trim as needed)
+- OLD thesis (negative): orientation is partly unlearnable (free R_asym floor).
+- NEW thesis (positive): the LEARNABLE part is the SG-determined relative rotation; we expose it
+  as a **deployable, leak-free coset label** (the generating SG operation, available from a
+  template at sampling time) and condition the orientation flow on it -> recover ~2/3 of the
+  oracle-codebook benefit; **SO(3)-averaged training closes the rest**; de-novo (no-template)
+  prediction is the remaining honest gap.
+
+## Section-by-section rewrite
+- [ ] **Title + abstract** -> method+result framing (numbers below).
+- [ ] **Intro**: lead with the GAP -- MolCrystalFlow/MOFFlow skip SG conditioning; SG-conditioning
+      proven inorganic-only (NextCrystal / WyckoffDiff / DiffCSP++ / SymmCD). State contributions:
+      (1) deployable coset label; (2) conditioning recovers the orientation benefit; (3) SO(3)-avg
+      reaches the ceiling; (4) honest de-novo gap.
+- [ ] **Method** (expand from the diagnostic's decomposition):
+      - R_m = rot(g_m) * R_asym decomposition (keep from current paper).
+      - Deployable coset = generating SG op h = g_m * g_0^{-1}, recovered from centroids
+        (min-image), LEAK-FREE + template-available at sampling (contrast DiffCSP++ atom templates).
+      - Coset conditioning in the flow (coset_embed; threaded through sampler, C3a).
+      - SO(3)-averaged FM objective (C5).
+      - Packing-only coset predictor (C4).
+- [ ] **Experiments / Results** (all from `e035b8d`):
+      - **Table 1 (main):** held-out NON-REF orientation-loss drop, 3 seeds:
+          control (no-coset)      +27.5% (29.4 / 24.4 / 28.8)
+          deployable coset K=1    +41.1% (43.2 / 37.2 / 42.9)
+          + SO(3)-avg K=4         +47.7% (49.2 / 43.4 / 50.5)
+          leaky-codebook oracle   ~+48% (upper bound)
+      - **Fig 1:** bar chart of Table 1 with the ~+48% ceiling line.
+      - **Orient-isolated physical match** (best-of-8, coset template): up to 14.5%/37.4% at loose
+        tol, 9.9%/27.5% at (0.3,0.5), median 41.1 deg; tol-sweep table.
+      - **Predictor (C4):** 39.5% top-1 vs 10.3% majority (4x); predicted-coset reconstruction
+        collapses to 64.8 deg -> de-novo gap.
+      - **Templated end-to-end:** 0.0% match; error budget lattice 0.442 / centroid 0.346 /
+        orient 13.4 deg -> scopes the contribution to the ORIENTATION mechanism (lattice+centroid
+        are the end-to-end bottleneck, not orientation).
+- [ ] **Limitations / Analysis**: de-novo predictor gap; end-to-end bottleneck = lattice+centroid;
+      symmetric-top multimodality residual.
+- [ ] **Conclusion + future work**: better/top-k coset predictor for template-free use; joint
+      lattice-centroid improvement.
+- [ ] **Related work**: add MolCrystalFlow (2602.16020), NextCrystal (2602.17176), MOFFlow,
+      SO(3)-averaged FM (2507.09785), Genarris-3; keep DiffCSP++/WyckoffDiff/SymmCD.
+
+## Figures / tables to produce
+- [ ] Table 1 (main result) -- from logs.
+- [ ] Fig 1 bar chart -- matplotlib from logs.
+- [ ] Tol-sweep table -- from phaseB/orient_isolated_coset.log.
+- [ ] (Optional) schematic of R_asym decomposition + coset conditioning (excalidraw skill; needs
+      jsdelivr import fix + dangerouslyDisableSandbox per [[reference_excalidraw_skill]]).
+
+## Claims discipline (do NOT overclaim)
+- Coset helps ON THE ORIENTATION RESIDUAL; NOT yet end-to-end match.
+- De-novo (no template) does NOT work yet (39.5% too noisy -> 64.8 deg).
+- SO(3)-avg is the ceiling-reaching component.
+
+## Optional extra runs (JCIM journal version, NOT the workshop)
+- [ ] Unconditioned templated baseline (was skipped: run_phaseB UNCOND fallback missed
+      coset_deploy_off_s0.pt at eval time). Rerun eval_templated_matchrate on an OFF ckpt
+      (CPU-heavy matcher; short GPU rental or overnight CPU). Cheap; completes the templated delta.
+- [ ] Stronger / calibrated coset predictor (bigger, or top-k conditioning) to shrink de-novo gap.
+- [ ] End-to-end with improved lattice/centroid generation.
+
+## Repro / data
+- Numbers: `e035b8d`, gpu_results/. Checkpoints local (gitignored, 10x ~5.5MB). Zenodo v1.0.3
+  DOI 10.5281/zenodo.21384130 (bump on submission).
+- Author block per [[reference_author_identity]] (Frank Cai, Purdue, ORCID 0009-0003-0041-1459).
+
+## Open decisions for Frank (sign-off)
+1. Venue: MoML-first (my rec) vs straight-to-journal?
+2. Title (draft above OK, or shorter)?
+3. Include the excalidraw schematic figure?
+4. Do the optional unconditioned-templated rerun now, or defer to the journal version?

@@ -1,0 +1,13 @@
+corpus: 2539 -> 2464 multi-copy; val crystals: 296
+ckpt checkpoints/scale_coset_s0.pt  clean_packing(train)=False  vol/atom 9.9
+
+==== orientation-isolated reconstruction (true lattice+centroid+conformer) ====
+  default matcher: ltol=0.3 stol=0.5 angle_tol=10.0; best-of-8
+
+  condition    match@1   match@k   med RMSD   non-ref err
+  oracle        100.0%    100.0%      0.000        0.0 deg  (ceiling)
+  identity        1.7%      1.7%      0.094      163.6 deg  (naive R=I)
+  untrained       0.0%      0.0%        nan       91.3 deg  (floor)
+  trained        26.4%     56.8%      0.089       31.7 deg  <-- RESULT
+
+  (n=296 crystals; match@1 = single deterministic-prior draw, match@k = best of 8; med RMSD = median matched StructureMatcher RMS)

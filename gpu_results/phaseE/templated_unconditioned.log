@@ -1,0 +1,14 @@
+[phaseE_uncond] UNCONDITIONED (no symmetry template)
+  corpus 1127 -> 1095 multi-copy; val 131; device cpu; k=20 steps=50; n_cosets(model)=238
+  sampled 32/131
+  sampled 64/131
+  sampled 96/131
+  sampled 128/131
+  sampled 131/131
+
+==== phaseE_uncond: end-to-end template-based generation, match@20 (n=131) ====
+  scheme: UNCONDITIONED (no symmetry template)
+  match@1 (single draw): 0.0%
+  match rate: 0.0%  (Wilson 95% CI 0.0-2.8%)
+  median best-of-k component error: lattice-param 0.501  centroid(frac) 0.345  orient 93.5 deg
+  TAG phaseE_uncond coset 0 k 20 match 0.00
