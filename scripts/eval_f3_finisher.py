@@ -119,6 +119,18 @@ def _min_rms_S(sm, refS, draw_dicts):
     return best
 
 
+def _perturb_asu_orient(ori, groups, sigma_deg, gen):
+    """F3d-0: perturb each species' ASU (reference) orientation by a random SO(3) rotation, to give
+    the local finisher extra starting basins to escape the ~18 deg orientation residual."""
+    import math
+    from symmc_flow import manifolds as M
+    o = ori.clone()
+    for g in groups:
+        w = torch.randn(3, generator=gen) * (sigma_deg * math.pi / 180.0)
+        o[g[0]] = M.so3_exp(w.unsqueeze(0))[0] @ o[g[0]]
+    return o
+
+
 def _finish_score_one(payload):
     """One crystal end-to-end (finish k draws + score vs ref). Runs in a worker process."""
     torch.set_num_threads(1)                               # avoid thread oversubscription in the pool
@@ -126,14 +138,17 @@ def _finish_score_one(payload):
     from pymatgen.analysis.structure_matcher import StructureMatcher
     from symmc_flow.molcrystal import rigid_to_structure
     from symmc_flow.rigid_press import finish_structure
-    c, fk = payload
+    c, fk, restarts, sigma = payload
     Z, loc, am, mm = c["Z"], c["local"], c["atom_mask"], c["mol_mask"]
+    gen = torch.Generator().manual_seed(1234 + hash(c["ref"].get("charge", 0)) % 9973)
     raws, fins = [], []
-    for (L, cen, ori) in c["draws"]:
+    for di, (L, cen, ori) in enumerate(c["draws"]):
         raws.append(rigid_to_structure(L, Z, loc, cen, ori, am, mm).as_dict())
-        Lf, cf, Rf = finish_structure(L, cen, ori, loc, Z, am, mm, c["sg"],
-                                      groups=c["groups"], op_idx=c["op_idx"], **fk)
-        fins.append(rigid_to_structure(Lf, Z, loc, cf, Rf, am, mm).as_dict())
+        for r in range(max(1, restarts)):                  # r=0 = unperturbed (F3c baseline)
+            o0 = ori if r == 0 else _perturb_asu_orient(ori, c["groups"], sigma, gen)
+            Lf, cf, Rf = finish_structure(L, cen, o0, loc, Z, am, mm, c["sg"],
+                                          groups=c["groups"], op_idx=c["op_idx"], **fk)
+            fins.append(rigid_to_structure(Lf, Z, loc, cf, Rf, am, mm).as_dict())
     refS = Structure.from_dict(c["ref"])
     res = {"ref": c["ref"], "raws": raws, "fins": fins}
     for stol in STOLS:
@@ -161,7 +176,10 @@ def finish_and_score(args):
           f"relax_cell={relax_cell} contact={args.contact} cutoff={args.cutoff}; workers={workers}",
           flush=True)
 
-    payloads = [(c, fk) for c in crystals]
+    if args.restarts > 1:
+        print(f"  F3d-0 orientation multi-start: {args.restarts} restarts x sigma {args.restart_sigma} deg "
+              f"-> best-of-{k*args.restarts} match pool", flush=True)
+    payloads = [(c, fk, args.restarts, args.restart_sigma) for c in crystals]
     t0 = time.time(); results = []
     if workers > 1:
         ctx = mp.get_context("spawn")
@@ -227,6 +245,10 @@ def main():
     ap.add_argument("--contact", type=float, default=0.90)
     ap.add_argument("--cutoff", type=float, default=6.0)
     ap.add_argument("--no-relax-cell", action="store_true")
+    ap.add_argument("--restarts", type=int, default=1,
+                    help="F3d-0: orientation multi-start restarts per draw (1 = single finish)")
+    ap.add_argument("--restart-sigma", type=float, default=15.0,
+                    help="F3d-0: SO(3) perturbation std (deg) for restarts>1")
     ap.add_argument("--workers", type=int, default=0, help="finish+score processes (0 = cpu_count-1)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--out", default="gpu_results/phaseF3")
