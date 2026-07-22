@@ -591,3 +591,48 @@ rewrite PLAN only; **awaiting Frank's sign-off before editing `paper/main.tex`.*
 2. Title (draft above OK, or shorter)?
 3. Include the excalidraw schematic figure?
 4. Do the optional unconditioned-templated rerun now, or defer to the journal version?
+
+---
+
+# Task: Finish JCIM manuscript for publication + achemso formatting (2026-07-22)
+
+Finalize `paper/submissions/JCIM/` to ACS J. Chem. Inf. Model. (jcisd8) publication format;
+also fix MoML stale title + verify page count. LaTeX installed locally (MiKTeX 25.12).
+
+## JCIM
+- [ ] `article` -> ACS `achemso` (journal=jcisd8, manuscript=article); drop natbib/bibstyle (achemso owns it)
+- [ ] Remove `\todo` macro + 6 markers; expand each to publication prose:
+  - [ ] Intro opener; Methods rigid-body flow; R_asym derivation (Eq + gauge floor + Haar + probe + 2x2);
+        orientation-isolated tolerance table; Limitations (from diagnostic Discussion)
+- [ ] achemso author block (\affiliation/\email/\keywords); ORCID OUT of body (JCIM rule)
+- [ ] Abstract <=250 words; TOC graphic (\begin{tocentry})
+- [ ] "Data and Code" -> **Data and Software Availability** (JCIM-required); competing-interest Notes
+- [ ] Appendices -> Supporting Information (si.tex, manuscript=suppinfo) + \begin{suppinfo} pointer
+- [ ] Self-contained figures/ in package; compile clean (0 undefined refs/cites)
+
+## MoML
+- [ ] Fix stale title in comment header; compile -> real page count; trim to <=4 pp if over
+
+## Guidelines confirmed (researcher-resources.acs.org, jcisd8, updated 2026-05-21)
+- Abstract 150-250 words; TOC graphic required (Article); Data Availability Statement mandatory;
+  ORCID must NOT appear in manuscript text (auto-added on accept); refs any style but complete w/ titles;
+  COI: "The authors declare no competing financial interest."
+
+## Review (2026-07-22) — DONE, compiled + verified locally (MiKTeX 25.12)
+- **LaTeX installed**: winget MiKTeX.MiKTeX 25.12 (user scope), AutoInstall on; pdflatex/bibtex/latexmk
+  at `%LOCALAPPDATA%\Programs\MiKTeX\miktex\bin\x64`. pdftoppm/pdftotext there too (Read-tool PDF render
+  needs poppler, which the Read tool lacks — render via MiKTeX pdftoppm to PNG instead).
+- **JCIM** `submissions/JCIM/main.tex`: article -> achemso (journal=jcisd8, manuscript=article). All 6
+  `\todo` expanded (intro; rigid-body flow; full R_asym derivation + 2x2 Table; orientation-isolated
+  tolerance table; limitations). achemso author block (\affiliation/\email/\keywords), ORCID out of body.
+  Abstract 224 words (in range). TOC graphic (fig3_ladder). "Data and Software Availability" +
+  competing-interest + \begin{suppinfo}. Extended methods moved to **new `si.tex`** (achemso
+  manuscript=suppinfo, 5 SI sections). fig3_ladder.pdf copied into package. **Compiles CLEAN**:
+  main.pdf 19 pp (ACS double-spaced), si.pdf 6 pp; 0 undefined refs/cites, 0 errors, 0 overfull>15pt,
+  19/19 bibitems resolve.
+- **MoML** `submissions/MoML/main.tex`: stale title comment fixed. Trimmed main text 4.4pp -> **exactly
+  4 pp** (refs start top of p5; appendix p6) via prose tightening + smaller bar chart + caption/table
+  spacing. Compiles clean, 6 pp total.
+- **HUMAN-GATED (Frank owns)**: (a) review the prose I wrote into the JCIM derivation/limitations — his
+  paper, his voice; (b) tab:bench positioning still his call; (c) Zenodo DOI bump on both; (d) swap the
+  TOC graphic for a purpose-built one if desired; (e) commit/push (not done — awaiting his ok).

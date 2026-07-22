@@ -27,11 +27,11 @@ coset deployable in a sampler) is now the headline. Numbers from commit `e035b8d
   the contribution to the orientation mechanism.
 
 ## TODO before submitting (human-gated)
-- [ ] **Compile on Overleaf** (no local TeX here). Verify **main text ≤ 4 pages**;
-      trim prose if over.
-- [ ] Confirm the pgfplots bar chart (Fig. 1) renders; if pgfplots is unavailable
-      in the chosen template, Table 1 already carries the same numbers — drop the
-      figure.
+- [x] **Compiled + verified locally** (MiKTeX 25.12, 2026-07-22). Main text trimmed to
+      **exactly 4 pages** (References start top of p5, appendix p6). Clean compile, 6 pp total.
+      Trims: bar chart shrunk (4.6→3.3 cm), abstract/Discussion/Experiments/Reproducibility
+      tightened, caption/table spacing reduced. No result, table, or figure removed.
+- [x] pgfplots bar chart (Fig. 1) renders fine — kept (Table 1 also carries the numbers).
 - [ ] **Optional:** add a concept schematic (R_asym decomposition + how the coset
       label feeds the flow) IF the compiled length leaves room. Deferred here to
       avoid blowing the 4-page limit before a real page count is known.
