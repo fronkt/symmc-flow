@@ -35,8 +35,9 @@ Guidelines source: https://researcher-resources.acs.org/publish/author_guideline
 - [ ] **Frank reviews the expanded prose** (Introduction, Methods §orientation-decomposition
       derivation, Limitations) for voice/accuracy — this was a scaffold he owns.
 - [ ] Decide whether `tab:bench` (the MolCrystalFlow comparison framing) stays as written.
-- [ ] Optional: replace the TOC graphic with a purpose-built conceptual schematic
-      (currently reuses `fig3_ladder.pdf`).
+- [x] Purpose-built TOC graphic added (`figures/fig_toc.pdf`, source
+      `paper/figures/fig_toc.py`): decomposition + coset/family-mask conditioning +
+      the 0%→6.9%/10.7% exact-match ladder vs MolCrystalFlow. Renders in the tocentry.
 - [ ] Bump the Zenodo DOI (`cai2026symmcflow`) to the strengthened code before submission.
 - [ ] Upload via the ACS Paragon system: `main.tex`+`references.bib`+`figures/` as the
       manuscript, `si.tex` (built to PDF) as Supporting Information; provide the TOC graphic

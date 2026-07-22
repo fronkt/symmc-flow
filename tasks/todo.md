@@ -633,6 +633,20 @@ also fix MoML stale title + verify page count. LaTeX installed locally (MiKTeX 2
 - **MoML** `submissions/MoML/main.tex`: stale title comment fixed. Trimmed main text 4.4pp -> **exactly
   4 pp** (refs start top of p5; appendix p6) via prose tightening + smaller bar chart + caption/table
   spacing. Compiles clean, 6 pp total.
-- **HUMAN-GATED (Frank owns)**: (a) review the prose I wrote into the JCIM derivation/limitations — his
-  paper, his voice; (b) tab:bench positioning still his call; (c) Zenodo DOI bump on both; (d) swap the
-  TOC graphic for a purpose-built one if desired; (e) commit/push (not done — awaiting his ok).
+- **PUSHED** `fff13b3` (JCIM finalize + MoML trim) to origin/paper-draft.
+
+## Follow-up (2026-07-22): TOC graphic + AI4Mat NeurIPS conversion (items 4 & 5)
+- [x] **Item 4 — purpose-built JCIM TOC graphic**: `paper/figures/fig_toc.py` → `fig_toc.pdf`
+      (decomposition R_m=rot(g_m)R_asym + coset/family-mask conditioning + 0%→6.9%/10.7% ladder vs
+      MCF; Okabe-Ito, 3.25×1.75in). Wired into JCIM tocentry (replaces fig3_ladder); recompiled
+      clean, 19 pp, TOC renders on last page.
+- [x] **Item 5 — AI4Mat → NeurIPS style**: downloaded `neurips_2024.sty` (stable-layout basis);
+      rebuilt `AI4Mat/main.tex` = MoML body under `\usepackage[preprint,nonatbib]{neurips_2024}` +
+      numbered natbib + hyperref. Compiles clean: 6 pp, 20/20 bibitems, 0 undefined, 0 bad overfull,
+      numbered cites + "Preprint. Under review." footer. SUBMISSION_NOTES updated (swap 2026 .sty +
+      check double-blind at submit).
+- **On flag #2 (tab:bench)**: NOT necessary to change. The bench (we're below MCF end-to-end at
+  diagnostic scale) now explicitly sets up §ladder, which closes that same gap to parity — it reads
+  as the honest "before" of the before→after arc, not an exposed weakness. Recommend keep as-is.
+- **STILL HUMAN-GATED (Frank owns)**: (a) review the prose in JCIM derivation/limitations; (b) Zenodo
+  DOI bump; (c) at AI4Mat submit: swap official 2026 .sty + set anonymity per the CFP.

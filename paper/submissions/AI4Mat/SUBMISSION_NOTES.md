@@ -6,12 +6,12 @@ Simultaneous submission is fine — this co-submits with MoML (Sep 1) and does n
 conflict with the JCIM journal version (Phase E/F). Part of the "submit all 3"
 NeurIPS-workshops plan (symmc-flow + fe-sma + pxrd-diff); no per-author cap.
 
-**This package.** `main.tex` + `references.bib` are a **content-identical copy of
-the MoML short paper** (`paper/submissions/MoML/`), kept in a separate directory so
-each venue's formatting can diverge without cross-contamination. Self-contained
-(single-column 10pt article), one results table + one pgfplots bar chart in the
-main text, full methods / per-seed numbers / tolerance sweep in the non-counting
-appendix.
+**This package.** `main.tex` (NeurIPS style) + `references.bib` + `neurips_2024.sty`.
+The prose/results are the **same content as the MoML short paper**
+(`paper/submissions/MoML/`), reformatted into the NeurIPS style AI4Mat requires.
+One results table + one pgfplots bar chart + the lever-ladder table in the main
+text; full methods / per-seed numbers / tolerance sweep in the appendix (refs +
+appendix in the same PDF, per AI4Mat).
 
 **The story (strengthened, Phase F).** Same headline as the JCIM/MoML strengthened
 version — the **first fully symmetry-conditioned molecular-crystal flow**
@@ -23,22 +23,25 @@ orientation-TTA (3× finishing budget). Full ladder in `tab:ladder`
 (`sec:ladder`); numbers from `gpu_results/FINDINGS_F_FINAL.md` +
 `gpu_results/phaseF3{a..f}/`.
 
+## Status — converted to NeurIPS style + compiled locally (2026-07-22)
+- [x] **Converted to the NeurIPS style** (`neurips_2024.sty`, bundled). Preamble:
+      `\usepackage[preprint, nonatbib]{neurips_2024}` + numbered `natbib`
+      (`unsrtnat`) + hyperref/pgfplots. Compiles clean (MiKTeX): **6 pp**, 20/20
+      bibitems, 0 undefined refs/cites, 0 bad overfull. Numbered citations render.
+
 ## TODO before submitting (human-gated)
-- [ ] **Convert to the official AI4Mat/NeurIPS style file** for the 2026 edition
-      (the CFP will link the template; this draft uses a neutral `article` base so
-      it compiles standalone in the meantime).
-- [ ] **Compile on Overleaf** (no local TeX here). Verify the page limit for the
-      chosen AI4Mat track (typically ~4 pages excl. references); trim prose if over.
-- [ ] Confirm the pgfplots bar chart (Fig. 1) renders under the NeurIPS template;
-      Table 1 (`tab:gate`) and Table 2 (`tab:ladder`) already carry the numbers, so
-      the figure can be dropped if space-constrained.
-- [ ] **Optional:** include the exact-match lever-ladder figure
-      (`paper/figures/fig3_ladder.pdf`) if the page budget allows — it visualizes
-      the 0%→parity ladder from `tab:ladder`.
-- [ ] Final citation-accuracy pass (all keys resolve; the competitor arXiv IDs are
-      the same verified set as MoML).
-- [ ] Sync the Zenodo DOI (`cai2026symmcflow`) if a new version is minted for the
-      strengthened code.
+- [ ] **Swap `neurips_2024.sty` for the official AI4Mat / NeurIPS-2026 style file**
+      when the CFP posts it. The layout is identical year-to-year; only the first-page
+      footer text differs. `\documentclass` + author block stay the same.
+- [ ] **Anonymity:** the draft uses `[preprint]` (author shown, no line numbers) to
+      match the non-anonymous MoML co-submission. **If AI4Mat 2026 review is
+      double-blind, remove `preprint`** → anonymized submission mode with line numbers,
+      and strip the author block.
+- [ ] **Page limit:** currently 6 pp (incl. refs + appendix in one PDF). AI4Mat
+      recent editions accept short *and* full-length (up to ~9 pp) papers — confirm the
+      2026 track limit on the CFP; the pgfplots bar chart (Fig. 1) can be dropped if
+      over (Table 1 carries the same numbers).
+- [ ] Sync the Zenodo DOI (`cai2026symmcflow`) if a new version is minted.
 - [ ] **Frank writes/owns the final text**; this draft is for review only.
 
 ## Keep in sync with MoML
