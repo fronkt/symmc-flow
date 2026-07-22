@@ -44,12 +44,15 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
     dt = 1.0 / steps
     dev, dtp = kL.device, kL.dtype
 
+    use_sc = getattr(model.cfg, "self_cond", False)        # F3d self-conditioning refinement
+    sc = None                                              # terminal estimate carried across steps
+
     def field(k_, x_, R_, t_scalar):
         t = torch.full((B,), float(t_scalar), device=dev, dtype=dtp)
         L_ = M.k_to_lat(k_, n, repr)
         if symmetrize:
             return model.symmetrized_velocity(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
-        return model.forward(mol_emb, L_, x_, R_, t, sg, mask, coset=coset)
+        return model.forward(mol_emb, L_, x_, R_, t, sg, mask, coset=coset, self_cond=sc)
 
     for i in range(steps):
         t0 = i * dt
@@ -68,6 +71,10 @@ def rk4_sample(model, mol_emb, init: CrystalState, sg, steps: int = 50,
         x4 = M.wrap(x + dt * k3x)
         R4 = R @ M.so3_exp(dt * k3R)
         k4L, k4x, k4R = field(kL4, x4, R4, t0 + dt)
+        if use_sc:                                         # refresh self-cond estimate (reuse k4 eval)
+            t_end = torch.full((B,), t0 + dt, device=dev, dtype=dtp)
+            sc = model.terminal_estimate(M.k_to_lat(kL4, n, repr), x4, R4, t_end, n,
+                                         (k4L, k4x, k4R))
 
         kL = kL + (dt / 6.0) * (k1L + 2 * k2L + 2 * k3L + k4L)
         if fam:

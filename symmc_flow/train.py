@@ -55,7 +55,15 @@ def _step_loss(model, batch, weights, device, ot=False, vol_per_atom=10.0,
     cond_L = z1.lattice if cond_clean_packing else z_t.lattice
     cond_x = z1.centroid if cond_clean_packing else z_t.centroid
     coset = batch.get("coset")
-    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask, coset=coset)
+    self_cond = None
+    if getattr(model.cfg, "self_cond", False) and float(torch.rand(())) < 0.5:
+        with torch.no_grad():                              # F3d: condition on a detached self-estimate
+            pred0 = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask,
+                          coset=coset, self_cond=None)
+            nat = z1.mask.sum(-1).clamp_min(1)
+            self_cond = model.terminal_estimate(cond_L, cond_x, z_t.orient, t, nat, pred0)
+    pred = model(mol_emb, cond_L, cond_x, z_t.orient, t, batch["sg"], z1.mask,
+                 coset=coset, self_cond=self_cond)
     if so3_avg_k <= 1:
         return cfm_loss(pred, targets, z1.mask, weights)
 

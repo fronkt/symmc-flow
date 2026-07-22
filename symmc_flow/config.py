@@ -28,6 +28,9 @@ class ModelConfig:
     lattice_family_mask: bool = False  # freeze crystal-family-constrained lattice DOF (needs
                                        # lattice_repr="logmetric6"); the deployable extension of
                                        # coset orientation conditioning to the unit cell
+    self_cond: bool = False            # Phase F3d: self-conditioning refinement -- the network sees
+                                       # its own terminal-state estimate and predicts a correction
+                                       # (iterated at sampling). Gated; off = old path byte-identical.
     # flow head loss weights
     lambda_lattice: float = 1.0
     lambda_centroid: float = 1.0

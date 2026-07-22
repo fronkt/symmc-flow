@@ -124,6 +124,9 @@ def main():
                     help="Phase F3b: cache one prior per structure (lower-variance CFM target)")
     ap.add_argument("--centroid-prior-std", type=float, default=None,
                     help="Phase F3b: wrapped-normal centroid prior std (None -> uniform torus)")
+    ap.add_argument("--self-cond", action="store_true",
+                    help="Phase F3d: self-conditioning refinement (model sees its own terminal "
+                         "estimate; iterated at sampling) -- the novel positioning lever")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
 
@@ -157,7 +160,7 @@ def main():
 
     mcfg = ModelConfig(lambda_orient=1.0, n_cosets=0 if args.no_coset else n_cosets,
                        lattice_repr="logmetric6" if args.lattice_logmetric else "shape10",
-                       lattice_family_mask=args.family_mask)
+                       lattice_family_mask=args.family_mask, self_cond=args.self_cond)
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
                        cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k,

@@ -71,6 +71,14 @@ class SymMCFlow(nn.Module):
             nn.LayerNorm(c.d_model), nn.Linear(c.d_model, c.d_model), nn.SiLU(),
             nn.Linear(c.d_model, self._lat_dim))
 
+        # Phase F3d self-conditioning: embed the network's own terminal-state estimate and add it to
+        # the tokens. Gated -- these layers only exist (and only touch `tok`) when self_cond is on,
+        # so the default path is byte-identical. A zeroed estimate is the "no info" null token.
+        if getattr(c, "self_cond", False):
+            self.sc_centroid_in = nn.Linear(3, c.d_model)
+            self.sc_orient_in = nn.Linear(9, c.d_model)
+            self.sc_lattice_in = nn.Linear(self._lat_dim, c.d_model)
+
     # -- molecule encoding (geometry-invariant, computed once per crystal) -----
     def encode_molecules(self, Z, local, atom_mask):
         """Z:(B,M,A) local:(B,M,A,3) atom_mask:(B,M,A) -> mol_emb (B,M,d_model)."""
@@ -97,12 +105,14 @@ class SymMCFlow(nn.Module):
         fourier = fourier.flatten(-2)                                  # (B,M,M,3*2F)
         return torch.cat([d, dist, cart, cart_dist, fourier], dim=-1)
 
-    def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None):
+    def forward(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None,
+                self_cond=None):
         """Predict velocity fields.
         mol_emb:(B,M,d) lattice:(B,3,3) centroid:(B,M,3) orient:(B,M,3,3)
         t:(B,) sg:(B,) mol_mask:(B,M). coset:(B,M) long or None (per-molecule space-group coset
-        id, only used if the model was built with n_cosets>0). Returns (v_L (B,10) in lattice
-        param space, v_x (B,M,3), v_R (B,M,3))."""
+        id, only used if the model was built with n_cosets>0). self_cond:(L_hat,x_hat,R_hat) terminal
+        estimate or None (F3d; only used if self_cond enabled, zeros = null token). Returns
+        (v_L (B,10) in lattice param space, v_x (B,M,3), v_R (B,M,3))."""
         B, Mm, _ = centroid.shape
         n = mol_mask.sum(-1).clamp_min(1)
         repr = getattr(self.cfg, "lattice_repr", "shape10")
@@ -113,6 +123,17 @@ class SymMCFlow(nn.Module):
         tok = tok + temb.unsqueeze(1) + sgemb.unsqueeze(1) + self.lattice_in(k).unsqueeze(1)
         if self.coset_embed is not None and coset is not None:
             tok = tok + self.coset_embed(coset.clamp(0, self.cfg.n_cosets))    # (B,M,d)
+        if getattr(self.cfg, "self_cond", False):                             # F3d refinement token
+            if self_cond is None:                                             # null estimate = zeros
+                x_hat = torch.zeros_like(centroid)
+                R9_hat = torch.zeros(B, Mm, 9, device=centroid.device, dtype=centroid.dtype)
+                k_hat = torch.zeros_like(k)
+            else:
+                L_hat, x_hat, R_hat = self_cond
+                R9_hat = R_hat.reshape(B, Mm, 9)
+                k_hat = M.lat_to_k(L_hat, n, repr)
+            tok = tok + self.sc_centroid_in(x_hat) + self.sc_orient_in(R9_hat) \
+                      + self.sc_lattice_in(k_hat).unsqueeze(1)
 
         pair = self._pair_features(centroid, lattice)
         h = self.attn(tok, pair, mol_mask)                                    # (B,M,d)
@@ -126,6 +147,21 @@ class SymMCFlow(nn.Module):
             v_L = M.mask_velocity(v_L, sg)   # frozen family DOF get zero velocity
         m = mol_mask.unsqueeze(-1).float()
         return v_L, v_x * m, v_R * m
+
+    def terminal_estimate(self, lattice, centroid, orient, t, n, pred):
+        """F3d: Euler-extrapolate the current state to t=1 using the predicted velocity, giving the
+        (L_hat, x_hat, R_hat) terminal estimate fed back as the self-conditioning input. The paths
+        are straight lines in each manifold's tangent, so this is the model's own terminal guess.
+        n:(B,) atoms per crystal (for the lattice param<->matrix maps)."""
+        v_L, v_x, v_R = pred
+        B, Mm, _ = centroid.shape
+        repr = getattr(self.cfg, "lattice_repr", "shape10")
+        rem = (1.0 - t).view(-1, 1)
+        k_t = M.lat_to_k(lattice, n, repr)
+        L_hat = M.k_to_lat(k_t + rem * v_L, n, repr)
+        x_hat = M.wrap(centroid + rem.unsqueeze(1) * v_x)                     # torus
+        R_hat = orient @ M.so3_exp(rem.unsqueeze(1) * v_R)                    # body-frame (right-mult)
+        return L_hat, x_hat, R_hat
 
     # -- SGFM-symmetrized centroid field --------------------------------------
     def symmetrized_velocity(self, mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None):

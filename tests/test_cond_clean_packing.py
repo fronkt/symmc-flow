@@ -22,10 +22,10 @@ def _capture(model):
     seen = {}
     orig = model.forward
 
-    def wrapped(mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None):
+    def wrapped(mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=None, **kwargs):
         seen["lattice"] = lattice.detach().clone()
         seen["centroid"] = centroid.detach().clone()
-        return orig(mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=coset)
+        return orig(mol_emb, lattice, centroid, orient, t, sg, mol_mask, coset=coset, **kwargs)
 
     model.forward = wrapped
     return seen
