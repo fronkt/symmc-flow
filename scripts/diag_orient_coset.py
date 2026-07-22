@@ -117,6 +117,13 @@ def main():
                     help="Phase F: informed lattice prior ln(V) std (~0.11 for molecular crystals)")
     ap.add_argument("--dev-std", type=float, default=0.3,
                     help="Phase F: deviatoric log-metric prior std (logmetric6)")
+    ap.add_argument("--ot-coupling", action="store_true",
+                    help="Phase F3b: optimal-transport prior<->data centroid pairing (fixes the "
+                         "under-trained centroid head -- the arbitrary pairing makes it unlearnable)")
+    ap.add_argument("--fixed-prior", action="store_true",
+                    help="Phase F3b: cache one prior per structure (lower-variance CFM target)")
+    ap.add_argument("--centroid-prior-std", type=float, default=None,
+                    help="Phase F3b: wrapped-normal centroid prior std (None -> uniform torus)")
     ap.add_argument("--ckpt", default="checkpoints/diag_orient_coset.pt")
     args = ap.parse_args()
 
@@ -154,7 +161,9 @@ def main():
     tcfg = TrainConfig(steps=args.steps, batch_size=args.batch_size, lr=args.lr,
                        seed=args.seed, log_every=50, prior_vol_per_atom=vpa,
                        cond_clean_packing=args.clean_packing, so3_avg_k=args.so3_avg_k,
-                       prior_logvol_std=args.logvol_std, prior_dev_std=args.dev_std)
+                       prior_logvol_std=args.logvol_std, prior_dev_std=args.dev_std,
+                       use_ot_coupling=args.ot_coupling, fixed_prior=args.fixed_prior,
+                       centroid_prior_std=args.centroid_prior_std)
     device = resolve_device(tcfg.device)
     weights = (mcfg.lambda_lattice, mcfg.lambda_centroid, mcfg.lambda_orient)
     print(f"  device={device}  steps={args.steps}  n_cosets(model)={mcfg.n_cosets}\n")
