@@ -25,7 +25,7 @@
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[#1]}}}   % remove before submission
 \setlength{\parskip}{0.2em}
 
-\title{\bfseries Deployable Symmetry-Coset Conditioning for Rigid-Body
+\title{\bfseries Fully Symmetry-Conditioned Rigid-Body Flow Matching for
 Molecular-Crystal Structure Prediction}
 \author{Frank Cai\\ \small Purdue University, West Lafayette, IN, USA \\
 \small \texttt{frankyc11223@gmail.com}, ORCID 0009-0003-0041-1459}
@@ -67,8 +67,6 @@ at statistical parity with MolCrystalFlow's $\sim\!8\%$; an orientation test-tim
 finishing pass reaches $10.7\%$ (\S\ref{sec:ladder}, Fig.~\ref{fig:ladder}). This is a
 symmetry-conditioned alternative to the symmetry-free rigid-body flows, reaching parity on exact match
 with a complete anatomy of every lever it takes to get there.
-\todo{Frank: consider promoting the ``first fully symmetry-conditioned molecular flow at parity''
-result to the title/lead; the coset story then becomes the orientation half of the anatomy.}
 \end{abstract}
 
 % =====================================================================
@@ -160,9 +158,9 @@ coordinates are the deviatoric (shape) directions. A binary \emph{family mask} $
 freezes the constrained coordinates to their canonical values (e.g.\ orthorhombic frees $k_0,k_1,k_2$
 and zeros $k_3{=}k_4{=}k_5$; hexagonal fixes a nonzero off-diagonal for $\gamma{=}120^\circ$), applied
 after each sampler step and in the prior. The flow thus learns only the free, family-consistent
-degrees of freedom. \todo{Move the basis table + per-family free-DOF table from tasks/phaseF\_spec.md
-into an appendix; note this mechanism is DiffCSP++'s, our novelty is transporting it into the
-molecular rigid-body flow and composing it with the orientation coset.}
+degrees of freedom (basis and per-family mask in Appendix~\ref{app:family}). The mask mechanism is
+DiffCSP++'s\cite{jiao2024diffcsppp}; our novelty is transporting it into the molecular rigid-body flow
+and composing it with the orientation coset.
 
 \subsection{Exact-match finishing: physical press, learned prior, self-conditioning, recycling}
 \label{sec:finish}
@@ -179,9 +177,8 @@ $0.5$ and carried across sampler steps, following the self-conditioning used in 
 generators. \emph{(iv)~Recycling:} AlphaFold-style, the sampling trajectory is re-solved conditioned
 on the previous pass's output structure. \emph{(v)~Orientation test-time augmentation (TTA):}
 perturbing the asymmetric-unit orientation and pooling the best finished draw. All are gated behind
-configuration flags; the default path is unchanged. \todo{Frank: finisher energy/optimizer details
-(vdW table, Adam, neighbor list refresh) and the self-conditioning update
-$R\!\leftarrow\!R\,\exp_{\mathrm{SO}(3)}(\cdot)$ belong in an appendix.}
+configuration flags; the default path is unchanged (finisher energy/optimizer and the
+self-conditioning update in Appendix~\ref{app:finish}).
 
 % =====================================================================
 \section{Results and Discussion}
@@ -406,6 +403,73 @@ a symmetry-preserving physical relaxation.
 \section*{Data and Code Availability}
 Code, CSD refcode manifest, and pipeline: \url{https://github.com/fronkt/symmc-flow}, archived at
 Zenodo\cite{cai2026symmcflow}. CSD structures are licence-restricted and not redistributed.
+
+\appendix
+% =====================================================================
+\section{Crystal-family lattice mask}\label{app:family}
+% =====================================================================
+We parametrize the cell by its metric $G=L^\top L$, which is invariant to the arbitrary orientation
+of $L$, and take the matrix logarithm $S=\log G$, a symmetric $3\times3$ matrix with six independent
+components. Expanding $S$ in an orthonormal symmetric basis $\{B_0,\dots,B_5\}$ gives coordinates
+$k_i=\langle S,B_i\rangle$ that separate volume from shape:
+\begin{align*}
+B_0 &= \tfrac{1}{\sqrt3}\,I               & k_0 &= \tfrac{1}{\sqrt3}\,\mathrm{tr}\,S = \tfrac{2}{\sqrt3}\log V &&\text{(volume, always free)}\\
+B_1 &= \tfrac{1}{\sqrt6}\,\mathrm{diag}(1,1,-2) & k_1 &&&\text{($c$ vs.\ $a,b$)}\\
+B_2 &= \tfrac{1}{\sqrt2}\,\mathrm{diag}(1,-1,0)  & k_2 &&&\text{($a$ vs.\ $b$)}\\
+B_3 &= \tfrac{1}{\sqrt2}(E_{23}+E_{32})   & k_3 &&&\text{(off-diag.\ $\sim\!\alpha$)}\\
+B_4 &= \tfrac{1}{\sqrt2}(E_{13}+E_{31})   & k_4 &&&\text{(off-diag.\ $\sim\!\beta$)}\\
+B_5 &= \tfrac{1}{\sqrt2}(E_{12}+E_{21})   & k_5 &&&\text{(off-diag.\ $\sim\!\gamma$)}
+\end{align*}
+The cell reconstructs as $G=\exp\big(\sum_i k_i B_i\big)$, $L=\mathrm{chol}(G)$; the triangular
+(canonical-frame) choice is immaterial because the model round-trips the lattice through $k$ and
+\textsc{StructureMatcher} is frame-invariant. The binary family mask $m(\mathrm{sg})$ frees only the
+shape coordinates the crystal family permits and freezes the rest to canonical values
+(Table~\ref{tab:mask}), applied after every sampler step and in the prior. For the hexagonal family,
+$\gamma=120^\circ$ makes the $B_5$ component a fixed \emph{nonzero} constant in log-metric space
+(independent of $a$, since the $a^2$-scaling contributes only to the volume coordinate $k_0$); its
+value is computed numerically and verified in a unit test. The mask mechanism follows
+DiffCSP++\cite{jiao2024diffcsppp}; our contribution is transporting it into the molecular rigid-body
+flow and composing it with the orientation coset.
+
+\begin{table}[h]\centering
+\caption{Crystal-family lattice mask: free log-metric coordinates per family (space-group ranges);
+all others are frozen to the canonical value in the last column. The volume coordinate $k_0$ is
+always free.}
+\label{tab:mask}
+\begin{tabular}{lcl}\toprule
+family (SG range) & free $k$-coords & frozen (value) \\\midrule
+triclinic ($1$--$2$)              & $0,1,2,3,4,5$ & --- \\
+monoclinic ($3$--$15$)            & $0,1,2,4$     & $k_3{=}0,\ k_5{=}0$ \\
+orthorhombic ($16$--$74$)         & $0,1,2$       & $k_3{=}k_4{=}k_5{=}0$ \\
+tetragonal ($75$--$142$)          & $0,1$         & $k_2{=}k_3{=}k_4{=}k_5{=}0$ \\
+trigonal/hexagonal ($143$--$194$) & $0,1$         & $k_2{=}k_3{=}k_4{=}0,\ k_5{=}\text{CANON}_{\mathrm{hex}}$ \\
+cubic ($195$--$230$)              & $0$           & $k_1{=}\dots{=}k_5{=}0$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Finishing and self-conditioning}\label{app:finish}
+% =====================================================================
+\paragraph{Rigid-press finisher.} Each generated crystal is relaxed under a soft Lennard-Jones energy
+summed over intermolecular atom pairs within a $6\,\text{\AA}$ neighbor list, with the contact
+distance set to $0.90\times$ the sum of van der Waals radii. The free variables are the
+asymmetric-unit pose (a $\mathrm{SO}(3)$ tangent and a fractional shift per rigid block) and the
+family-masked cell coordinates $k$; the intramolecular geometry is frozen (rigid body) and every
+symmetry copy is \emph{regenerated} from the optimized ASU pose via the space-group operations at each
+step, so the relaxation cannot break the imposed symmetry and never reads the reference structure.
+Optimization is Adam (lr $0.03$, $\sim\!40$--$60$ steps) with the neighbor list refreshed every $15$
+steps and a light volume-penalty term ($\lambda_{\mathrm{vol}}\,{=}\,0.05$) toward the corpus volume
+per atom.
+
+\paragraph{Self-conditioning.} With probability $0.5$ during training, the model first produces a
+detached prediction with a null self-conditioning token, Euler-extrapolates it to $t{=}1$ to form a
+terminal estimate $(\hat L,\hat x,\hat R)$, and re-runs conditioned on that estimate. The extrapolation
+respects each manifold: $\hat L=\mathrm{k\_to\_lat}\big(k_t+(1{-}t)\,v_L\big)$,
+$\hat x=\mathrm{wrap}\big(x_t+(1{-}t)\,v_x\big)$ on the torus, and, in the body frame (right
+multiplication), $\hat R=R_t\,\exp_{\mathrm{SO}(3)}\!\big((1{-}t)\,v_R\big)$. At sampling time the
+estimate is carried across the RK4 steps (reusing the final velocity evaluation), and AlphaFold-style
+\emph{recycling} re-solves the whole trajectory conditioned on the previous pass's output structure.
+All of these are gated behind configuration flags, leaving the default generation path unchanged.
 
 \bibliographystyle{unsrtnat}
 \bibliography{references}
