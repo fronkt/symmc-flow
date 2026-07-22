@@ -1,0 +1,35 @@
+[F3 finish] 131 crystals x 10 draws; steps=40 relax_cell=False contact=0.9 cutoff=6.0; workers=6
+  finished 10/131  (316s)
+  finished 20/131  (582s)
+  finished 30/131  (746s)
+  finished 40/131  (784s)
+  finished 50/131  (876s)
+  finished 60/131  (1030s)
+  finished 70/131  (1136s)
+  finished 80/131  (1257s)
+  finished 90/131  (1427s)
+  finished 100/131  (1494s)
+  finished 110/131  (1728s)
+  finished 120/131  (1839s)
+  finished 130/131  (2078s)
+  finished 131/131  (2148s)
+
+==== F3a: RAW vs FINISHED (coset ON), n=131, best-of-10 ====
+    stol   RAW match   FIN match   FIN 95% CI
+     0.5       0.0%       0.8%   0.13-4.20
+  TAG f3 match stol 0.5 raw 0.00 fin 0.76 ci 0.13-4.20
+     0.8       0.0%       6.1%   3.13-11.59
+  TAG f3 match stol 0.8 raw 0.00 fin 6.11 ci 3.13-11.59
+     1.0       0.0%       6.9%   3.66-12.54
+  TAG f3 match stol 1.0 raw 0.00 fin 6.87 ci 3.66-12.54
+     1.2       0.8%       7.6%   4.20-13.48
+  TAG f3 match stol 1.2 raw 0.76 fin 7.63 ci 4.20-13.48
+
+  cell-vol RMAD   RAW 20.89%   FIN 20.89%
+  angle-spike     RAW 74.2%   FIN 74.2%   (ref 74.0%)
+  median min-RMSD RAW 1.018 (n=118)   FIN 0.849 (n=120)   -> +16.6%
+  TAG f3 rmad raw 20.89 fin 20.89
+  TAG f3 anglespike raw 74.2 fin 74.2 ref 74.0
+  TAG f3 minrmsd raw 1.018 fin 0.849 drop +16.6%
+
+GATE: FIN match@stol<=1.0 off 0 (CI-separated) OR median min-RMSD drop >=30% -> F3b; else F4.
