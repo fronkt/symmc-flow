@@ -91,7 +91,8 @@ def generate(args):
         for _ in range(args.match_k):
             z0 = sample_prior(z1, vol_per_atom=vpa, sg=batch["sg"], lattice_repr=lat_repr,
                               family_mask=fam_mask, logvol_std=lvstd, dev_std=dvstd)
-            samp = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps, coset=coset)
+            samp = rk4_sample(model, mol_emb, z0, batch["sg"], steps=args.sampler_steps,
+                              coset=coset, recycle=args.recycle)
             for b in range(B):
                 rec[b]["draws"].append((samp.lattice[b].cpu(), samp.centroid[b].cpu(),
                                         samp.orient[b].cpu()))
@@ -239,6 +240,8 @@ def main():
     ap.add_argument("--from-tensors", default="", help="finish + score from a saved f3_tensors.pkl")
     ap.add_argument("--match-k", type=int, default=5)
     ap.add_argument("--sampler-steps", type=int, default=50)
+    ap.add_argument("--recycle", type=int, default=0,
+                    help="F3e: AlphaFold-style recycling passes (self_cond model only)")
     ap.add_argument("--batch-size", type=int, default=8)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--finish-steps", type=int, default=60)
