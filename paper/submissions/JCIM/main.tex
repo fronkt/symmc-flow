@@ -59,7 +59,7 @@ unsupervised symmetry-preserving packing finisher, a fully-ablated stack of leve
 lifts held-out exact match from $0\%$ to $6.9\%$ (strict best-of-$10$,
 StructureMatcher $\text{stol}\,1.0$), at statistical parity with the symmetry-free
 MolCrystalFlow ($\sim\!8\%$), reaching $10.7\%$ with orientation test-time
-augmentation. We report a complete anatomy of every lever it takes to get there.
+augmentation. We report the contribution of each lever.
 \end{abstract}
 
 % =====================================================================
@@ -78,9 +78,8 @@ lattice $L$, a fractional centroid $c_m\in\mathbb{T}^3$, and an orientation
 $R_m\in\mathrm{SO}(3)$ per molecule---and supports the short sampling trajectories
 characteristic of flow matching.
 
-\paragraph{The gap.} This introduces a per-molecule orientation variable on
-$\mathrm{SO}(3)$, and here the current generation of models leaves value on the
-table. MolCrystalFlow\cite{zeng2026molcrystalflow}, a 2026 rigid-body
+\paragraph{The gap.} This factorization introduces a per-molecule orientation variable on
+$\mathrm{SO}(3)$, and here the current generation of models underuses the available symmetry. MolCrystalFlow\cite{zeng2026molcrystalflow}, a 2026 rigid-body
 molecular-crystal flow with the identical
 $\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$ factorization, jointly
 learns pose but imposes no space-group constraint, and
@@ -366,8 +365,7 @@ error falls to $4.3^\circ$ (from $13.4^\circ$), and orientation-isolated
 reconstruction climbs to $56.8\%$ best-of-$8$ at $31.7^\circ$ (from $27.5\%$ at
 $41.1^\circ$). Exact end-to-end match remains $0\%$ with the lattice ($0.42$) and
 centroid ($0.35$) component errors essentially unchanged: scaling data sharpens
-orientation but does not move the joint lattice--centroid bottleneck, cleanly
-isolating where the remaining work lies.
+orientation but does not move the joint lattice--centroid bottleneck.
 
 \begin{table*}[t]\centering
 \caption{Diagnostic ($N\!\approx\!1.1$k) vs.\ scale ($N\!=\!2.5$k) corpus:
@@ -471,7 +469,7 @@ strict match@$10$. The median atom-RMSD to the reference falls from $1.02$ (raw)
 $0.77$ (best), and cell-volume RMAD from $33\%$ to $21\%$. Diminishing returns are
 explicit: recycling and orientation-TTA both refine positioning, so stacking them
 ($8.4\%$) underperforms TTA alone; corpus scale and cell relaxation add nothing to
-match. The ceiling is reached, and every lever's contribution is isolated.
+match. These diminishing returns mark the effective ceiling for the current architecture.
 
 \begin{figure}[t]\centering
 \includegraphics[width=\linewidth]{fig3_ladder.pdf}
@@ -540,8 +538,7 @@ template-free path. Extending symmetry conditioning to the lattice yields the fi
 fully symmetry-conditioned molecular-crystal flow, and composed with an
 unsupervised symmetry-preserving finisher and a fully-ablated lever stack it reaches
 exact-match parity with the symmetry-free rigid-body flows ($0\%\!\to\!6.9\%$
-strict, $10.7\%$ with orientation TTA), with a complete anatomy of what each lever
-contributes. This gives rigid-body molecular-crystal
+strict, $10.7\%$ with orientation TTA), with each lever's contribution quantified. This gives rigid-body molecular-crystal
 generators\cite{zeng2026molcrystalflow} a concrete recipe: condition both
 orientation (on the generating coset) and the lattice (on the crystal family),
 sample only the free pose, and finish with a symmetry-preserving physical

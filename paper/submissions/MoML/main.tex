@@ -84,8 +84,8 @@ $L$, a fractional centroid $c_m\in\mathbb{T}^3$, and an orientation
 $R_m\in\mathrm{SO}(3)$ per molecule---suiting the short sampling trajectories of
 flow matching.
 
-This introduces a per-molecule orientation variable on $\mathrm{SO}(3)$, and here
-the current generation of models leaves value on the table. MolCrystalFlow, a
+This factorization introduces a per-molecule orientation variable on $\mathrm{SO}(3)$, and here
+the current generation of models underuses the available symmetry. MolCrystalFlow, a
 2026 rigid-body molecular-crystal flow with the same
 $\text{lattice}\times\mathbb{T}^3\times\mathrm{SO}(3)$ factorization, jointly
 learns pose but \emph{does not impose space-group
@@ -325,8 +325,7 @@ orientation test-time-augmentation pass (best-of-$30$, $3\times$ the finishing
 candidates) reaches $\mathbf{10.7\%}$, above MolCrystalFlow. Recycling and
 orientation-TTA both refine positioning and overlap, marking the ceiling. This is,
 to our knowledge, the first fully symmetry-conditioned molecular-crystal flow, at
-parity on exact match with the symmetry-free rigid-body flows, with a complete
-anatomy of every lever it takes to get there.
+parity on exact match with the symmetry-free rigid-body flows, with the contribution of each lever quantified.
 
 \begin{table}[t]
 \centering
