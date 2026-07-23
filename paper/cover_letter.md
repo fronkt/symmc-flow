@@ -62,7 +62,7 @@ I confirm that this manuscript is original, has not been published previously, a
 under consideration for publication elsewhere. It has a single author with no conflicts of
 interest to declare. All source code is openly available
 (https://github.com/fronkt/symmc-flow; archived at Zenodo,
-https://doi.org/10.5281/zenodo.20822235), so every reported number regenerates from the
+https://doi.org/10.5281/zenodo.21384130), so every reported number regenerates from the
 deposited artifacts.
 
 Thank you for considering this work.

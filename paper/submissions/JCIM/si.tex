@@ -1,0 +1,181 @@
+% =====================================================================
+% Supporting Information for
+% "Fully Symmetry-Conditioned Rigid-Body Flow Matching for
+%  Molecular-Crystal Structure Prediction"
+% ACS J. Chem. Inf. Model. (jcisd8). achemso manuscript=suppinfo:
+% sections/figures/tables auto-prefix with "S".
+% =====================================================================
+\documentclass[journal=jcisd8,manuscript=suppinfo]{achemso}
+
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\graphicspath{{figures/}{../../figures/}}
+
+\author{Frank Cai}
+\affiliation{Purdue University, West Lafayette, Indiana 47907, United States}
+\email{frankyc11223@gmail.com}
+
+\title{Supporting Information:
+Fully Symmetry-Conditioned Rigid-Body Flow Matching for
+Molecular-Crystal Structure Prediction}
+
+\begin{document}
+
+% =====================================================================
+\section{Rigid-body factorization, gauge, and manifolds}\label{sisec:method}
+% =====================================================================
+\textbf{Intrinsic gauge.} Each crystal is parsed into rigid blocks by a
+covalent-bond graph with periodic unwrapping; species are keyed by a
+Weisfeiler--Leman hash and share one reference conformer rotated into a
+molecule-intrinsic frame (gyration-tensor principal axes, sign-fixed by an
+element-weighted third moment). Each copy's pose is the Kabsch rotation to that
+frame, which removes the cross-crystal reference that otherwise floors the absolute
+orientation $R_m$. The atom positions reconstruct exactly as
+$\text{cart}_{m,a}=c_mL+R_m\,\text{local}_{m,a}$, so the re-gauge to the relative
+target $R'_m=R_mR_0^{-1}$ (Eq.~1 of the main text) leaves the rebuilt crystal
+unchanged.
+
+\textbf{Manifolds.} The lattice is carried in a $10$-dimensional
+log-volume/unit-determinant-shape parametrization (prior volume matched to the
+corpus mean); centroids on torus geodesics with a minimum-image velocity; and
+orientations on $\mathrm{SO}(3)$ geodesics with body-frame angular-velocity target
+$u_R=\log(R_0^\top R_1)$, advanced by the exponential map. Training uses conditional
+flow matching\cite{lipman2023flowmatching} with optimal-transport
+coupling\cite{pooladian2023multisample}; sampling is RK4 in $50$ steps.
+
+\textbf{Deployable coset recovery.} For a space group with operations
+$\{(W_h,t_h)\}$ (pymatgen), each non-reference copy is assigned
+$\arg\min_h \lVert (c_m-(W_hc_0+t_h))\ \mathrm{mod}\ 1\rVert$ under the minimum
+image, giving the generating-operation index; a deterministic $(\text{sg},h)$
+ordering yields shared integer labels ($238$ total on the diagnostic corpus). This
+uses only centroids and space-group operations, never the observed rotation, so the
+label is leak-free and reproducible from a symmetry template at sampling time.
+
+\textbf{Training.} Adam, learning rate $3\times10^{-4}$, gradient clipping, batch
+$16$; default network width $d{=}128$ with four attention and four encoder layers;
+$800$ steps for the coset runs, and $K{=}4$ prior draws for the
+$\mathrm{SO}(3)$-averaged objective. The template-free predictor reuses the encoder
+and pair-bias trunk over conformer/centroid/lattice/space-group inputs (no
+orientation) and is trained to $39.5\%$ held-out top-1 accuracy.
+
+% =====================================================================
+\section{The $R_{\text{asym}}$ conditional probe}\label{sisec:probe}
+% =====================================================================
+To test whether the gauge-free asymmetric-unit orientation carries any exploitable
+signal beyond its uniform marginal, a supervised probe was trained to predict
+$R_{\text{asym}}$ from the lattice, the centroid arrangement, the conformer shape,
+and the space group. Across three seeds the probe (mean geodesic error
+$125.2^\circ$) does not improve on the best feature-free constant ($122.4^\circ$)
+and sits at the no-information level ($\sim\!-2.4\%$ relative to the constant),
+confirming that the uniform marginal reflects genuine conditional unpredictability
+under this conditioning rather than a masked dependence. The claim is therefore
+operational and scoped: $R_{\text{asym}}$ is not predictable from the conditioning
+used here (rigid, general-position organic crystals), not that it is unlearnable in
+principle.
+
+% =====================================================================
+\section{Crystal-family lattice mask}\label{sisec:family}
+% =====================================================================
+We parametrize the cell by its metric $G=L^\top L$, which is invariant to the
+arbitrary orientation of $L$, and take the matrix logarithm $S=\log G$, a symmetric
+$3\times3$ matrix with six independent components. Expanding $S$ in an orthonormal
+symmetric basis $\{B_0,\dots,B_5\}$ gives coordinates $k_i=\langle S,B_i\rangle$
+that separate volume from shape:
+\begin{align*}
+B_0 &= \tfrac{1}{\sqrt3}\,I               & k_0 &= \tfrac{1}{\sqrt3}\,\mathrm{tr}\,S = \tfrac{2}{\sqrt3}\log V &&\text{(volume, always free)}\\
+B_1 &= \tfrac{1}{\sqrt6}\,\mathrm{diag}(1,1,-2) & k_1 &&&\text{($c$ vs.\ $a,b$)}\\
+B_2 &= \tfrac{1}{\sqrt2}\,\mathrm{diag}(1,-1,0)  & k_2 &&&\text{($a$ vs.\ $b$)}\\
+B_3 &= \tfrac{1}{\sqrt2}(E_{23}+E_{32})   & k_3 &&&\text{(off-diag.\ $\sim\!\alpha$)}\\
+B_4 &= \tfrac{1}{\sqrt2}(E_{13}+E_{31})   & k_4 &&&\text{(off-diag.\ $\sim\!\beta$)}\\
+B_5 &= \tfrac{1}{\sqrt2}(E_{12}+E_{21})   & k_5 &&&\text{(off-diag.\ $\sim\!\gamma$)}
+\end{align*}
+The cell reconstructs as $G=\exp\big(\sum_i k_i B_i\big)$, $L=\mathrm{chol}(G)$; the
+triangular (canonical-frame) choice is immaterial because the model round-trips the
+lattice through $k$ and \textsc{StructureMatcher} is frame-invariant. The binary
+family mask $m(\mathrm{sg})$ frees only the shape coordinates the crystal family
+permits and freezes the rest to canonical values (Table~\ref{sitab:mask}), applied
+after every sampler step and in the prior. For the hexagonal family,
+$\gamma=120^\circ$ makes the $B_5$ component a fixed \emph{nonzero} constant in
+log-metric space (independent of $a$, since the $a^2$-scaling contributes only to
+the volume coordinate $k_0$); its value is computed numerically and verified in a
+unit test. The mask mechanism follows DiffCSP++\cite{jiao2024diffcsppp}; our
+contribution is transporting it into the molecular rigid-body flow and composing it
+with the orientation coset.
+
+\begin{table}[h]\centering
+\caption{Crystal-family lattice mask: free log-metric coordinates per family
+(space-group ranges); all others are frozen to the canonical value in the last
+column. The volume coordinate $k_0$ is always free.}
+\label{sitab:mask}
+\begin{tabular}{lcl}\toprule
+family (SG range) & free $k$-coords & frozen (value) \\\midrule
+triclinic ($1$--$2$)              & $0,1,2,3,4,5$ & --- \\
+monoclinic ($3$--$15$)            & $0,1,2,4$     & $k_3{=}0,\ k_5{=}0$ \\
+orthorhombic ($16$--$74$)         & $0,1,2$       & $k_3{=}k_4{=}k_5{=}0$ \\
+tetragonal ($75$--$142$)          & $0,1$         & $k_2{=}k_3{=}k_4{=}k_5{=}0$ \\
+trigonal/hexagonal ($143$--$194$) & $0,1$         & $k_2{=}k_3{=}k_4{=}0,\ k_5{=}\text{CANON}_{\mathrm{hex}}$ \\
+cubic ($195$--$230$)              & $0$           & $k_1{=}\dots{=}k_5{=}0$ \\\bottomrule
+\end{tabular}
+\end{table}
+
+% =====================================================================
+\section{Finishing and self-conditioning}\label{sisec:finish}
+% =====================================================================
+\textbf{Rigid-press finisher.} Each generated crystal is relaxed under a soft
+Lennard-Jones energy summed over intermolecular atom pairs within a $6\,\text{\AA}$
+neighbor list, with the contact distance set to $0.90\times$ the sum of van der
+Waals radii. The free variables are the asymmetric-unit pose (an $\mathrm{SO}(3)$
+tangent and a fractional shift per rigid block) and the family-masked cell
+coordinates $k$; the intramolecular geometry is frozen (rigid body) and every
+symmetry copy is \emph{regenerated} from the optimized ASU pose via the space-group
+operations at each step, so the relaxation cannot break the imposed symmetry and
+never reads the reference structure. Optimization is Adam (learning rate $0.03$,
+$\sim\!40$--$60$ steps) with the neighbor list refreshed every $15$ steps and a
+light volume-penalty term ($\lambda_{\mathrm{vol}}=0.05$) toward the corpus volume
+per atom.
+
+\textbf{Self-conditioning.} With probability $0.5$ during training, the model first
+produces a detached prediction with a null self-conditioning token,
+Euler-extrapolates it to $t{=}1$ to form a terminal estimate
+$(\hat L,\hat x,\hat R)$, and re-runs conditioned on that estimate. The
+extrapolation respects each manifold:
+$\hat L=\mathrm{k\_to\_lat}\big(k_t+(1{-}t)\,v_L\big)$,
+$\hat x=\mathrm{wrap}\big(x_t+(1{-}t)\,v_x\big)$ on the torus, and, in the body
+frame (right multiplication),
+$\hat R=R_t\,\exp_{\mathrm{SO}(3)}\!\big((1{-}t)\,v_R\big)$. At sampling time the
+estimate is carried across the RK4 steps (reusing the final velocity evaluation),
+and AlphaFold-style \emph{recycling} re-solves the whole trajectory conditioned on
+the previous pass's output structure. All of these are gated behind configuration
+flags, leaving the default generation path unchanged.
+
+% =====================================================================
+\section{Per-seed numbers and tolerance sweep}\label{sisec:numbers}
+% =====================================================================
+\textbf{Non-reference loss drop, per seed.} Control $29.4/24.4/28.8\%$; deployable
+coset $43.2/37.2/42.9\%$; $+\mathrm{SO}(3)$-averaged $49.2/43.4/50.5\%$. At the
+$2{,}539$-crystal scale corpus: coset $53.5/54.4/55.1\%$; control
+$35.2/36.0/39.1\%$.
+
+\textbf{Orientation-isolated reconstruction} (coset-conditioned, best-of-$8$),
+\textsc{StructureMatcher} (length, site) tolerance sweep:
+$(0.2,0.2)\!\to\!4.6\%$; $(0.3,0.5)\!\to\!27.5\%$; $(0.5,0.7)\!\to\!37.4\%$; oracle
+$100\%$ throughout; median non-reference orientation error $41.1^\circ$.
+
+\textbf{Template-free.} Predicted-coset (top-1) reconstruction: $0\%$ match,
+$64.8^\circ$ error, versus $41.1^\circ$ template-supplied; top-5 marginalization
+$51.2^\circ$.
+
+\textbf{End-to-end, raw flow} (all manifolds sampled, best-of-$20$, no finisher):
+$0\%$ match; median errors lattice-parameter $0.44$, centroid $0.35$, orientation
+$13.4^\circ$.
+
+\textbf{End-to-end, fully symmetry-conditioned $+$ finished} (main-text
+Table~6, strict match@$10$): best $6.9\%$ at $\text{stol}\,1.0$ ($95\%$ CI
+$3.66$--$12.54$) / $6.1\%$ at $0.8$; median atom-RMSD $1.02\!\to\!0.77$, cell-volume
+RMAD $33\%\!\to\!21\%$, cell angles within $2^\circ$ of $90^\circ$
+$16\%\!\to\!73.6\%$ (reference $74.0\%$).
+
+\bibliography{references}
+
+\end{document}
