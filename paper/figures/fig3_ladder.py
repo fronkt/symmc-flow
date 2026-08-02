@@ -85,5 +85,7 @@ axR.axhline(0, color=OK["black"], lw=0.6)
 
 fig.tight_layout()
 fig.savefig("paper/figures/fig3_ladder.pdf", bbox_inches="tight")
-fig.savefig("paper/figures/fig3_ladder.png", bbox_inches="tight", dpi=200)
+# 600 dpi: at 200 the PNG landed at ~258 effective dpi once placed at full width
+# in the Word manuscript, under ACS's 300 dpi minimum for colour figures.
+fig.savefig("paper/figures/fig3_ladder.png", bbox_inches="tight", dpi=600)
 print("wrote fig3_ladder.pdf / .png")
