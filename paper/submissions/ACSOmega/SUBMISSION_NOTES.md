@@ -117,13 +117,14 @@ offer, and it is not a formatting problem. Options:
       `cover_letter.pdf` recompiled (2 pp) and the rendered line verified.
 - [x] **Referee reports: none.** No response document needed; the cover letter's
       "no changes to the data, analysis, or claims" sentence is correct as written.
-- [ ] **Frank reviews the expanded prose** (Introduction, the orientation-
-      decomposition derivation, Limitations). This was carried over unreviewed from
-      the JCIM package — still open, still his.
-- [ ] **Decide whether `tab:bench` stays as written.** Also carried over. The
-      result is parity with MolCrystalFlow, not superiority; if that table reads as
-      a leaderboard entry rather than as evidence for the conditioning mechanism, a
-      third editor draws the same conclusion the first two did.
+- [x] **Prose reviewed and approved by Frank, 2026-08-02** — Introduction, the
+      orientation-decomposition derivation, and Limitations. This had been carried
+      unreviewed since the JCIM build; it is now signed off as written.
+- [x] **`tab:bench` stays as written** (Frank, 2026-08-02). The table reports
+      parity with MolCrystalFlow, not superiority, and is deliberately framed that
+      way — as evidence for the conditioning mechanism, with the comparable-task
+      caveat stated in the text and again in Limitations. Do not "improve" it into
+      a leaderboard claim.
 - [ ] Upload via ACS Paragon Plus: `main.tex` + `references.bib` + `figures/`
       (or the DOCX) as the Manuscript File, `si.pdf` as Supporting Information,
       `figures/fig_toc.png` in the TOC-graphic slot, `cover_letter.pdf` as the
