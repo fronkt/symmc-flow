@@ -14,7 +14,18 @@ data/cache/
 data/cod_mol/
 data/csd_mol/*
 !data/csd_mol/manifest.csv
+# CSD is licence-restricted and this repo is PUBLIC: never redistribute the
+# structures themselves. Only the refcode manifest ships, which regenerates the
+# corpus from a licensed CSD installation -- the guarantee the papers make in
+# their Data Availability statements. Same rule as data/csd_mol above.
+data/csd_mol_scale/*
+!data/csd_mol_scale/manifest.csv
+data/csd_mol_scale_big/*
+!data/csd_mol_scale_big/manifest.csv
 .DS_Store
+
+# Generated intermediate: build_docx.py rewrites main.tex for pandoc. Do not edit.
+paper/submissions/*/main_docx.tex
 
 # E4 (MolCrystalFlow alignment): keep the small logs as ledger, ignore the 33MB regenerable draws pickle
 gpu_results/**/*.pkl
