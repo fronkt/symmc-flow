@@ -111,6 +111,10 @@ def ot_couple(z0: CrystalState, z1: CrystalState) -> CrystalState:
         idx = mask[b].nonzero(as_tuple=True)[0]
         if len(idx) < 2:
             continue
+        if len(idx) > 512:               # OT hang-guard: Hungarian is O(n^3); a pathological
+            import sys                    # large-n structure pegs one CPU core for many minutes
+            print(f"[ot_couple] skip large n={len(idx)} (identity coupling)", file=sys.stderr, flush=True)
+            continue
         a, c = x0[b, idx], x1[b, idx]                       # (n,3) prior, data
         d = a.unsqueeze(1) - c.unsqueeze(0)                 # (n_prior, n_data, 3)
         d = d - d.round()                                  # minimum image on torus
