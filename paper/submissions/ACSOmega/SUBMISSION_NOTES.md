@@ -1,9 +1,14 @@
 # ACS Omega submission package — notes
 
 **Venue.** ACS Omega, CODEN `acsodf`. Research Article. Rolling submission.
-Transferred from *J. Chem. Inf. Model.* at the Editor's invitation.
 Guidelines source: https://researcher-resources.acs.org/publish/author_guidelines?coden=acsodf
 (checked 2026-08-02).
+
+**Transfer origin.** *J. Chem. Inf. Model.*, manuscript ID **ci-2026-02477r**,
+decision **28 July 2026**, transfer offered by the Editor. **No referee reports
+accompanied the decision** — so no point-by-point response document is required,
+and the cover letter's statement that the data, analysis, and claims are unchanged
+stands as written.
 
 **Built + verified locally (MiKTeX, Word COM), 2026-08-02.**
 - LaTeX: `pdflatex → bibtex → pdflatex → pdflatex` clean. `main.pdf` 20 pp,
@@ -107,13 +112,11 @@ offer, and it is not a formatting problem. Options:
 ## TODO before submitting (human-gated)
 
 - [ ] **Resolve the APC** (above). Nothing else matters until this is settled.
-- [ ] **Fill the two placeholders in the cover letter**: `[JCIM MS ID]` and
-      `[DECISION DATE]`. They are in both `cover_letter.md` and `cover_letter.tex`;
-      recompile the letter after editing.
-- [ ] **Did the JCIM decision include referee reports?** If so, an ACS transfer
-      normally expects a point-by-point response document, and the cover letter's
-      "no changes to the data, analysis, or claims" sentence needs revising. The
-      package currently assumes no reports were received.
+- [x] **Cover letter completed** with manuscript ID `ci-2026-02477r` and decision
+      date 28 July 2026, in both `cover_letter.md` and `cover_letter.tex`;
+      `cover_letter.pdf` recompiled (2 pp) and the rendered line verified.
+- [x] **Referee reports: none.** No response document needed; the cover letter's
+      "no changes to the data, analysis, or claims" sentence is correct as written.
 - [ ] **Frank reviews the expanded prose** (Introduction, the orientation-
       decomposition derivation, Limitations). This was carried over unreviewed from
       the JCIM package — still open, still his.

@@ -11,8 +11,8 @@ Dear Editors,
 I am submitting the manuscript **"Fully Symmetry-Conditioned Rigid-Body Flow
 Matching for Molecular-Crystal Structure Prediction"** for consideration as a
 Research Article in *ACS Omega*. This manuscript is transferred from the *Journal
-of Chemical Information and Modeling* (manuscript ID **[JCIM MS ID]**) at the
-Editor's invitation following the decision of **[DECISION DATE]**.
+of Chemical Information and Modeling* (manuscript ID **ci-2026-02477r**) at the
+Editor's invitation following the decision of **28 July 2026**.
 
 Rigid-body flow matching has become an attractive route to molecular-crystal
 structure prediction: freezing each molecule's conformer reduces the problem to a
