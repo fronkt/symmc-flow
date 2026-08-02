@@ -1,0 +1,165 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Xie et~al.(2022)Xie, Fu, Ganea, Barzilay, and Jaakkola]{xie2022cdvae}
+Tian Xie, Xiang Fu, Octavian-Eugen Ganea, Regina Barzilay, and Tommi Jaakkola.
+\newblock Crystal diffusion variational autoencoder for periodic material
+  generation.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2022.
+\newblock arXiv:2110.06197.
+
+\bibitem[Jiao et~al.(2023)Jiao, Huang, Lin, Han, Chen, Lu, and
+  Liu]{jiao2023diffcsp}
+Rui Jiao, Wenbing Huang, Peijia Lin, Jiaqi Han, Pin Chen, Yutong Lu, and Yang
+  Liu.
+\newblock Crystal structure prediction by joint equivariant diffusion.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2023.
+\newblock arXiv:2309.04475.
+
+\bibitem[Miller et~al.(2024)Miller, Chen, Sriram, and Wood]{miller2024flowmm}
+Benjamin~Kurt Miller, Ricky T.~Q. Chen, Anuroop Sriram, and Brandon~M. Wood.
+\newblock {FlowMM}: Generating materials with riemannian flow matching.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2024.
+\newblock arXiv:2406.04713.
+
+\bibitem[Lipman et~al.(2023)Lipman, Chen, Ben-Hamu, Nickel, and
+  Le]{lipman2023flowmatching}
+Yaron Lipman, Ricky T.~Q. Chen, Heli Ben-Hamu, Maximilian Nickel, and Matt Le.
+\newblock Flow matching for generative modeling.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2023.
+\newblock arXiv:2210.02747.
+
+\bibitem[Chen and Lipman(2024)]{chen2024riemannian}
+Ricky T.~Q. Chen and Yaron Lipman.
+\newblock Flow matching on general geometries.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2024.
+\newblock arXiv:2302.03660.
+
+\bibitem[Zeng et~al.(2026)Zeng, Sullivan, Egg, Martirossyan, H{\"o}llmer, Jin,
+  Hennig, Roitberg, Martiniani, Tadmor, and Liu]{zeng2026molcrystalflow}
+Cheng Zeng, Harry~W. Sullivan, Thomas Egg, Maya~M. Martirossyan, Philipp
+  H{\"o}llmer, Jirui Jin, Richard~G. Hennig, Adrian Roitberg, Stefano
+  Martiniani, Ellad~B. Tadmor, and Mingjie Liu.
+\newblock {MolCrystalFlow}: Molecular crystal structure prediction via flow
+  matching.
+\newblock \emph{arXiv preprint arXiv:2602.16020}, 2026.
+
+\bibitem[Kim et~al.(2025)Kim, Kim, Kim, Park, and Ahn]{kim2025mofflow}
+Nayoung Kim, Seongsu Kim, Minsu Kim, Jinkyoo Park, and Sungsoo Ahn.
+\newblock {MOFFlow}: Flow matching for structure prediction of metal-organic
+  frameworks.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2025.
+\newblock arXiv:2410.17270; rigid-body SE(3) flow matching for MOFs.
+
+\bibitem[Jiao et~al.(2024)Jiao, Huang, Liu, Zhao, and Liu]{jiao2024diffcsppp}
+Rui Jiao, Wenbing Huang, Yu~Liu, Deli Zhao, and Yang Liu.
+\newblock Space group constrained crystal generation.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2024.
+\newblock arXiv:2402.03992; the DiffCSP++ model.
+
+\bibitem[Kelvinius et~al.(2025)Kelvinius, Andersson, Parackal, Qian, Armiento,
+  and Lindsten]{wyckoffdiff2025}
+Filip~Ekstr{\"o}m Kelvinius, Oskar~B. Andersson, Abhijith~S. Parackal, Dong
+  Qian, Rickard Armiento, and Fredrik Lindsten.
+\newblock {WyckoffDiff}: A generative diffusion model for crystal symmetry.
+\newblock \emph{arXiv preprint arXiv:2502.06485}, 2025.
+
+\bibitem[Levy et~al.(2025)Levy, Panigrahi, Kaba, Zhu, Lee, Galkin, Miret, and
+  Ravanbakhsh]{symmcd2025}
+Daniel Levy, Siba~Smarak Panigrahi, S{\'e}kou-Oumar Kaba, Qiang Zhu, Kin
+  Long~Kelvin Lee, Mikhail Galkin, Santiago Miret, and Siamak Ravanbakhsh.
+\newblock {SymmCD}: Symmetry-preserving crystal generation with diffusion
+  models.
+\newblock \emph{arXiv preprint arXiv:2502.03638}, 2025.
+
+\bibitem[Mu et~al.(2026)Mu, He, Zhu, and Yin]{mu2026nextcrystal}
+Jinming Mu, Lixin He, Xudong Zhu, and Shi Yin.
+\newblock {NextCrystal}: A symmetry-driven generative framework for crystal
+  structure prediction.
+\newblock \emph{arXiv preprint arXiv:2602.17176}, 2026.
+
+\bibitem[Hunnisett et~al.(2024)]{price2023blindtest7}
+Lily~M. Hunnisett et~al.
+\newblock The seventh blind test of crystal structure prediction: Structure
+  generation methods.
+\newblock \emph{Acta Crystallographica Section B}, 80\penalty0 (6), 2024.
+\newblock \doi{10.1107/S2052520624007492}.
+
+\bibitem[Wengert et~al.(2021)Wengert, Cs{\'a}nyi, Reuter, and
+  Margraf]{obrien2021dataefficient}
+Simon Wengert, G{\'a}bor Cs{\'a}nyi, Karsten Reuter, and Johannes~T. Margraf.
+\newblock Data-efficient machine learning for molecular crystal structure
+  prediction.
+\newblock \emph{Chemical Science}, 12:\penalty0 4536--4546, 2021.
+\newblock \doi{10.1039/D0SC05765G}.
+
+\bibitem[Cao et~al.(2025)Cao, Geiger, dos Santos~Costa, Reidenbach, Kreis,
+  Geffner, Pellegrini, Zhou, and Kucukbenli]{cao2025so3averaged}
+Zhonglin Cao, Mario Geiger, Allan dos Santos~Costa, Danny Reidenbach, Karsten
+  Kreis, Tomas Geffner, Franco Pellegrini, Guoqing Zhou, and Emine Kucukbenli.
+\newblock Efficient molecular conformer generation with {SO(3)}-averaged flow
+  matching and reflow.
+\newblock \emph{arXiv preprint arXiv:2507.09785}, 2025.
+
+\bibitem[Satorras et~al.(2021)Satorras, Hoogeboom, and
+  Welling]{satorras2021egnn}
+V{\'i}ctor~Garcia Satorras, Emiel Hoogeboom, and Max Welling.
+\newblock {E}(n) equivariant graph neural networks.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2021.
+\newblock arXiv:2102.09844.
+
+\bibitem[Groom et~al.(2016)Groom, Bruno, Lightfoot, and Ward]{groom2016csd}
+Colin~R. Groom, Ian~J. Bruno, Matthew~P. Lightfoot, and Suzanna~C. Ward.
+\newblock The cambridge structural database.
+\newblock \emph{Acta Crystallographica Section B}, 72\penalty0 (2):\penalty0
+  171--179, 2016.
+\newblock \doi{10.1107/S2052520616003954}.
+
+\bibitem[Ong et~al.(2013)Ong, Richards, Jain, Hautier, Kocher, Cholia, Gunter,
+  Chevrier, Persson, and Ceder]{ong2013pymatgen}
+Shyue~Ping Ong, William~Davidson Richards, Anubhav Jain, Geoffroy Hautier,
+  Michael Kocher, Shreyas Cholia, Dan Gunter, Vincent~L. Chevrier, Kristin~A.
+  Persson, and Gerbrand Ceder.
+\newblock Python materials genomics (pymatgen): A robust, open-source python
+  library for materials analysis.
+\newblock \emph{Computational Materials Science}, 68:\penalty0 314--319, 2013.
+\newblock \doi{10.1016/j.commatsci.2012.10.028}.
+
+\bibitem[Martirossyan et~al.(2025)Martirossyan, Egg, Hoellmer, Karypis,
+  Transtrum, Roitberg, Liu, Hennig, Tadmor, and
+  Martiniani]{martirossyan2025matching}
+Maya~M. Martirossyan, Thomas Egg, Philipp Hoellmer, George Karypis, Mark
+  Transtrum, Adrian Roitberg, Mingjie Liu, Richard~G. Hennig, Ellad~B. Tadmor,
+  and Stefano Martiniani.
+\newblock All that structure matches does not glitter.
+\newblock \emph{arXiv preprint arXiv:2509.12178}, 2025.
+
+\bibitem[Cai(2026)]{cai2026symmcflow}
+Frank Cai.
+\newblock {fronkt/symmc-flow}: {SymMC}-{Flow} orientation flow matching and csd
+  data pipeline for molecular-crystal structure prediction (v1.0.3).
+\newblock Software, Zenodo, 2026.
+\newblock URL \url{https://doi.org/10.5281/zenodo.21384130}.
+\newblock Version v1.0.3, DOI: 10.5281/zenodo.21384130; concept DOI
+  10.5281/zenodo.20822234 resolves to the latest version.
+
+\bibitem[Pooladian et~al.(2023)Pooladian, Ben-Hamu, Domingo-Enrich, Amos,
+  Lipman, and Chen]{pooladian2023multisample}
+Aram-Alexandre Pooladian, Heli Ben-Hamu, Carles Domingo-Enrich, Brandon Amos,
+  Yaron Lipman, and Ricky T.~Q. Chen.
+\newblock Multisample flow matching: Straightening flows with minibatch
+  couplings.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, 2023.
+\newblock arXiv:2304.14772.
+
+\end{thebibliography}
