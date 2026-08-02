@@ -257,22 +257,24 @@ leaky codebook (oracle upper bound) & $\sim48\%$      & no  \\
 \centering
 \begin{tikzpicture}
 \begin{axis}[
-  width=0.72\linewidth, height=3.3cm,
-  ybar, bar width=12pt,
+  width=0.62\linewidth, height=4.0cm,
+  ybar, bar width=16pt,
   symbolic x coords={control, coset, coset+SO3avg},
-  xtick=data, ymin=0, ymax=55,
+  xtick=data, ymin=0, ymax=64, ytick={0,20,40,60},
   ylabel={non-ref.\ loss drop (\%)},
   ylabel style={font=\small}, tick label style={font=\small},
   nodes near coords, nodes near coords style={font=\footnotesize},
-  enlarge x limits=0.28,
+  every node near coord/.append style={yshift=1pt},
+  enlarge x limits=0.30, clip=false,
 ]
 \addplot+[error bars/.cd, y dir=both, y explicit] coordinates {
   (control,27.5) +- (0,2.7)
   (coset,41.1)   +- (0,3.4)
   (coset+SO3avg,47.7) +- (0,3.9)
 };
-\draw[dashed] (axis cs:control,48) -- (axis cs:coset+SO3avg,48)
-  node[above left,font=\footnotesize] {leaky-codebook ceiling $\sim$48\%};
+\draw[dashed] (axis cs:control,48) -- (axis cs:coset+SO3avg,48);
+\node[anchor=north west, font=\scriptsize] at (rel axis cs:0.02,0.99)
+  {leaky-codebook ceiling $\sim$48\%};
 \end{axis}
 \end{tikzpicture}
 \caption{Deployable coset conditioning recovers two-thirds of the way from the
