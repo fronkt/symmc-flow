@@ -1,0 +1,57 @@
+\providecommand{\latin}[1]{#1}
+\makeatletter
+\providecommand{\doi}
+  {\begingroup\let\do\@makeother\dospecials
+  \catcode`\{=1 \catcode`\}=2 \doi@aux}
+\providecommand{\doi@aux}[1]{\endgroup\texttt{#1}}
+\makeatother
+\providecommand*\mcitethebibliography{\thebibliography}
+\csname @ifundefined\endcsname{endmcitethebibliography}
+  {\let\endmcitethebibliography\endthebibliography}{}
+\begin{mcitethebibliography}{4}
+\providecommand*\natexlab[1]{#1}
+\providecommand*\mciteSetBstSublistMode[1]{}
+\providecommand*\mciteSetBstMaxWidthForm[2]{}
+\providecommand*\mciteBstWouldAddEndPuncttrue
+  {\def\EndOfBibitem{\unskip.}}
+\providecommand*\mciteBstWouldAddEndPunctfalse
+  {\let\EndOfBibitem\relax}
+\providecommand*\mciteSetBstMidEndSepPunct[3]{}
+\providecommand*\mciteSetBstSublistLabelBeginEnd[3]{}
+\providecommand*\EndOfBibitem{}
+\mciteSetBstSublistMode{f}
+\mciteSetBstMaxWidthForm{subitem}{(\alph{mcitesubitemcount})}
+\mciteSetBstSublistLabelBeginEnd
+  {\mcitemaxwidthsubitemform\space}
+  {\relax}
+  {\relax}
+
+\bibitem[Lipman \latin{et~al.}(2023)Lipman, Chen, Ben-Hamu, Nickel, and
+  Le]{lipman2023flowmatching}
+Lipman,~Y.; Chen,~R. T.~Q.; Ben-Hamu,~H.; Nickel,~M.; Le,~M. Flow Matching for
+  Generative Modeling. International Conference on Learning Representations
+  (ICLR). 2023; arXiv:2210.02747\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Pooladian \latin{et~al.}(2023)Pooladian, Ben-Hamu, Domingo-Enrich,
+  Amos, Lipman, and Chen]{pooladian2023multisample}
+Pooladian,~A.-A.; Ben-Hamu,~H.; Domingo-Enrich,~C.; Amos,~B.; Lipman,~Y.;
+  Chen,~R. T.~Q. Multisample Flow Matching: Straightening Flows with Minibatch
+  Couplings. International Conference on Machine Learning (ICML). 2023;
+  arXiv:2304.14772\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Jiao \latin{et~al.}(2024)Jiao, Huang, Liu, Zhao, and
+  Liu]{jiao2024diffcsppp}
+Jiao,~R.; Huang,~W.; Liu,~Y.; Zhao,~D.; Liu,~Y. Space Group Constrained Crystal
+  Generation. International Conference on Learning Representations (ICLR).
+  2024; arXiv:2402.03992; the DiffCSP++ model\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\end{mcitethebibliography}
