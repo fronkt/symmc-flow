@@ -1,0 +1,49 @@
+[1/2] CSD export  N=8000  sample=150000  -> data/csd_mol_scale_big   (CSD interp: C:/Users/frank/CCDC/ccdc-software/csd-python-api/miniconda/python.exe)
+CSD: 1451367 entries (api/db version 601); seed=0
+
+scanned 34455 candidates -> KEPT 8000 CIFs in data/csd_mol_scale_big\cif
+reject reasons:
+  18559  not pure-organic
+   3212  disordered
+   1552  too many atoms
+   1286  r_factor
+    902  no 3d coords
+    779  polymeric / missing sites
+    165  z_prime
+
+manifest: data/csd_mol_scale_big\manifest.csv (shareable; CIFs are not)
+[2/2] factorize CIFs -> data/csd_mol_scale_big/ds.pt
+== 8000 CIFs in data/csd_mol_scale_big/cif ==
+  7998 parsed, 2 unreadable
+
+KEPT 2539 / 7998   SKIPPED 5459
+
+skip reasons:
+  5298  conformer
+   155  Z'
+     6  molecule
+
+Z' (molecules/cell) over kept:
+  Z'= 1: 52
+  Z'= 2: 599
+  Z'= 3: 42
+  Z'= 4: 1252
+  Z'= 5: 17
+  Z'= 6: 105
+  Z'= 7: 3
+  Z'= 8: 312
+  Z'= 9: 2
+  Z'=10: 17
+  Z'=12: 83
+  Z'=14: 3
+  Z'=16: 52
+
+atoms/molecule over kept (min=1, max=64):
+  multi-atom rigid blocks: 11237   monatomic (orient=I): 437
+
+cached dataset -> data/csd_mol_scale_big/ds.pt
+
+OK: 2539 crystals factorized into shared-conformer rigid blocks.
+DONE. Corpus at data/csd_mol_scale_big/ds.pt
+Next: scp data/csd_mol_scale_big/ds.pt to the box's data/csd_mol_scale/ds.pt, then
+      bash scripts/run_phaseE.sh data/csd_mol_scale/ds.pt
