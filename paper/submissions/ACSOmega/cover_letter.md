@@ -1,0 +1,82 @@
+# Cover letter — ACS Omega (transfer from J. Chem. Inf. Model.)
+
+Frank Cai
+Purdue University, West Lafayette, IN, USA
+frankyc11223@gmail.com · ORCID 0009-0003-0041-1459
+
+To the Editors, *ACS Omega*
+
+Dear Editors,
+
+I am submitting the manuscript **"Fully Symmetry-Conditioned Rigid-Body Flow
+Matching for Molecular-Crystal Structure Prediction"** for consideration as a
+Research Article in *ACS Omega*. This manuscript is transferred from the *Journal
+of Chemical Information and Modeling* (manuscript ID **[JCIM MS ID]**) at the
+Editor's invitation following the decision of **[DECISION DATE]**.
+
+Rigid-body flow matching has become an attractive route to molecular-crystal
+structure prediction: freezing each molecule's conformer reduces the problem to a
+lattice, a set of fractional centroids, and a per-molecule orientation on SO(3), a
+low-dimensional target that fast flow-matching samplers solve in tens of steps.
+Yet the current generation of rigid-body molecular-crystal generators leaves
+crystallographic symmetry unconditioned on the orientation degree of freedom, and
+symmetry- or Wyckoff-conditioned generation has to date been demonstrated only for
+inorganic atomic sites. This manuscript closes that gap and makes the conditioning
+deployable.
+
+The contributions are:
+
+- **A mechanism, then a method.** The per-molecule orientation target factorizes
+  into a space-group-determined relative rotation, which a flow learns, and a
+  gauge-free asymmetric-unit pose, which it cannot regress from packing. This
+  explains why an unconditioned orientation flow stalls, and it identifies exactly
+  what to condition on.
+
+- **Deployable symmetry-coset conditioning.** A leak-free coset label — the
+  generating space-group operation, recovered from centroids against a symmetry
+  template at sampling time, never from the observed rotation — conditions the
+  orientation flow. It recovers two-thirds of an oracle-codebook benefit
+  (+41.1% held-out non-reference orientation loss vs. +27.5% for a paired control),
+  and an SO(3)-averaged objective closes the rest (+47.7%). Supplying the coset at
+  generation collapses the end-to-end median orientation error sevenfold
+  (93.5° → 13.4°), and the advantage widens with data.
+
+- **The first fully symmetry-conditioned molecular-crystal flow.** Extending the
+  conditioning to the lattice — a crystal-family mask on an O(3)-invariant
+  log-metric cell parametrization — composes with the orientation coset to condition
+  every symmetry-constrained degree of freedom. Paired with an unsupervised,
+  symmetry-preserving packing finisher and a fully ablated stack of levers, it lifts
+  held-out exact match from 0% to 6.9% (strict best-of-10, StructureMatcher
+  stol 1.0) — statistical parity with the symmetry-free MolCrystalFlow (~8%), from a
+  flow that matched nothing — and 10.7% with orientation test-time augmentation.
+
+I believe the work fits *ACS Omega*'s interdisciplinary remit. It sits at the
+interface of crystallography, machine learning, and solid-state chemistry: the
+result is a design rule for chemists building molecular-crystal structure
+generators — condition orientation on the generating coset and the lattice on the
+crystal family, sample only the free pose, and finish with a symmetry-preserving
+physical relaxation — reported with each lever's contribution quantified rather
+than as a single state-of-the-art number. The limitations are stated explicitly,
+including the comparable-task (not head-to-head) nature of the MolCrystalFlow
+comparison and the confidence interval on the parity claim.
+
+For the transfer I have restructured the manuscript to *ACS Omega*'s section order,
+placing Methods after the Conclusions, and have made no changes to the data,
+analysis, or claims.
+
+I confirm that this manuscript is original, has not been published previously, and
+is not under consideration for publication elsewhere. It has a single author with
+no competing financial interest to declare. The source code, the CSD refcode
+manifest, and the export/factorization pipeline are openly available
+(https://github.com/fronkt/symmc-flow; archived at Zenodo,
+https://doi.org/10.5281/zenodo.21500734), so every reported number regenerates from
+the deposited artifacts. The Cambridge Structural Database is licence-restricted;
+the underlying structures are not redistributed, but the deposited refcode manifest
+reproduces the corpus from a licensed CSD installation.
+
+Thank you for considering this work.
+
+Sincerely,
+
+Frank Cai
+Purdue University
