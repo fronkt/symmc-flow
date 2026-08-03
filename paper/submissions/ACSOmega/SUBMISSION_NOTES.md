@@ -4,11 +4,27 @@
 Guidelines source: https://researcher-resources.acs.org/publish/author_guidelines?coden=acsodf
 (checked 2026-08-02).
 
-**Transfer origin.** *J. Chem. Inf. Model.*, manuscript ID **ci-2026-02477r**,
-decision **28 July 2026**, transfer offered by the Editor. **No referee reports
-accompanied the decision** — so no point-by-point response document is required,
-and the cover letter's statement that the data, analysis, and claims are unchanged
-stands as written.
+**Route: DIRECT submission, NOT a transfer.** *J. Chem. Inf. Model.*, manuscript
+ID **ci-2026-02477r**, declined without external review **28 July 2026** by
+Assoc. Ed. Prof. Kevin Naidoo, who offered an ACS Omega transfer. **The transfer
+was declined in error**, and on **30 July 2026** the editorial office (Shayla
+Poling, on behalf of Dr. Naidoo) confirmed: *"we aren't able to reissue a transfer
+decision after it is declined. However, you are welcome to submit to the
+destination journal without the transfer."*
+
+Consequences, and they are not cosmetic:
+
+- **There is no transfer link and no copied submission draft.** ACS Omega must be
+  submitted to directly through ACS Paragon Plus as a new manuscript. The files
+  and metadata do not carry over; everything is uploaded fresh.
+- **The cover letter was rewritten on 2026-08-03.** Through 2026-08-02 it claimed
+  the manuscript "is transferred from *JCIM* … at the Editor's invitation," which
+  became false the moment the transfer was declined. Sending it would have
+  misrepresented the manuscript's provenance to an ACS editor who can see the JCIM
+  record in the same system. It now discloses the JCIM history, the declined
+  transfer, and the editorial office's advice to submit directly.
+- **No referee reports were issued at any stage**, so there is no response document
+  to prepare and nothing to respond to.
 
 **Built + verified locally (MiKTeX, Word COM), 2026-08-02.**
 - LaTeX: `pdflatex → bibtex → pdflatex → pdflatex` clean. `main.pdf` 20 pp,

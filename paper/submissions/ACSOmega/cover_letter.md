@@ -10,9 +10,17 @@ Dear Editors,
 
 I am submitting the manuscript **"Fully Symmetry-Conditioned Rigid-Body Flow
 Matching for Molecular-Crystal Structure Prediction"** for consideration as a
-Research Article in *ACS Omega*. This manuscript is transferred from the *Journal
-of Chemical Information and Modeling* (manuscript ID **ci-2026-02477r**) at the
-Editor's invitation following the decision of **28 July 2026**.
+Research Article in *ACS Omega*.
+
+In the interest of full transparency: this work was previously submitted to the
+*Journal of Chemical Information and Modeling* (manuscript ID
+**ci-2026-02477r**), where it was declined without external review on 28 July
+2026. The Associate Editor kindly offered a transfer to *ACS Omega*; I declined
+that transfer in error, and the editorial office confirmed on 30 July that a
+transfer decision cannot be reissued once declined, advising me that I would be
+welcome to submit to the destination journal directly. That is what I am doing
+here. No referee reports were issued at any stage, so there are no reviewer
+recommendations to respond to.
 
 Rigid-body flow matching has become an attractive route to molecular-crystal
 structure prediction: freezing each molecule's conformer reduces the problem to a
@@ -60,9 +68,9 @@ than as a single state-of-the-art number. The limitations are stated explicitly,
 including the comparable-task (not head-to-head) nature of the MolCrystalFlow
 comparison and the confidence interval on the parity claim.
 
-For the transfer I have restructured the manuscript to *ACS Omega*'s section order,
-placing Methods after the Conclusions, and have made no changes to the data,
-analysis, or claims.
+The manuscript has been restructured to *ACS Omega*'s section order, placing
+Methods after the Conclusions. The data, analysis, and claims are unchanged from
+the version *JCIM* considered.
 
 I confirm that this manuscript is original, has not been published previously, and
 is not under consideration for publication elsewhere. It has a single author with
