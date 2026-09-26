@@ -205,20 +205,32 @@ def main():
     g = torch.Generator().manual_seed(args.seed)
     pick = [elig[i] for i in torch.randperm(len(elig), generator=g)[:args.n].tolist()]
 
+    # per-crystal results are appended to <out>.jsonl as they finish, so a killed run resumes
     from multiprocessing import Pool, TimeoutError as MPTimeout
+    part = args.out + ".jsonl"
+    prev = {}
+    if os.path.exists(part):
+        for line in open(part):
+            r = json.loads(line)
+            prev[r["refcode"]] = r
+    todo = [(i, it) for i, it in enumerate(pick) if it.get("refcode", "?") not in prev]
+    print(f"{len(prev)} already done, {len(todo)} to go", flush=True)
     pool = Pool(args.workers)
-    pend = [pool.apply_async(_work, ((it, args.k, args.steps, args.seed + i),))
-            for i, it in enumerate(pick)]
-    rows = []
-    for i, ar in enumerate(pend):
-        try:
-            r = ar.get(timeout=args.timeout)
-        except MPTimeout:
-            r = {"refcode": pick[i].get("refcode", "?"), "timeout": True}
-        rows.append(r)
-        if (i + 1) % 20 == 0:
-            print(f"{i+1}/{len(pick)}", flush=True)
+    pend = [(it, pool.apply_async(_work, ((it, args.k, args.steps, args.seed + i),))) for i, it in todo]
+    with open(part, "a") as fh:
+        for n_, (it, ar) in enumerate(pend):
+            try:
+                r = ar.get(timeout=args.timeout)
+            except MPTimeout:
+                r = {"refcode": it.get("refcode", "?"), "timeout": True}
+            if r is None:
+                continue
+            prev[r["refcode"]] = r
+            fh.write(json.dumps(r) + "\n"); fh.flush()
+            if (n_ + 1) % 20 == 0:
+                print(f"{len(prev)}/{len(pick)}", flush=True)
     pool.terminate(); pool.join()
+    rows = [prev[it.get("refcode", "?")] for it in pick if it.get("refcode", "?") in prev]
 
     done = [r for r in rows if r and not r.get("timeout")]
     keys = ["oracle", "true_press_match", "haar", "haar_press_basin", "bestK_press_basin", "anyK_press_basin"]
