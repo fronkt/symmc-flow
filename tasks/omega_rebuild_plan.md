@@ -64,7 +64,19 @@ technical content we verified ourselves is recorded here.
   with Z'>1 in P-1/C2/c/P2_1/c/Pna2_1; inspect before claiming 100%. NB downstream: mirrored copies
   carry a mirrored `local`, so `_species_groups` treats enantiomers as separate species -- fine for
   the asym-unit design, must be handled before reusing relative-gauge code.
-- [ ] **G2 — is anything learnable?** Train the R_asym flow (asym-unit only) on the re-parsed set,
+- [~] **G2 — is anything learnable?** (started 2026-09-26; `scripts/g2_asym_baselines.py`,
+  `scripts/g2_learned_flow.py`). Findings while building it:
+  * 1987 Z'=1 general-position crystals; asym-unit exact expansion rebuilds 9/9 in smoke **only after**
+    taking symmetry ops from spglib per crystal: the standard-setting table (`space_group.get_ops`) is
+    WRONG for alternative CSD settings (P2_1/n translates by (1/2,1/2,1/2), P2_1/c by (0,1/2,1/2)).
+    This also likely explains part of the old paper's ~18% coset residual misses -- audit before reuse.
+  * `rigid_press.finish_structure` drifts 1-3 A / 6-18 deg off the TRUE pose (fractional-coord steps
+    sized for rough cells); replaced by an orientation-only relax. Even so the steric-LJ minimum sits a
+    median ~14-17 deg from truth -> relaxed poses never pass exact match; relaxed poses are scored by
+    "basin" (relaxed draw vs relaxed truth) and unrelaxed poses by exact match.
+  * Learned model = learned pairwise torque field (rotation-equivariant), CPU-trainable (~7.5 min/epoch);
+    3 seeds x 40 epochs running locally. Original spec below:
+   Train the R_asym flow (asym-unit only) on the re-parsed set,
   3 seeds, species-grouped split. Compare geodesic error + orientation-isolated match@k vs Haar-random
   and constant R_asym, **each followed by the same rigid-press relaxation**.
   **Kill:** if learned R_asym + press does not beat random R_asym + press by a margin outside
