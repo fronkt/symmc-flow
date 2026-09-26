@@ -46,10 +46,24 @@ technical content we verified ourselves is recorded here.
   the flaw; **Paper B is dead.** But MCF's public CSP driver replicates one conformer + one flip
   across all Z copies -> generated cells are homochiral (verified at packing_gen.py:371-388).
   Paper A's sharpest claim: exact SG expansion generates mixed-handedness packings natively.
-- [ ] **G1 — O(3) data re-parse.** Kabsch with reflection allowed (store parity bit per copy);
-  re-parse the 3500 CIFs. Pass: centro survival rises to within ~10 pts of Sohncke, *and* exact
-  SG expansion of (lattice, asym centroid, R_asym, parity) reconstructs 100% of kept crystals under
-  StructureMatcher (oracle). Unit test: a P2₁/c toy with an inversion copy round-trips.
+- [x] **G1 — O(3) data re-parse** (done 2026-09-26; `scripts/g1_o3_reparse.py`,
+  `results/g1_o3_reparse.json`, cache `data/csd_mol/ds_o3.pt` [gitignored, CSD]). All 3500 CIFs:
+
+  | class | total | kept det+1 | kept O(3) | exact rebuild |
+  |---|---|---|---|---|
+  | centrosymmetric | 2432 | 453 (18.6%) | **2028 (83.4%)** | 2020/2028 |
+  | Sohncke | 874 | 655 (74.9%) | 660 (75.5%) | 651/660 |
+  | other (glide) | 194 | 36 (18.6%) | **164 (84.5%)** | 163/164 |
+  | **all** | 3500 | 1144 | **2852** | 2834/2852 (99.4%) |
+
+  Mirror copies 5423/14119 (38%). Remaining skips: 591 genuinely non-rigid, 52 Z'>16, 2 too large,
+  1 error, 1 timeout (WETCEH, >300 s). Pass criterion met: centro survival now above Sohncke.
+  18 rebuild misses: 9 were ALSO kept by the legacy parser (pre-existing, not mirror-related:
+  ADFGLP AZECOA ENIGOY FEXHAV GOQDAU GUSSIY HAJBID01 MOHQEJ MOJKUS), 9 are newly recovered
+  (DAGRAF MEOHPH OLUPES SELZEO TULVUR [P-1, Z=4], UYOSOR, VAHPIF, XITREB01, XODDUP) -- all Z>=4
+  with Z'>1 in P-1/C2/c/P2_1/c/Pna2_1; inspect before claiming 100%. NB downstream: mirrored copies
+  carry a mirrored `local`, so `_species_groups` treats enantiomers as separate species -- fine for
+  the asym-unit design, must be handled before reusing relative-gauge code.
 - [ ] **G2 — is anything learnable?** Train the R_asym flow (asym-unit only) on the re-parsed set,
   3 seeds, species-grouped split. Compare geodesic error + orientation-isolated match@k vs Haar-random
   and constant R_asym, **each followed by the same rigid-press relaxation**.

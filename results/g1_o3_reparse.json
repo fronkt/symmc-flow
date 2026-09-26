@@ -1,0 +1,644 @@
+{
+ "n_cifs": 3500,
+ "by_class": {
+  "centro": {
+   "total": 2432,
+   "kept_det1": 453,
+   "kept_o3": 2028,
+   "oracle_match": 2020
+  },
+  "sohncke": {
+   "total": 874,
+   "kept_det1": 655,
+   "kept_o3": 660,
+   "oracle_match": 651
+  },
+  "other": {
+   "total": 194,
+   "kept_det1": 36,
+   "kept_o3": 164,
+   "oracle_match": 163
+  }
+ },
+ "by_sg": [
+  {
+   "sg": 14,
+   "hm": "P 1 21/c 1",
+   "class": "centro",
+   "total": 1330,
+   "kept_det1": 250,
+   "kept_o3": 1136,
+   "oracle_match": 1134
+  },
+  {
+   "sg": 2,
+   "hm": "P -1",
+   "class": "centro",
+   "total": 660,
+   "kept_det1": 110,
+   "kept_o3": 531,
+   "oracle_match": 526
+  },
+  {
+   "sg": 19,
+   "hm": "P 21 21 21",
+   "class": "sohncke",
+   "total": 430,
+   "kept_det1": 338,
+   "kept_o3": 340,
+   "oracle_match": 339
+  },
+  {
+   "sg": 4,
+   "hm": "P 1 21 1",
+   "class": "sohncke",
+   "total": 315,
+   "kept_det1": 227,
+   "kept_o3": 228,
+   "oracle_match": 221
+  },
+  {
+   "sg": 15,
+   "hm": "C 1 2/c 1",
+   "class": "centro",
+   "total": 193,
+   "kept_det1": 32,
+   "kept_o3": 158,
+   "oracle_match": 157
+  },
+  {
+   "sg": 61,
+   "hm": "P b c a",
+   "class": "centro",
+   "total": 147,
+   "kept_det1": 19,
+   "kept_o3": 125,
+   "oracle_match": 125
+  },
+  {
+   "sg": 33,
+   "hm": "P n a 21",
+   "class": "other",
+   "total": 60,
+   "kept_det1": 9,
+   "kept_o3": 46,
+   "oracle_match": 45
+  },
+  {
+   "sg": 29,
+   "hm": "P c a 21",
+   "class": "other",
+   "total": 47,
+   "kept_det1": 7,
+   "kept_o3": 42,
+   "oracle_match": 42
+  },
+  {
+   "sg": 5,
+   "hm": "C 1 2 1",
+   "class": "sohncke",
+   "total": 45,
+   "kept_det1": 30,
+   "kept_o3": 31,
+   "oracle_match": 31
+  },
+  {
+   "sg": 9,
+   "hm": "C 1 c 1",
+   "class": "other",
+   "total": 36,
+   "kept_det1": 6,
+   "kept_o3": 31,
+   "oracle_match": 31
+  },
+  {
+   "sg": 1,
+   "hm": "P 1",
+   "class": "sohncke",
+   "total": 26,
+   "kept_det1": 13,
+   "kept_o3": 14,
+   "oracle_match": 13
+  },
+  {
+   "sg": 18,
+   "hm": "P 21 21 2",
+   "class": "sohncke",
+   "total": 19,
+   "kept_det1": 16,
+   "kept_o3": 16,
+   "oracle_match": 16
+  },
+  {
+   "sg": 62,
+   "hm": "P n m a",
+   "class": "centro",
+   "total": 19,
+   "kept_det1": 11,
+   "kept_o3": 13,
+   "oracle_match": 13
+  },
+  {
+   "sg": 60,
+   "hm": "P b c n",
+   "class": "centro",
+   "total": 18,
+   "kept_det1": 3,
+   "kept_o3": 14,
+   "oracle_match": 14
+  },
+  {
+   "sg": 7,
+   "hm": "P 1 c 1",
+   "class": "other",
+   "total": 17,
+   "kept_det1": 4,
+   "kept_o3": 15,
+   "oracle_match": 15
+  },
+  {
+   "sg": 43,
+   "hm": "F d d 2",
+   "class": "other",
+   "total": 15,
+   "kept_det1": 1,
+   "kept_o3": 14,
+   "oracle_match": 14
+  },
+  {
+   "sg": 11,
+   "hm": "P 1 21/m 1",
+   "class": "centro",
+   "total": 13,
+   "kept_det1": 11,
+   "kept_o3": 11,
+   "oracle_match": 11
+  },
+  {
+   "sg": 13,
+   "hm": "P 1 2/c 1",
+   "class": "centro",
+   "total": 11,
+   "kept_det1": 2,
+   "kept_o3": 8,
+   "oracle_match": 8
+  },
+  {
+   "sg": 96,
+   "hm": "P 43 21 2",
+   "class": "sohncke",
+   "total": 8,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 56,
+   "hm": "P c c n",
+   "class": "centro",
+   "total": 8,
+   "kept_det1": 0,
+   "kept_o3": 6,
+   "oracle_match": 6
+  },
+  {
+   "sg": 12,
+   "hm": "C 1 2/m 1",
+   "class": "centro",
+   "total": 7,
+   "kept_det1": 5,
+   "kept_o3": 5,
+   "oracle_match": 5
+  },
+  {
+   "sg": 88,
+   "hm": "I 41/a",
+   "class": "centro",
+   "total": 7,
+   "kept_det1": 2,
+   "kept_o3": 6,
+   "oracle_match": 6
+  },
+  {
+   "sg": 145,
+   "hm": "P 32",
+   "class": "sohncke",
+   "total": 6,
+   "kept_det1": 6,
+   "kept_o3": 6,
+   "oracle_match": 6
+  },
+  {
+   "sg": 41,
+   "hm": "A b a 2",
+   "class": "other",
+   "total": 5,
+   "kept_det1": 1,
+   "kept_o3": 5,
+   "oracle_match": 5
+  },
+  {
+   "sg": 20,
+   "hm": "C 2 2 21",
+   "class": "sohncke",
+   "total": 4,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 78,
+   "hm": "P 43",
+   "class": "sohncke",
+   "total": 4,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 92,
+   "hm": "P 41 21 2",
+   "class": "sohncke",
+   "total": 3,
+   "kept_det1": 3,
+   "kept_o3": 3,
+   "oracle_match": 3
+  },
+  {
+   "sg": 169,
+   "hm": "P 61",
+   "class": "sohncke",
+   "total": 3,
+   "kept_det1": 3,
+   "kept_o3": 3,
+   "oracle_match": 3
+  },
+  {
+   "sg": 148,
+   "hm": "R -3",
+   "class": "centro",
+   "total": 3,
+   "kept_det1": 0,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 161,
+   "hm": "R 3 c",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 58,
+   "hm": "P n n m",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 144,
+   "hm": "P 31",
+   "class": "sohncke",
+   "total": 2,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 68,
+   "hm": "C c c a",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 1,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 86,
+   "hm": "P 42/n",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 80,
+   "hm": "I 41",
+   "class": "sohncke",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 113,
+   "hm": "P -4 21 m",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 72,
+   "hm": "I b a m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 71,
+   "hm": "I m m m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 73,
+   "hm": "I b c a",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 17,
+   "hm": "P 2 2 21",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 152,
+   "hm": "P 31 2 1",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 45,
+   "hm": "I b a 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 118,
+   "hm": "P -4 n 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 160,
+   "hm": "R 3 m",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 95,
+   "hm": "P 43 2 2",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 205,
+   "hm": "P a -3",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 142,
+   "hm": "I 41/a c d",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 167,
+   "hm": "R -3 c",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 79,
+   "hm": "I 4",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 163,
+   "hm": "P -3 1 c",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 30,
+   "hm": "P n c 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 70,
+   "hm": "F d d d",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 217,
+   "hm": "I -4 3 m",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 76,
+   "hm": "P 41",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 31,
+   "hm": "P m n 21",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 204,
+   "hm": "I m -3",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 26,
+   "hm": "P m c 21",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 110,
+   "hm": "I 41 c d",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 114,
+   "hm": "P -4 21 c",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 82,
+   "hm": "I -4",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 23,
+   "hm": "I 2 2 2",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 173,
+   "hm": "P 63",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 55,
+   "hm": "P b a m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  }
+ ],
+ "copies": 14119,
+ "mirror_copies": 5423,
+ "oracle_fail_refcodes": [
+  "ADFGLP",
+  "AZECOA",
+  "DAGRAF",
+  "ENIGOY",
+  "FEXHAV",
+  "GOQDAU",
+  "GUSSIY",
+  "HAJBID01",
+  "MEOHPH",
+  "MOHQEJ",
+  "MOJKUS",
+  "OLUPES",
+  "SELZEO",
+  "TULVUR",
+  "UYOSOR",
+  "VAHPIF",
+  "XITREB01",
+  "XODDUP"
+ ],
+ "skip_reasons": [
+  [
+   "conformer",
+   591
+  ],
+  [
+   "Z'",
+   52
+  ],
+  [
+   "molecule has 65 > max_atoms",
+   1
+  ],
+  [
+   "molecule has 86 > max_atoms",
+   1
+  ],
+  [
+   "error",
+   1
+  ],
+  [
+   "timeout > 300.0s",
+   1
+  ],
+  [
+   "molecule has 70 > max_atoms",
+   1
+  ]
+ ]
+}

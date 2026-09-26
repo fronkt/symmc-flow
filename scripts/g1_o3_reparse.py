@@ -62,6 +62,7 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--workers", type=int, default=3)
     ap.add_argument("--part-size", type=int, default=250)
+    ap.add_argument("--cif-timeout", type=float, default=300.0)
     args = ap.parse_args()
 
     warnings.filterwarnings("ignore")
@@ -86,9 +87,22 @@ def main():
         if os.path.exists(part):
             results += torch.load(part, weights_only=False)
             continue
-        with Pool(args.workers) as pool:
-            chunk = pool.map(_work, [(p, common) for p in paths[s:s + args.part_size]],
-                             chunksize=4)
+        # per-CIF time limit: a pathological structure (e.g. graph-isomorphism blow-up) is
+        # recorded as a timeout skip instead of stalling the whole part
+        from multiprocessing import TimeoutError as MPTimeout
+        pool = Pool(args.workers)
+        sub = paths[s:s + args.part_size]
+        pending = [pool.apply_async(_work, ((p, common),)) for p in sub]
+        chunk = []
+        for p, ar in zip(sub, pending):
+            try:
+                chunk.append(ar.get(timeout=args.cif_timeout))
+            except MPTimeout:
+                ref = os.path.splitext(os.path.basename(p))[0]
+                print(f"  timeout > {args.cif_timeout}s: {ref}", flush=True)
+                chunk.append((ref, False, None, f"timeout > {args.cif_timeout}s", False))
+        pool.terminate()
+        pool.join()
         torch.save(chunk, part + ".tmp")
         os.replace(part + ".tmp", part)
         results += chunk
