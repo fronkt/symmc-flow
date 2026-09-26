@@ -303,3 +303,32 @@ def test_symmetric_molecule_automorphism_guard():
     orig = torch.tensor(st.frac_coords, dtype=torch.float32)
     nn = _match_sets(orig, recon, L)
     assert float(nn.max()) < 1e-3, f"symmetric-mol round-trip {float(nn.max()):.2e} A"
+
+
+def test_inversion_copy_needs_allow_mirror():
+    """A chiral conformer plus its INVERTED copy (what P-1 / P2_1/c's inversion op makes) is
+    the enantiomer pair: det+1 Kabsch cannot fit it (legacy gate skips the crystal), while
+    `allow_mirror` keeps it, marks that copy parity -1, and still reconstructs every atom."""
+    # the shared test conformer is near-planar (its mirror image fits under conf_tol), so use
+    # a clearly 3D, all-distinct-element (hence chiral) tetrahedral centre instead
+    Zc = [6, 7, 8, 9, 1]                                  # C with N, O, F, H substituents
+    xyz = np.array([[0.0, 0.0, 0.0], [1.4, 0.0, 0.0], [-0.47, 1.32, 0.0],
+                    [-0.47, -0.66, 1.15], [-0.36, -0.51, -0.89]])
+    xyz -= xyz.mean(0)
+    L = _BIG
+    centroids = _grid_centroids(2)
+    R = M.random_so3(()).numpy()
+    st = _place(xyz, Zc, L, centroids, [R, -R])           # -R = inversion . R
+
+    legacy = MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8)
+    assert len(legacy) == 0 and "conformer rmsd" in legacy.skipped[0][1]
+
+    ds = MolCrystalDataset(structures=[st], max_mols=8, max_atoms=8, allow_mirror=True)
+    assert ds.skipped == [], ds.skipped
+    item = ds[0]
+    assert sorted(item["parity"][item["mol_mask"]].tolist()) == [-1, 1]
+    assert all(abs(float(torch.det(item["orient"][m])) - 1.0) < 1e-4 for m in range(2))
+    recon = rigid_to_frac(item["lattice"], item["local"], item["centroid"], item["orient"])
+    nn = _match_sets(torch.tensor(st.frac_coords, dtype=torch.float32),
+                     recon[item["atom_mask"]], L)
+    assert float(nn.max()) < 1e-3, f"round-trip max NN dist {float(nn.max()):.2e} A"

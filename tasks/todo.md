@@ -650,3 +650,7 @@ also fix MoML stale title + verify page count. LaTeX installed locally (MiKTeX 2
   as the honest "before" of the before→after arc, not an exposed weakness. Recommend keep as-is.
 - **STILL HUMAN-GATED (Frank owns)**: (a) review the prose in JCIM derivation/limitations; (b) Zenodo
   DOI bump; (c) at AI4Mat submit: swap official 2026 .sty + set anonymity per the CFP.
+
+## 2026-09-25: ACS Omega reject + resubmit (window to 2027-01-22)
+- Plan + gates in `tasks/omega_rebuild_plan.md`. Measured: centro survival 18.1% vs Sohncke 74.1%
+  (det+1 Kabsch drops enantiomeric copies). G0 comparator check in progress.
