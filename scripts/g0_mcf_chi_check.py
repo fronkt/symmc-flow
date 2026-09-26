@@ -4,7 +4,7 @@ import sys, importlib.util
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-base = r"C:\Users\frank\AppData\Local\Temp\claude\C--Users-frank\40207194-28ba-4c06-bcbf-fb5cb9ac6dff\scratchpad\mcf"
+base = sys.argv[1] if len(sys.argv) > 1 else "MolCrystalFlow"  # MolCrystalFlow checkout @3c493f8
 
 def load(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
