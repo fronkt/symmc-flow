@@ -112,3 +112,19 @@ technical content we verified ourselves is recorded here.
 - G0–G1: local CPU, ~days. G2–G3: rented GPU (prior runs cost single-digit $); Frank approves spend.
 - Target resubmission ≈ early January, leaving slack before the 01-22 window closes.
 - pxrd-flow (ICLR) and the other revisions keep priority when deadlines collide.
+
+## Next steps after G2 (started 2026-09-27) — sequential, val-selected, test scored once
+Protocol: split fixed by `--split-seed 0` (test = perm[:200], val = perm[200:300], train = rest).
+Every selection (ranking rule, training hyperparameters, checkpoint) is made on VAL; TEST is scored
+once per final configuration and never used to choose anything.
+- [ ] **N1 — ranking without the steric energy.** For each crystal draw S=16 learned orientations
+  (current G2 checkpoints) and score candidate selectors: endpoint-mode frequency (draws within a
+  geodesic radius), residual learned torque at t->1, unrelaxed LJ energy, random pick (= match@1).
+  Choose the selector on VAL by ranked exact match@1; report it on TEST. Batched sampling (all S
+  draws in one forward) so this is laptop-feasible.
+- [ ] **N2 — train longer / better.** Multi-draw loss per step (several (R0,t) pairs per crystal
+  through the batched forward), cosine LR schedule, more epochs; select checkpoint on VAL loss AND
+  val ranked match; re-score TEST with the N1 selector frozen.
+- [ ] **N3 — G3 benchmark** on the same test split: new model, MolCrystalFlow retrained on our split
+  (its public driver is homochiral: report the centrosymmetric-with-chiral-conformer subset separately),
+  classical random+press, old symmc-flow.
