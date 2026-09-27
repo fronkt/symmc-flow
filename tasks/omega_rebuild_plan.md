@@ -128,7 +128,13 @@ once per final configuration and never used to choose anything.
   geodesic radius), residual learned torque at t->1, unrelaxed LJ energy, random pick (= match@1).
   Choose the selector on VAL by ranked exact match@1; report it on TEST. Batched sampling (all S
   draws in one forward) so this is laptop-feasible.
-- [ ] **N2 — train longer / better.** Multi-draw loss per step (several (R0,t) pairs per crystal
+- [~] **N2 checkpoint protocol (fixed 2026-09-27 BEFORE any N2 result was seen):** per seed two
+  candidates = best fixed-val-loss checkpoint and final-epoch checkpoint; sample 16 draws on VAL with
+  each (g2_rank sample), score with the N1 rule (lowest-LJ unrelaxed); keep the higher-val candidate per
+  seed (tie -> best-val-loss); then sample TEST with the 3 kept checkpoints and score ONCE with the N1
+  rule. Compare against N1 test (G2 checkpoints): 7.5% per seed / 11.0% pooled.
+- [~] **N2 — train longer / better.** (running on Vast EPYC 7763 box 52915697: 3 seeds x 16 procs,
+  30 epochs, 8 draws/step) Multi-draw loss per step (several (R0,t) pairs per crystal
   through the batched forward), cosine LR schedule, more epochs; select checkpoint on VAL loss AND
   val ranked match; re-score TEST with the N1 selector frozen.
 - [ ] **N3 — G3 benchmark** on the same test split: new model, MolCrystalFlow retrained on our split
