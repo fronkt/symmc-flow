@@ -1,0 +1,30 @@
+{
+ "n_val": 100,
+ "val": {
+  "n2c_s0_best.pt": [
+   8.0,
+   12.0
+  ],
+  "n2c_s1_best.pt": [
+   3.0,
+   12.0
+  ],
+  "n2c_s1_final.pt": [
+   7.0,
+   7.0
+  ],
+  "n2c_s2_best.pt": [
+   6.0,
+   12.0
+  ],
+  "n2c_s2_final.pt": [
+   6.0,
+   11.0
+  ]
+ },
+ "chosen": [
+  "n2c_s0_best.pt",
+  "n2c_s1_final.pt",
+  "n2c_s2_best.pt"
+ ]
+}

@@ -1,0 +1,21 @@
+{
+ "n": 200,
+ "rule": "lj (unrelaxed), chosen on val in N1",
+ "n2c_s0_best.pt": {
+  "lj_pick": 7.5,
+  "any16": 10.5,
+  "first_draw": 1.0
+ },
+ "n2c_s1_final.pt": {
+  "lj_pick": 4.5,
+  "any16": 7.0,
+  "first_draw": 0.5
+ },
+ "n2c_s2_best.pt": {
+  "lj_pick": 3.0,
+  "any16": 7.0,
+  "first_draw": 0.5
+ },
+ "pooled_lj_pick": 6.5,
+ "mean_lj_pick": 5.0
+}
