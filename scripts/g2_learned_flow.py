@@ -100,6 +100,32 @@ class TorqueField(nn.Module):
         f = (s.unsqueeze(-1) * v / d.unsqueeze(-1)).sum(1)   # (A,3)
         return torch.linalg.cross(Xa - g["c0"], f).sum(0)    # (3,) torque
 
+    def forward_batch(self, g, R, t):
+        """Same field for B orientations of ONE crystal at once: R (B,3,3), t (B,) -> (B,3).
+        Identical maths to `forward` with a leading batch axis (checked in N1 against it)."""
+        loc = g["local"]
+        B = R.shape[0]
+        Xa = g["c0"] + torch.einsum("bij,aj->bai", R, loc)                        # (B,A,3)
+        Rn = torch.einsum("nij,bjk->bnik", g["Rc"][g["img_op"]], R)             # (B,N,3,3)
+        Xn = g["img_c"][None, :, None] + torch.einsum("bnij,aj->bnai", Rn, loc)  # (B,N,A,3)
+        Xn = Xn.reshape(B, -1, 3)
+        Zn = g["Z"].repeat(Rn.shape[1])
+        v = Xa[:, :, None] - Xn[:, None]                                          # (B,A,NA,3)
+        d = v.norm(dim=-1).clamp_min(1e-3)
+        w = 0.5 * (torch.cos(math.pi * (d / self.cutoff).clamp(max=1.0)) + 1.0)
+        k = torch.arange(1, 5)
+        tt = torch.cat([torch.sin(t[:, None] * k * math.pi), torch.cos(t[:, None] * k * math.pi)], -1)
+        A, NA = d.shape[1], d.shape[2]
+        # the smooth cutoff weight is exactly 0 beyond `cutoff`, so evaluate the MLP only on pairs
+        # inside it (same result as the dense form, a fraction of the cost)
+        bi, ai, ji = torch.nonzero(d < self.cutoff, as_tuple=True)
+        feat = torch.cat([rbf(d[bi, ai, ji], cutoff=self.cutoff), self.emb(g["Z"][ai]),
+                          self.emb(Zn[ji]), tt[bi]], -1)
+        s = torch.zeros_like(d)
+        s[bi, ai, ji] = self.mlp(feat).squeeze(-1) * w[bi, ai, ji]               # (B,A,NA)
+        f = (s.unsqueeze(-1) * v / d.unsqueeze(-1)).sum(2)                        # (B,A,3)
+        return torch.linalg.cross(Xa - g["c0"], f, dim=-1).sum(1)                 # (B,3)
+
 
 def target(R0, R1, t):
     Rt = M.so3_exp(t * M.so3_log(R1 @ R0.T)) @ R0
