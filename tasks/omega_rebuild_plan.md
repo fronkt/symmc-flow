@@ -117,7 +117,13 @@ technical content we verified ourselves is recorded here.
 Protocol: split fixed by `--split-seed 0` (test = perm[:200], val = perm[200:300], train = rest).
 Every selection (ranking rule, training hyperparameters, checkpoint) is made on VAL; TEST is scored
 once per final configuration and never used to choose anything.
-- [ ] **N1 — ranking without the steric energy.** For each crystal draw S=16 learned orientations
+- [x] **N1 RESULT (2026-09-27, `results/n1_final.json`).** Val (n=100) exact match of the ONE picked
+  draw, per seed mean: random 2.0, **unrelaxed LJ 7.0** (pooled 48 draws 9.0), residual torque 0.7,
+  endpoint-mode frequency (Chamfer 0.25-1.5 A) 1.0-2.0 -> hypothesis (mode frequency) REJECTED; rule
+  chosen = lowest-LJ UNRELAXED draw. TEST (n=200, scored once): **7.5% per seed (8.5/7.5/6.5), 11.0%
+  pooled over 3 seeds**, vs random pick 1.3%, upper bound any-of-16 13%. G2's energy ranking failed only
+  because it ranked AFTER relaxation (relax moves exact draws ~14 deg off truth).
+- [x] N1 spec (was): For each crystal draw S=16 learned orientations
   (current G2 checkpoints) and score candidate selectors: endpoint-mode frequency (draws within a
   geodesic radius), residual learned torque at t->1, unrelaxed LJ energy, random pick (= match@1).
   Choose the selector on VAL by ranked exact match@1; report it on TEST. Batched sampling (all S

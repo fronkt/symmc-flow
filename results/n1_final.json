@@ -1,0 +1,113 @@
+{
+ "val": {
+  "n": 100,
+  "random": {
+   "per_seed": [
+    3.0,
+    0.0,
+    3.0
+   ],
+   "mean": 2.0,
+   "pooled_3seeds": 2.0
+  },
+  "lj": {
+   "per_seed": [
+    10.0,
+    4.0,
+    7.0
+   ],
+   "mean": 7.0,
+   "pooled_3seeds": 9.0
+  },
+  "torque": {
+   "per_seed": [
+    0.0,
+    1.0,
+    1.0
+   ],
+   "mean": 0.7,
+   "pooled_3seeds": 0.0
+  },
+  "mode@0.25": {
+   "per_seed": [
+    0.0,
+    1.0,
+    2.0
+   ],
+   "mean": 1.0,
+   "pooled_3seeds": 3.0
+  },
+  "mode@0.5": {
+   "per_seed": [
+    1.0,
+    1.0,
+    2.0
+   ],
+   "mean": 1.3,
+   "pooled_3seeds": 4.0
+  },
+  "mode@0.75": {
+   "per_seed": [
+    0.0,
+    1.0,
+    3.0
+   ],
+   "mean": 1.3,
+   "pooled_3seeds": 4.0
+  },
+  "mode@1.0": {
+   "per_seed": [
+    0.0,
+    2.0,
+    4.0
+   ],
+   "mean": 2.0,
+   "pooled_3seeds": 4.0
+  },
+  "mode@1.5": {
+   "per_seed": [
+    2.0,
+    0.0,
+    3.0
+   ],
+   "mean": 1.7,
+   "pooled_3seeds": 3.0
+  },
+  "oracle_any_draw": {
+   "per_seed": [
+    16.0,
+    9.0,
+    15.0
+   ]
+  }
+ },
+ "chosen": "lj",
+ "test": {
+  "n": 200,
+  "random": {
+   "per_seed": [
+    2.0,
+    0.5,
+    1.5
+   ],
+   "mean": 1.3,
+   "pooled_3seeds": 0.5
+  },
+  "lj": {
+   "per_seed": [
+    8.5,
+    7.5,
+    6.5
+   ],
+   "mean": 7.5,
+   "pooled_3seeds": 11.0
+  },
+  "oracle_any_draw": {
+   "per_seed": [
+    14.0,
+    12.0,
+    13.0
+   ]
+  }
+ }
+}
