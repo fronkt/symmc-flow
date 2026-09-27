@@ -64,7 +64,24 @@ technical content we verified ourselves is recorded here.
   with Z'>1 in P-1/C2/c/P2_1/c/Pna2_1; inspect before claiming 100%. NB downstream: mirrored copies
   carry a mirrored `local`, so `_species_groups` treats enantiomers as separate species -- fine for
   the asym-unit design, must be handled before reusing relative-gauge code.
-- [~] **G2 — is anything learnable?** (started 2026-09-26; `scripts/g2_asym_baselines.py`,
+- [x] **G2 RESULT (2026-09-27, Vast 72-core CPU box, ~$2.8; `results/g2_baselines.json`, `results/g2_eval.json`).**
+  199 held-out Z'=1 crystals, 16 draws/arm, true lattice + asym centroid given, checkpoints = best val <= epoch 7:
+
+  | metric | learned (3 seeds) | Haar | paired McNemar per seed |
+  |---|---|---|---|
+  | exact match, unrelaxed, any of 16 | **10.9 +- 2.9%** (13.1/7.5/12.1) | 0.0% | p = 3e-8, 6e-5, 1e-7 |
+  | right basin, any relaxed draw | **19.9 +- 2.5%** (22.6/19.6/17.6) | 11.1% | p = 0.002, 0.02, 0.07 |
+  | right basin, lowest-LJ-energy draw | 8.5 +- 1.5% | 6.5% | p = 0.19, 0.54, 1 (n.s.) |
+
+  K=32 classical baseline: best-by-energy basin 8.6%, any-of-32 20.7%, relaxed TRUE pose exact 1.0%.
+  Exact matches by any seed: 60/199 = 30.2%, mostly P2_1/c (28) and P-1 (8) -- the centrosymmetric
+  crystals the old pipeline discarded. Loss-vs-t: learned field ~ predict-zero floor for t<0.6, 0.55-0.65
+  of it at t>=0.9 -> it is a LEARNED RELAXER whose minima sit on the true structure (steric LJ minima sit
+  ~14 deg off, so physics alone never matches exactly). Verdict: G2 PASSES on exact reconstruction and on
+  draw quality; the full pipeline is bottlenecked by the steric-energy RANKING step (not significant).
+  Next: rank learned draws without LJ (endpoint-mode frequency / learned-field consistency), train
+  longer on faster cores (plateau at epoch ~2-7 on a 2016 Xeon; single-sample SGD), then G3.
+- [x] **G2 build notes** (started 2026-09-26; `scripts/g2_asym_baselines.py`,
   `scripts/g2_learned_flow.py`). Findings while building it:
   * 1987 Z'=1 general-position crystals; asym-unit exact expansion rebuilds 9/9 in smoke **only after**
     taking symmetry ops from spglib per crystal: the standard-setting table (`space_group.get_ops`) is

@@ -1,0 +1,6411 @@
+{
+ "args": {
+  "ckpts": [
+   "results/eval_s0.pt",
+   "results/eval_s1.pt",
+   "results/eval_s2.pt"
+  ],
+  "out": "results/g2_eval.json",
+  "cache": "data/csd_mol/g2_asym.pt",
+  "split_seed": 0,
+  "n_test": 200,
+  "samples": 16,
+  "press_steps": 80,
+  "workers": 60,
+  "timeout": 3600.0
+ },
+ "summary": {
+  "n": 199,
+  "timeouts": 1,
+  "haar:match1": 0.0,
+  "haar:matchS": 0.0,
+  "haar:basin_best": 0.0653,
+  "haar:basin_any": 0.1106,
+  "haar:geo_min_median": 53.5,
+  "eval_s0.pt:match1": 0.0101,
+  "eval_s0.pt:matchS": 0.1307,
+  "eval_s0.pt:basin_best": 0.1005,
+  "eval_s0.pt:basin_any": 0.2261,
+  "eval_s0.pt:geo_min_median": 40.0,
+  "eval_s1.pt:match1": 0.005,
+  "eval_s1.pt:matchS": 0.0754,
+  "eval_s1.pt:basin_best": 0.0854,
+  "eval_s1.pt:basin_any": 0.196,
+  "eval_s1.pt:geo_min_median": 46.7,
+  "eval_s2.pt:match1": 0.0101,
+  "eval_s2.pt:matchS": 0.1206,
+  "eval_s2.pt:basin_best": 0.0704,
+  "eval_s2.pt:basin_any": 0.1759,
+  "eval_s2.pt:geo_min_median": 38.5
+ },
+ "rows": [
+  {
+   "refcode": "VIHBEW",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.39059894637418,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.809562144172852,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.5442531575389327,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.041819252397694,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UWEZIJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 72.15562786382128,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.53076442297878,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.86422283901861,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 107.90333533805061,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LESQUW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.917698138037192,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.9786407023121673,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.38641145859881,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.98847205988531,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "FUHGOF",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.42208445392399,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.2768731320467,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.75325775427342,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.6653140700095,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KOWFIP",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.3596532767807,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.304141202644418,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 4.620542718790879,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 6.015741191681152,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "PEDBEH",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.54440872763715,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.86912275096872,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.87887201118286,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.232627872359383,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "PUYFAR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.39523014856187,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.35449623350952,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.9524993710627,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.42438614419168,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XUSTIR",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 81.68390568052914,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.91437100364942,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.919354044061976,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.408284638520136,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ROWWEI",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.52091337778793,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.68152127664796,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.3928436653078,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.93793374220984,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QUMWIF",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.79240348337853,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.345386716587754,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 18.847082269307908,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.29719402753728,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "EVIVAH",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.133903194926965,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.123642203296953,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.681210667441857,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 13.711168480467363,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "LUHDIC",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.51519784004616,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.27653204000123,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 18.406683624456534,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.87866335904683,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MAFQIW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.798554025702785,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.34215924478045,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 79.22621920205097,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.15405875180133,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "EBIFOL",
+   "sg": 56,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.21306467255847,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.12538973851623,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.108624748291355,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.581708805543535,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LUQWID",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.71604371646434,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 9.30266898445953,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.4242820242661,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 13.398584019328084,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OFEJIT",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 97.29761567034075,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.339935102461034,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": true,
+    "matchS": true,
+    "geo_min": 5.139088546144131,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.3291818044389,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OFEWUV",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.52864914883713,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.55024404157313,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.6448253365527,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.172067377810045,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OWAGOJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.29922409384359,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.34186213411563,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.949330494654156,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.181751376837383,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ISEJIA",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.315574400524206,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.50146199825893,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 0.26407499023039477,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.30834318562419,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UDIDAP",
+   "sg": 18,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.11679182304953,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.150759476961056,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.08993227110366,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.52115701313179,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WAFZUB",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.30978206617761,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.63184043605632,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.522107742584026,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.824938774507054,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "PIRNOW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.367842129676568,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.32090269685619,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.79367898074676,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.0135597621198,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "PAHJEO",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.70332090809385,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 13.898173083526789,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.763103138031575,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.183062732698765,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IDUQEE",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.54045887727843,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.31014048414383,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.982174935325231,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.17735485997221,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UQATOX",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 87.12407622236343,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.774177815569072,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.97553297225875,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.873650789434677,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "SANLAV",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.519936491207332,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 82.22711745540943,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.0424370170376136,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 82.58498521697224,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QEQZAR",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 76.24467087461115,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.03009739810695,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 83.21900435686784,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 17.483815784561088,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MEKZEL",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.31955706610709,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.70698239038461,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.52389858530418,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 87.74983766355248,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "SOHVOB",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.29056058069559,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.2135465882132888,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.34828484175616,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.43283375503738,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "YUZYUR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.30033758164352,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.14615988847403,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.81818019989313,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.29283270130441,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ALOVUS01",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.27121182096934,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.877989168773375,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.9687738778016,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.7309266986658,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CIJXUR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.73527361574096,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.050493425678404,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 87.88784846592176,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 9.183838207053295,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "CINDOW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.739542567454826,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.56566281667067,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.248244477623196,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 8.128587640664666,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "PAMSUS",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.65141630213655,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 92.2919749333135,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 9.43296935702951,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 16.515127620618617,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "NAVFIB",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 83.7665054905469,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.85889058367307,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.04777796504695,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.553465098040213,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "PICCOX",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.371399535065095,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.37485194524272,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 82.33091584022611,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 100.3672324569387,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GATZAD",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.20697722343735,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.58342926443501,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.43883407622323,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.699959973074161,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "DINPEV10",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.74912257306253,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 64.72666333003019,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.71144541811158,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.428918973933165,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XIRQUM",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.43810716197226,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.71606037708832,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.57198286917733,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": true,
+    "matchS": true,
+    "geo_min": 4.410051229609895,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KUQMES",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.60136684131828,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.495676992433054,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.26158692080048,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.21470674867562,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IFOREB",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.919351628194576,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.20215315188821,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.686366711485846,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.920546596316496,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "MAQWIM12",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.12056958295731,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.14356499840358,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 37.35969700514946,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.523563071208795,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LAQFEP",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 76.47834530649563,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.06761670992763,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.416529051238026,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.8149805901974,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "AQILET",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.70354805234302,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.648090693728905,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.29455124522412,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 19.739518201356358,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "TAFPAR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.590318843370575,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.33123869060626,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 97.92255065864023,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.3873113790453,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ULIGOP",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.64829390645868,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.52083224777986,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 103.28700855352493,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.0775418492403186,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WAQREP",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.68245284612622,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.580308783728896,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.525744775293717,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.13994841323806,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WIRPIA",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.79542675783084,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": true,
+    "matchS": true,
+    "geo_min": 4.826447309057375,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.47790767349311,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.79406954864038,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OJOYES",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.01178441126714,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.26478015561524,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.814393608777728,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.493798969280505,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "TOKYUN",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.761191934738974,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.79255607992506,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.89879184304826,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.993573376369255,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "HAXLAV01",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.24474000876482,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.82742777769778,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.11317090704484,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 87.48608307856327,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "AWELIY",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.3237381436704,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.32808747404888,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.64672179675718,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 13.460031816196103,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "VAWZID",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.361488804073453,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.08200441993165,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.36191448424492,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.68477098702933,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TUYGOM",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.57762893370685,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 11.072798739006606,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.261294054928136,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.31591066083488,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "AKALIJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.66553430315096,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 11.318948511410111,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.861729671953933,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.15192523343028,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CIDPOU",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.44026983258915,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.55535069068751,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 96.07891184692454,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.87726883426375,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UJADAO",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.90113426400315,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 89.9574026146248,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 80.2437056525186,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 64.97158708347767,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IGIXIJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.71796558245373,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.60753334285612,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.982048848785073,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.36172790371775,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GUYNOD01",
+   "sg": 9,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.941604050580054,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 18.804335530387384,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.64501508172664,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.07771422887091,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "DLALNI10",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.30028427328776,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.11116607955823,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.863160785061933,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.566568942468834,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XARZEZ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.75529898160806,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.270741995016085,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.36549375381782,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.23397021451984,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XIKMOW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.06731060108998,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.80442986546558,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.30397041001999,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 72.32561761188455,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XICMIJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.10098301884919,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.5803594584823242,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.717624654809384,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.8527460152002575,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ETEXAF",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.346279599420605,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.120947327862716,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.361188192267369,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.62543975956539,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WOHGOR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 90.0970253416382,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.536420070059364,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 115.01996215128618,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 15.149284447007412,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "HXQUIN13",
+   "sg": 43,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.94030148546703,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.31452738056274,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.723802811361477,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.863597793226944,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "YAFXOU",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.13364931429936,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.5379161138786026,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.15013130954597,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 91.86474660072919,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ZAFLAX",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 76.77579321466051,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.026443120395047,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.09277379419952,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.1184664974925695,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "GUDHAS",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.70999133659774,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.88987786180315,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.85350485557065,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.4853330883481,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KUMKUY10",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.2592744843534,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.80002614145747,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.41736812481949,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.86135515879439,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ZUKYAI",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.93367111978951,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.14523239682304,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.74057130016354,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 83.02719215440638,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ZEWKOF",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.49512607949508,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.2519381287889453,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.31108580004711,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.22496519447742,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "NUMZUS",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.9303364064332,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.730197075076267,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.319851596503373,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.346645262424936,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WIRPAO",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.990976029972149,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.364784370347984,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.39791549561548,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.57446538992873,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QAQSEK",
+   "sg": 18,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.536492538389105,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.4653939200697144,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.66902469678206,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.021754987332546,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GLUTAS02",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.028293977718256,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.011787532890573,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.11425707408809,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 82.01902891215582,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "SABGIN",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.53739512258673,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 10.782584001172765,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.438924282758576,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.537527392966883,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "SAHGEO",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.45010497362763,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 64.32907118825457,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 64.2602570323667,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.35685714657755,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LATREH",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 81.984003702092,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 19.356228475702753,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.655711157966884,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.39034739556729,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "VEWNIY",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.06785393505942,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.47563538591908,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.039144148063766,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.866217127750303,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "ZOVNUW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 110.60363696603682,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.84820833477638,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.668442213166756,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.891078057561226,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TIMCIE",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 97.46083670093654,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 9.571949192487283,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 81.93018181143229,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.9715587634938,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "YIVRIE",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.13666259135165,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.02091295909287,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.05692404878197,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.066670497227352,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "PHACRD",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 87.24037385336123,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.30791592697545,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.63773451492035,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.191588909667506,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "EVIDES",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.73818269451323,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.25670650019069,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.57679132235302,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.2984021387584,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "POGWAN",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.625275835025306,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.1059004185571,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.717134755701647,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.76784191313461,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GOLPOO",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 90.21435433120068,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.077995265854064,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.64038621192375,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.20650960592702,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XOGBEB",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.204220450304536,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 89.23239169460628,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.76817230458812,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.556305915380044,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "AMPENA01",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 83.2844512294949,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 19.410897309819536,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.44258251691996,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.29067356972397,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "MICKAO",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.50342967455405,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.3976066395441,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.65679424128188,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.30301018406336,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TENPOV",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 18.876045686483348,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.455375544718,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.63885341883332,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.22146442905663,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "NEGRUQ",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.85568855810994,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.69200182497558,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.23306921392764,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.44079808954003,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ZUCSAU",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.87590337824391,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.926153640270181,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.13191444625018,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.168903457078166,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "TPEPHO23",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.19203660204097,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.680613650726983,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.38229218923253,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.41094483280072,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CALKEI",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.043278079599652,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.9554050321763,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.46420264847566,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 90.56640960177981,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GUPFAB01",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 92.91924584630912,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.73740971438054,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.8720282476812,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 15.969626024819085,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QISFOQ",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.94581211496963,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.12362801014674,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.0659722558382576,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.25884060037589,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "FIFGAC01",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.471093226638416,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.615842778350869,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 16.881183071448987,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.15661366085472,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KOMLUU",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 79.38446102474182,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.892164172107331,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.201932336932583,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.35917724547578,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ULIQUC02",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.73795421454238,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.59288774327787,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.63604254554204,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.73976612964419,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UXIKIW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.35065008822744,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.201710792145175,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.51203429626805,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.6061504730873,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JOFKUO",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.95678914471042,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.598202047865165,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.47778597719897,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.94360729702532,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TUMFAM",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.95895573131752,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.6822574369555,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.615643026303113,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.674778048448,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ZIPXOP",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.78773046779384,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 11.752537457658983,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.505445329138574,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 72.38990335235272,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GARGIR",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.87807304601518,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.50901393601469,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.78162311248346,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.5622794141407716,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "HEKMOZ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.56038853701455,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.56726532829301,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.32093243604434,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.812564491697035,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TEFDAM",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.61849620441322,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.88397990997224,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.17643270095166,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 17.439574941759624,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "VUBKEL",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.53228922225173,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.06858376607342,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 86.33172646731776,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.435575417602087,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JIDXED",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.96365640158932,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 6.726667834744275,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.76783154647306,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.88573185349435,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UPIBEE",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.785757375385685,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 80.14813764565177,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 83.33332806319552,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.241235305842141,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WUZTOA",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.71003681553713,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.9087643366495,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.8519599857073,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.552916245527541,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "DARMUI",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.04084245186378,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 85.3903214940149,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.05609351550105,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.476293747830535,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GUGZOY",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.008383892805064,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.60624509650849,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.16914247580394,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.161371342029067,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TISNAN",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.48829739044788,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.07409256152277,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.96211244490647,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.66357120557875,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "GAPMOA",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.17972751844682,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.199330328329964,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.234903951981764,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 16.168029359829617,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "BOLXIJ",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.581704224256555,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.96663244653159,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.23906062298735,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.69211698198763,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WIXGAO",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.68831897939607,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.609830983717927,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.8138543603278,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": true,
+    "matchS": true,
+    "geo_min": 3.638860546839279,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "SAJNEB",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.68571551112991,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.32532024564376,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.22419713212622,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.099976878483328,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CADLED",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.2880648978974,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.010350572437076,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.60073946314183,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.050888293425713,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XASWIY",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.281554809309714,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.072614812756773,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.39084108672338,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.41174454674778,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "HITZIX",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.194288730413838,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.71993151074229,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.41671026123959,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.14804343707953,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KUWQIG",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.697643186840327,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 2.211574058671697,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.09393776220293,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 6.410979479514048,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "CENQIW",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.018845827641755,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.777675844957347,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.36736539261562,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.591243499177054,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TEWKOZ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.325497833126256,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.624817448969588,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 7.989092979698202,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.488053598503394,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "WAXPIW01",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.7871728081493,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.34370495203393,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.328496617538235,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.81055221174783,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WIMGAD",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.61960152886637,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.23071467061241,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.79328865817281,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.49610146338878,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "VORPUO",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.23556190160835,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.710112863362582,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 106.44986425248273,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.494999303582407,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "BEJHII",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 77.0709393490751,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.46709856520114,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.17352666288429,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.260074789588401,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "WEGPUX",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.558703147377585,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 70.56204910780892,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 16.387934130347347,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.161111336968318,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "YUCZOP",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.270925952251385,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.246626512028536,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 80.0231315234622,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.06068814831141,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ACAXIP",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.694861551841576,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.41961742247601,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.16914014341914,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 98.51377183319653,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "PUMTOK",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.06473153938153,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.16041116165987,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.454057525632663,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.74199326964517,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "ZUYYOH",
+   "sg": 33,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.156884201215526,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.33093874409694,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.18043361076394,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.15754098208564,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "SUFDEE",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.174893161154664,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.67272865776658,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.82945367756605,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.11135657607562,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LANWIJ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.5055441189978,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.781503352672756,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.96404005581115,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.20675882434912,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "GOXQES",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.67961215529234,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.8411325591771202,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.226030305522507,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.49797410397784,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WIBMEA",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.89192258771499,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.51391992937461,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.18410083797,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.19008500199159,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "DUDJAO01",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.793769685613663,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 7.166012496029353,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.62051086233464,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.279572179937908,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LIRSAH",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.67983392645181,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.19444507598538,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 94.42451025635322,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.85643409098,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "HUNNOU",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 94.28184126496998,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.97450773812722,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 81.12335205534619,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.60662658531074,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "HALSOE",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.3312702587195,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.524703149933618,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.486820535914795,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.728578029335896,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CODDIL",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.18135052063667,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.24988705463598,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 88.43609409022035,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 98.39114261683812,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ROFCUL",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.840674636121854,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.917977927909426,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.727674696358896,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.46173178708415,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IXIPIR",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.36375213906208,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.41758277488271,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.12761359249265,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.694549111146312,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "HACPAE",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.442611421282066,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 15.763492623215393,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.73450138695172,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.88171462211668,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MEGKAK",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.96959166901284,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.99623881723359,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.920671602710943,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.649382403322626,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MXPENO",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 32.538204998334926,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.785699235295134,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.1492617101018,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.6535987119775,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "GALJEL",
+   "sg": 7,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.43284033477873,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 61.1566190735129,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.20241565886305,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 15.475222781747712,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LUMSIY",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.285804854061496,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.1589754199500304,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.2231687712431,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.030490069449215,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KIWCIE",
+   "sg": 15,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 88.54336904132457,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.08694964385595,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.07261166014788,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 19.941630329086205,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "KORYAU",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.802321499867546,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.63206404383311,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.34941698863443,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.66575436932723,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UJEVAG",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.780893321928712,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.693157753574084,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.198840009245121,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.896094416657654,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WOTKUN",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.346436693771516,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.60344571817598,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.48371283339199,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.82297016351976,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "VUJKEU",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.47686207017186,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.96276522630376,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.73314126356231,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.99835892567412,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "VAYBUW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.56832538379532,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 96.9548767777895,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 78.41270269076743,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 77.1281558437523,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OWOFOZ",
+   "sg": 29,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.53631845204787,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.18013674798286,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.63423471083157,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 105.41361527236508,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "XICPEE",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.42775675906447,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 88.1503667866712,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.770425973543063,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.376358168919914,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OGOQIK",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.20896147943792,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.49357396202954,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 16.778844639567392,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.929832426970012,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "DUVBIF",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 30.97420096142873,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.187602600053896,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 25.08922459518112,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.101935732153846,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ORAVOW",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.038000675756024,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.37013932213988,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 80.55550378812967,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.68398047867959,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "EVADOV",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.76575733438497,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.5535531847434,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.214782465134725,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.26442261549843,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JIFRAR",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 76.4367836053961,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.89427900297864,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.871422523700566,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.14178365218782,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JAGRIV01",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 88.42082178723619,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.778809863784042,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.21308382996837,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 11.187989879358872,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UPIFEG",
+   "sg": 60,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.35773299439674,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": true,
+    "matchS": true,
+    "geo_min": 8.043471530775259,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.82312692394025,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 91.7850041421693,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "WERVEU06",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.31940805162035,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 97.16215252853188,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.48122464607973,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 65.98867055278427,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IRAMAS",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.533234953003955,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 19.80717464017992,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.276103068677042,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 91.2814757663668,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MUGCAS",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.19355890196391,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 11.528716427425897,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.892522602111423,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 26.041554456061412,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "DESJOA",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.07276367488026,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.98192490615283,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.678321082573994,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 75.52875093637792,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KIRMAD",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.88209777800695,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.13228519143712,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.21332738439369,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.917360294121096,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JODMAQ",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 77.6989889036361,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 18.179385174162263,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.741856167530216,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.16998691991101,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "IPEPAX",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.39850239355255,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.69162112797603,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.6721046112021,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 12.94334337341027,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "FUDGIX",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.23916640743688,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.05243644753206,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.773458701476416,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.522373690510754,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "NAXHAZ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.24603157981472,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 20.62808824633458,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 4.1615130254310015,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 80.82746143031207,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "OFUHOQ",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 82.08837582279895,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 49.0039162003085,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 68.15882655777243,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 43.828087639732054,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QARXOY",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.98609990230634,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 92.8886397686383,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 41.31687296872848,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 90.92343725007473,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QIDVOP",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.470560261894597,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 56.44507262176806,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.517391496962134,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 47.860644986085916,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "MUQCEG",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.804222043027444,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.468908231400775,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 73.18981412680958,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 37.142742876353175,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JUYZOS",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 36.26456496419713,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.117253900504952,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.04877221800756,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.0009983763753,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "GAZGOG",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.309112457191134,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 27.02411302666089,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.403093527785717,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.45061373667411,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "NUNPIV",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 64.7528980866322,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.710936133548572,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.41456783074239,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.375492983797514,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "USIZAY01",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.93011184245256,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.236050174087325,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.81514876209404,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 29.977242644511573,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "VIRLAN",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.95545276001789,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 48.492669710743876,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 15.375583982135566,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.51545655497265,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "YEBJAU",
+   "sg": 29,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 63.469170862317476,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.416810880023895,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.3252839094940825,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.38027811568934,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "SALHAQ",
+   "sg": 61,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.62341194216126,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 72.63096121872996,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.27918881662315,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.839564022061623,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TOVKEY",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.55496136990482,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 74.38584172218135,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 3.19504168476102,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 8.404321523684434,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "HPENDO10",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 45.28543485765392,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 79.86822966327549,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 31.83437107983804,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.252264780691242,
+    "basin_best": false,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "NITYIA",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 95.41462130862743,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 86.74356638370202,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 33.319786960154076,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.025440542250614,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "CDECEA",
+   "sg": 43,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 40.92263103474076,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.763359684974393,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 22.475092633763797,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 51.83659372459872,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "ALOMOG",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 69.89551143727489,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.56191633396905,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 62.92823354043081,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.95826246455269,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "KUCLUT",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 77.22390143553754,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.96756276889893,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.15936347640164,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 60.64171160255315,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "LOWTOI",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.492347566119754,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 42.26430216887929,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 54.29338886339021,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 44.63047094266847,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "QULGUD",
+   "sg": 19,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 35.34590110573583,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 28.135837304654476,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 34.17284343654281,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 10.363049876688486,
+    "basin_best": true,
+    "basin_any": true
+   }
+  },
+  {
+   "refcode": "ERUGUU",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.86510410038675,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 71.35804618387138,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.116660589791742,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 100.89023370206492,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "UYEZEE",
+   "sg": 2,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 57.877213026557996,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.74452410774456,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 24.144841659400136,
+    "basin_best": true,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 58.31775339783465,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "AQIKIV",
+   "sg": 4,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 23.146302153690122,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 5.062041450985448,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 53.58459281246131,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.80530279652173,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "JAVMID",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 67.78334373834014,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 66.8251706506249,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": true,
+    "geo_min": 1.5405424438289117,
+    "basin_best": false,
+    "basin_any": true
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 84.71254133210702,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "EHOQIE",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 59.055728016897845,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 14.332270878868826,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 38.21798199134785,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 61.411938374877145,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "TMPENO",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 79.8886109477588,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.83727107951895,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 50.102422354710825,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 39.52263691527949,
+    "basin_best": false,
+    "basin_any": false
+   }
+  },
+  {
+   "refcode": "URINER",
+   "sg": 14,
+   "haar": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 55.17826377602746,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s0.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 21.188947522482888,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s1.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 52.20151365647958,
+    "basin_best": false,
+    "basin_any": false
+   },
+   "eval_s2.pt": {
+    "match1": false,
+    "matchS": false,
+    "geo_min": 46.914161767135155,
+    "basin_best": false,
+    "basin_any": false
+   }
+  }
+ ]
+}
