@@ -198,6 +198,9 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     args = ap.parse_args()
     warnings.filterwarnings("ignore")
+    # tensors sent to Pool workers default to one file descriptor each; with many queued crystals
+    # and dozens of workers that exceeds the fd limit (Errno 24) on rented boxes
+    torch.multiprocessing.set_sharing_strategy("file_system")
 
     items = torch.load(args.data, weights_only=False)["items"]
     elig = [it for it in items if asym_item(it) is not None]
