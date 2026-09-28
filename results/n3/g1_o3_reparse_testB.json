@@ -1,0 +1,710 @@
+{
+ "n_cifs": 4500,
+ "by_class": {
+  "centro": {
+   "total": 3155,
+   "kept_det1": 556,
+   "kept_o3": 2593,
+   "oracle_match": 2578
+  },
+  "sohncke": {
+   "total": 1114,
+   "kept_det1": 870,
+   "kept_o3": 879,
+   "oracle_match": 873
+  },
+  "other": {
+   "total": 231,
+   "kept_det1": 40,
+   "kept_o3": 181,
+   "oracle_match": 181
+  }
+ },
+ "by_sg": [
+  {
+   "sg": 14,
+   "hm": "P 1 21/c 1",
+   "class": "centro",
+   "total": 1701,
+   "kept_det1": 307,
+   "kept_o3": 1451,
+   "oracle_match": 1443
+  },
+  {
+   "sg": 2,
+   "hm": "P -1",
+   "class": "centro",
+   "total": 889,
+   "kept_det1": 146,
+   "kept_o3": 697,
+   "oracle_match": 691
+  },
+  {
+   "sg": 19,
+   "hm": "P 21 21 21",
+   "class": "sohncke",
+   "total": 581,
+   "kept_det1": 483,
+   "kept_o3": 485,
+   "oracle_match": 485
+  },
+  {
+   "sg": 4,
+   "hm": "P 1 21 1",
+   "class": "sohncke",
+   "total": 380,
+   "kept_det1": 283,
+   "kept_o3": 288,
+   "oracle_match": 284
+  },
+  {
+   "sg": 15,
+   "hm": "C 1 2/c 1",
+   "class": "centro",
+   "total": 260,
+   "kept_det1": 24,
+   "kept_o3": 209,
+   "oracle_match": 208
+  },
+  {
+   "sg": 61,
+   "hm": "P b c a",
+   "class": "centro",
+   "total": 163,
+   "kept_det1": 23,
+   "kept_o3": 126,
+   "oracle_match": 126
+  },
+  {
+   "sg": 33,
+   "hm": "P n a 21",
+   "class": "other",
+   "total": 85,
+   "kept_det1": 17,
+   "kept_o3": 74,
+   "oracle_match": 74
+  },
+  {
+   "sg": 29,
+   "hm": "P c a 21",
+   "class": "other",
+   "total": 46,
+   "kept_det1": 8,
+   "kept_o3": 37,
+   "oracle_match": 37
+  },
+  {
+   "sg": 5,
+   "hm": "C 1 2 1",
+   "class": "sohncke",
+   "total": 43,
+   "kept_det1": 31,
+   "kept_o3": 33,
+   "oracle_match": 33
+  },
+  {
+   "sg": 1,
+   "hm": "P 1",
+   "class": "sohncke",
+   "total": 40,
+   "kept_det1": 22,
+   "kept_o3": 22,
+   "oracle_match": 22
+  },
+  {
+   "sg": 9,
+   "hm": "C 1 c 1",
+   "class": "other",
+   "total": 38,
+   "kept_det1": 5,
+   "kept_o3": 28,
+   "oracle_match": 28
+  },
+  {
+   "sg": 60,
+   "hm": "P b c n",
+   "class": "centro",
+   "total": 31,
+   "kept_det1": 6,
+   "kept_o3": 26,
+   "oracle_match": 26
+  },
+  {
+   "sg": 62,
+   "hm": "P n m a",
+   "class": "centro",
+   "total": 23,
+   "kept_det1": 17,
+   "kept_o3": 21,
+   "oracle_match": 21
+  },
+  {
+   "sg": 7,
+   "hm": "P 1 c 1",
+   "class": "other",
+   "total": 22,
+   "kept_det1": 2,
+   "kept_o3": 12,
+   "oracle_match": 12
+  },
+  {
+   "sg": 18,
+   "hm": "P 21 21 2",
+   "class": "sohncke",
+   "total": 18,
+   "kept_det1": 14,
+   "kept_o3": 14,
+   "oracle_match": 13
+  },
+  {
+   "sg": 11,
+   "hm": "P 1 21/m 1",
+   "class": "centro",
+   "total": 14,
+   "kept_det1": 12,
+   "kept_o3": 13,
+   "oracle_match": 13
+  },
+  {
+   "sg": 13,
+   "hm": "P 1 2/c 1",
+   "class": "centro",
+   "total": 14,
+   "kept_det1": 4,
+   "kept_o3": 12,
+   "oracle_match": 12
+  },
+  {
+   "sg": 56,
+   "hm": "P c c n",
+   "class": "centro",
+   "total": 11,
+   "kept_det1": 1,
+   "kept_o3": 7,
+   "oracle_match": 7
+  },
+  {
+   "sg": 43,
+   "hm": "F d d 2",
+   "class": "other",
+   "total": 11,
+   "kept_det1": 1,
+   "kept_o3": 7,
+   "oracle_match": 7
+  },
+  {
+   "sg": 88,
+   "hm": "I 41/a",
+   "class": "centro",
+   "total": 8,
+   "kept_det1": 2,
+   "kept_o3": 6,
+   "oracle_match": 6
+  },
+  {
+   "sg": 148,
+   "hm": "R -3",
+   "class": "centro",
+   "total": 8,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 12,
+   "hm": "C 1 2/m 1",
+   "class": "centro",
+   "total": 7,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 20,
+   "hm": "C 2 2 21",
+   "class": "sohncke",
+   "total": 6,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 92,
+   "hm": "P 41 21 2",
+   "class": "sohncke",
+   "total": 6,
+   "kept_det1": 6,
+   "kept_o3": 6,
+   "oracle_match": 6
+  },
+  {
+   "sg": 96,
+   "hm": "P 43 21 2",
+   "class": "sohncke",
+   "total": 6,
+   "kept_det1": 5,
+   "kept_o3": 5,
+   "oracle_match": 5
+  },
+  {
+   "sg": 145,
+   "hm": "P 32",
+   "class": "sohncke",
+   "total": 5,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 144,
+   "hm": "P 31",
+   "class": "sohncke",
+   "total": 5,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 41,
+   "hm": "A b a 2",
+   "class": "other",
+   "total": 5,
+   "kept_det1": 0,
+   "kept_o3": 5,
+   "oracle_match": 5
+  },
+  {
+   "sg": 78,
+   "hm": "P 43",
+   "class": "sohncke",
+   "total": 5,
+   "kept_det1": 4,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 76,
+   "hm": "P 41",
+   "class": "sohncke",
+   "total": 4,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 64,
+   "hm": "C m c a",
+   "class": "centro",
+   "total": 4,
+   "kept_det1": 3,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 86,
+   "hm": "P 42/n",
+   "class": "centro",
+   "total": 4,
+   "kept_det1": 2,
+   "kept_o3": 4,
+   "oracle_match": 4
+  },
+  {
+   "sg": 167,
+   "hm": "R -3 c",
+   "class": "centro",
+   "total": 3,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 45,
+   "hm": "I b a 2",
+   "class": "other",
+   "total": 3,
+   "kept_det1": 0,
+   "kept_o3": 3,
+   "oracle_match": 3
+  },
+  {
+   "sg": 169,
+   "hm": "P 61",
+   "class": "sohncke",
+   "total": 3,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 146,
+   "hm": "R 3",
+   "class": "sohncke",
+   "total": 3,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 154,
+   "hm": "P 32 2 1",
+   "class": "sohncke",
+   "total": 3,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 70,
+   "hm": "F d d d",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 8,
+   "hm": "C 1 m 1",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 82,
+   "hm": "I -4",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 1,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 170,
+   "hm": "P 65",
+   "class": "sohncke",
+   "total": 2,
+   "kept_det1": 2,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 205,
+   "hm": "P a -3",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 161,
+   "hm": "R 3 c",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 36,
+   "hm": "C m c 21",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 114,
+   "hm": "P -4 21 c",
+   "class": "other",
+   "total": 2,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 52,
+   "hm": "P n n a",
+   "class": "centro",
+   "total": 2,
+   "kept_det1": 1,
+   "kept_o3": 2,
+   "oracle_match": 2
+  },
+  {
+   "sg": 73,
+   "hm": "I b c a",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 39,
+   "hm": "A b m 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 72,
+   "hm": "I b a m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 34,
+   "hm": "P n n 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 152,
+   "hm": "P 31 2 1",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 124,
+   "hm": "P 4/m c c",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 160,
+   "hm": "R 3 m",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 32,
+   "hm": "P b a 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 142,
+   "hm": "I 41/a c d",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 30,
+   "hm": "P n c 2",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 81,
+   "hm": "P -4",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 85,
+   "hm": "P 4/n",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 57,
+   "hm": "P b c m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 159,
+   "hm": "P 3 1 c",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 158,
+   "hm": "P 3 c 1",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 50,
+   "hm": "P b a n",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 63,
+   "hm": "C m c m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 94,
+   "hm": "P 42 21 2",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 217,
+   "hm": "I -4 3 m",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 104,
+   "hm": "P 4 n c",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 198,
+   "hm": "P 21 3",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 0
+  },
+  {
+   "sg": 55,
+   "hm": "P b a m",
+   "class": "centro",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  },
+  {
+   "sg": 155,
+   "hm": "R 3 2",
+   "class": "sohncke",
+   "total": 1,
+   "kept_det1": 0,
+   "kept_o3": 0,
+   "oracle_match": 0
+  },
+  {
+   "sg": 31,
+   "hm": "P m n 21",
+   "class": "other",
+   "total": 1,
+   "kept_det1": 1,
+   "kept_o3": 1,
+   "oracle_match": 1
+  }
+ ],
+ "copies": 17975,
+ "mirror_copies": 6820,
+ "oracle_fail_refcodes": [
+  "CIDQIP",
+  "CIHPIU",
+  "DOJKOG",
+  "EKECOM05",
+  "EKUGIE",
+  "HABREL",
+  "HEFMEN",
+  "LIBDIN",
+  "OZETIY",
+  "RABZII",
+  "REBXEC",
+  "RIJNED",
+  "RUTREF",
+  "TEZJOZ",
+  "VIQNAL",
+  "WECTOQ",
+  "XADYIP",
+  "XAGWUC",
+  "XOJJEN",
+  "XOVKIF",
+  "ZENNIP"
+ ],
+ "skip_reasons": [
+  [
+   "conformer",
+   739
+  ],
+  [
+   "Z'",
+   103
+  ],
+  [
+   "molecule has 104 > max_atoms",
+   1
+  ],
+  [
+   "molecule has 76 > max_atoms",
+   1
+  ],
+  [
+   "molecule has 65 > max_atoms",
+   1
+  ],
+  [
+   "error",
+   1
+  ],
+  [
+   "molecule has 120 > max_atoms",
+   1
+  ]
+ ]
+}

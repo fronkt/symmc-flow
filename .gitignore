@@ -22,6 +22,14 @@ data/csd_mol_scale/*
 !data/csd_mol_scale/manifest.csv
 data/csd_mol_scale_big/*
 !data/csd_mol_scale_big/manifest.csv
+# N3 fresh held-out test pool (rows 3501-8000 of csd_mol_scale_big): CSD CIFs, never committed
+data/csd_testB/*
+!data/csd_testB/manifest.csv
+# N3 third-party inputs: MolCrystalFlow fork (our diff ships as patches/), UMA weights (gated licence),
+# OMC25 crystal list; and N3 exports/draws/checkpoints (CSD-derived)
+external/
+n3_mcf/
+results/n3/private/
 .DS_Store
 
 # Generated intermediate: build_docx.py rewrites main.tex for pandoc. Do not edit.

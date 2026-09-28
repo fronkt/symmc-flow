@@ -141,6 +141,15 @@ once per final configuration and never used to choose anything.
   -> the G2 checkpoints stay the model of record. Files: results/n2_*.json (ckpts local only, CSD-trained). Multi-draw loss per step (several (R0,t) pairs per crystal
   through the batched forward), cosine LR schedule, more epochs; select checkpoint on VAL loss AND
   val ranked match; re-score TEST with the N1 selector frozen.
-- [ ] **N3 — G3 benchmark** on the same test split: new model, MolCrystalFlow retrained on our split
-  (its public driver is homochiral: report the centrosymmetric-with-chiral-conformer subset separately),
-  classical random+press, old symmc-flow.
+- [ ] **N3 — G3 benchmark** (was: new model / MolCrystalFlow retrained / classical / old symmc-flow on the
+  same test split). **Pre-registered protocol: `tasks/n3_protocol.md` (v3, frozen 2026-09-28 after three
+  hostile review rounds).** Key changes from this line:
+  - The task is stated as orientation completion (oracle lattice + ops + c0), not CSP.
+  - The confirmatory test set is a FRESH TEST-B of ≈1000 crystals from the unused 4,500 CIFs of the same
+    seed-0 CSD stream. The 200-crystal split becomes DEV-TEST, secondary, with disclosure.
+  - Comparators:
+    - H1: MCF-R and MCF-R+G (lattice and centroids held at truth, plus a gauge scan);
+    - H2: a UMA-OMC physics search;
+    - H3: the old architecture on O(3) items.
+  - Statistics: a crystal-level exact sign-flip test with Holm.
+  - The homochiral-driver note applies only to MCF's CSP driver (Table R), not to any arm.

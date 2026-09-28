@@ -654,3 +654,8 @@ also fix MoML stale title + verify page count. LaTeX installed locally (MiKTeX 2
 ## 2026-09-25: ACS Omega reject + resubmit (window to 2027-01-22)
 - Plan + gates in `tasks/omega_rebuild_plan.md`. Measured: centro survival 18.1% vs Sohncke 74.1%
   (det+1 Kabsch drops enantiomeric copies). G0 comparator check in progress.
+- 2026-09-28: N3/G3 benchmark protocol pre-registered in `tasks/n3_protocol.md` (v3). Next steps are in
+  its §7:
+  - A1 build of the fresh TEST-B;
+  - local implementation and gates;
+  - a timing gate, whose cost projection needs Frank's approval before the full Vast run.
