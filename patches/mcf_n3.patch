@@ -1,0 +1,498 @@
+diff --git a/data-preprocess/thurlemann23/common.py b/data-preprocess/thurlemann23/common.py
+index 45a45a2..bf6c533 100644
+--- a/data-preprocess/thurlemann23/common.py
++++ b/data-preprocess/thurlemann23/common.py
+@@ -45,6 +45,10 @@ ATOM_TYPE_TO_IDX: Dict[int, int] = {
+     53: 9,   # I
+     5: 10,   # B
+     14: 11,  # Si
++    12: 12,  # Mg  (N3 patch P1)
++    33: 13,  # As  (N3 patch P1)
++    34: 14,  # Se  (N3 patch P1)
++    52: 15,  # Te  (N3 patch P1)
+ }
+ 
+ # Inverse mapping: model input index → atomic number
+diff --git a/molcrystalflow/data/dataset.py b/molcrystalflow/data/dataset.py
+index 129ac60..10372b3 100644
+--- a/molcrystalflow/data/dataset.py
++++ b/molcrystalflow/data/dataset.py
+@@ -23,6 +23,10 @@ ATOM_TYPE_TO_IDX = {
+     53: 9,  # I
+     5: 10,  # B
+     14: 11, # Si
++    12: 12, # Mg  (N3 patch P1)
++    33: 13, # As  (N3 patch P1)
++    34: 14, # Se  (N3 patch P1)
++    52: 15, # Te  (N3 patch P1)
+ }
+ 
+ 
+diff --git a/molcrystalflow/data/interpolant.py b/molcrystalflow/data/interpolant.py
+index 0f0afff..fb5a5bb 100644
+--- a/molcrystalflow/data/interpolant.py
++++ b/molcrystalflow/data/interpolant.py
+@@ -87,6 +87,29 @@ def _symmetric_so3(num_batch, num_bbs, device):
+     return rotations
+ 
+ 
++_P6_MIRROR = ((1.0, 1.0, 1.0), (-1.0, -1.0, 1.0), (-1.0, 1.0, -1.0), (1.0, -1.0, -1.0))
++
++
++def _symmetric_so3_vec(num_batch, num_bbs, device):
++    """N3 patch P6 (opt-in, key interpolant.rots.p6_vectorized_prior): _symmetric_so3 without the
++    per-copy Python loop. Same numpy draws (one Rotation.random call), same float32 rotvecs, one
++    batched Rotation.from_rotvec; must be bit-identical to _symmetric_so3 under a fixed numpy seed."""
++    axis_angles = torch.tensor(
++        Rotation.random(num_bbs.shape[0]).as_rotvec(),
++        device=device,
++        dtype=torch.float32,
++    )
++    angles = axis_angles.norm(dim=1, keepdim=True)
++    axes = axis_angles / (angles + 1e-8)
++    counts = [int(n) for n in num_bbs.tolist()]
++    crystal = torch.repeat_interleave(torch.arange(len(counts)), torch.tensor(counts, dtype=torch.long)).to(axes.device)
++    copy = torch.cat([torch.arange(n) % 4 for n in counts]).to(axes.device)
++    mirror = torch.tensor(_P6_MIRROR, dtype=torch.float32, device=axes.device)
++    rotvec = (axes[crystal] * mirror[copy]) * angles[crystal]
++    R = Rotation.from_rotvec(rotvec.cpu().numpy()).as_matrix()
++    return torch.tensor(R, dtype=torch.float32, device=device)
++
++
+ class Interpolant:
+ 
+     def __init__(self, cfg):
+@@ -318,7 +341,8 @@ class Interpolant:
+         """
+         # Generate rotations based on prior type
+         if prior_type == 'symmetric':
+-            rotmats_0 = _symmetric_so3(rotmats_1.shape[0], num_bbs, self._device)
++            sym_prior = _symmetric_so3_vec if getattr(self._rots_cfg, 'p6_vectorized_prior', False) else _symmetric_so3
++            rotmats_0 = sym_prior(rotmats_1.shape[0], num_bbs, self._device)
+         elif prior_type == 'uniform':
+             rotmats_0 = _uniform_so3(rotmats_1.shape[0], num_bbs, self._device)
+         else:
+@@ -418,6 +442,7 @@ class Interpolant:
+                 trans_1, batch_vec, batch.num_bbs, t_repeat, self._trans_cfg.prior_type, self._trans_cfg.batch_ot, axis_flips)
+         else:
+             trans_t = trans_1
++            b_trans = torch.zeros_like(trans_1)  # N3 patch P2: was unbound when trans.corrupt=False
+         if torch.any(torch.isnan(trans_t)):
+             raise ValueError('NaN in trans_t during corruption')
+         noisy_batch['trans_t'] = trans_t
+diff --git a/molcrystalflow/data/utils.py b/molcrystalflow/data/utils.py
+index 6e55031..767ff56 100644
+--- a/molcrystalflow/data/utils.py
++++ b/molcrystalflow/data/utils.py
+@@ -23,6 +23,10 @@ ATOM_TYPE_TO_IDX = {
+     53: 9,  # I
+     5: 10,  # B
+     14: 11, # Si
++    12: 12, # Mg  (N3 patch P1)
++    33: 13, # As  (N3 patch P1)
++    34: 14, # Se  (N3 patch P1)
++    52: 15, # Te  (N3 patch P1)
+     # Add more elements as needed
+ }
+ 
+diff --git a/molcrystalflow/experiments/inference.py b/molcrystalflow/experiments/inference.py
+index 8d9cd10..d6a327d 100644
+--- a/molcrystalflow/experiments/inference.py
++++ b/molcrystalflow/experiments/inference.py
+@@ -50,7 +50,7 @@ class EvalRunner:
+             log.info(f'Setting seed to {self._infer_cfg.seed}')
+             self._set_seed(self._infer_cfg.seed)
+ 
+-        self.device = GPUtil.getAvailable(order='memory')[0]
++        self.device = 0  # N3 patch P4: was GPUtil.getAvailable(order='memory')[0]
+ 
+         # Set-up output directory only on rank 0
+         local_rank = os.environ.get('LOCAL_RANK', 0)
+@@ -97,8 +97,7 @@ class EvalRunner:
+ 
+     def run_sampling(self):
+         """Run inference on the test dataset."""
+-        devices = GPUtil.getAvailable(
+-            order='memory', limit=8)[:self._infer_cfg.num_gpus]
++        devices = [0]  # N3 patch P4: was GPUtil.getAvailable(order='memory', limit=8)[:num_gpus]
+         log.info(f"Using devices: {devices}")
+         log.info(f'Evaluating {self._infer_cfg.task}')
+ 
+diff --git a/molcrystalflow/experiments/train.py b/molcrystalflow/experiments/train.py
+index a1fd584..5292e52 100644
+--- a/molcrystalflow/experiments/train.py
++++ b/molcrystalflow/experiments/train.py
+@@ -8,7 +8,7 @@ import numpy as np
+ import torch
+ import wandb
+ from omegaconf import DictConfig, OmegaConf
+-from pytorch_lightning import LightningDataModule, LightningModule, Trainer
++from pytorch_lightning import LightningDataModule, LightningModule, Trainer, seed_everything
+ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
+ from pytorch_lightning.loggers.wandb import WandbLogger
+ 
+@@ -45,6 +45,8 @@ class Experiment:
+         self._train_device_ids = eu.get_available_device(self._exp_cfg.num_devices)
+         log.info(f"Training with devices: {self._train_device_ids}")
+ 
++        if self._exp_cfg.seed is not None:  # N3 patch P5: seed BEFORE the model's weights are initialised
++            seed_everything(self._exp_cfg.seed)
+         self._module: LightningModule = FlowModule(self._cfg)
+ 
+         if self._exp_cfg.seed is not None:
+diff --git a/molcrystalflow/experiments/utils.py b/molcrystalflow/experiments/utils.py
+index e751718..c5c3b19 100644
+--- a/molcrystalflow/experiments/utils.py
++++ b/molcrystalflow/experiments/utils.py
+@@ -15,7 +15,7 @@ def get_available_device(num_device: int) -> list:
+     Returns:
+         List of device IDs.
+     """
+-    return GPUtil.getAvailable(order='memory', limit=8)[:num_device]
++    return [0]  # N3 patch P4: was GPUtil.getAvailable(order='memory', limit=8)[:num_device]
+ 
+ 
+ def get_pylogger(name: str = __name__) -> logging.Logger:
+diff --git a/molcrystalflow/models/bb_embedder.py b/molcrystalflow/models/bb_embedder.py
+index 4da0d5d..1bb0d6c 100644
+--- a/molcrystalflow/models/bb_embedder.py
++++ b/molcrystalflow/models/bb_embedder.py
+@@ -4,6 +4,7 @@ from torch_geometric.nn.pool import (
+     radius_graph,
+     global_mean_pool
+ )
++from torch_geometric.utils import scatter as pyg_scatter, softmax as pyg_softmax  # N3 patch P6
+ 
+ from molcrystalflow.data import utils as du
+ from molcrystalflow.models.egnn import E_GCL
+@@ -24,9 +25,10 @@ class GaussianSmearing(nn.Module):
+ class AttentionPooling(nn.Module):
+     """Hierarchical attention pooling for building block embeddings."""
+     
+-    def __init__(self, node_dim, hidden_dim=128, use_coordinates=True):
++    def __init__(self, node_dim, hidden_dim=128, use_coordinates=True, p6_scatter=False):
+         super().__init__()
+         self.use_coordinates = use_coordinates
++        self.p6_scatter = p6_scatter  # N3 patch P6 (opt-in): scatter-softmax instead of per-group loops
+         
+         # Input dimension includes node features and optionally coordinate norms (1D)
+         input_dim = node_dim + (1 if use_coordinates else 0)
+@@ -62,6 +64,10 @@ class AttentionPooling(nn.Module):
+         attention_scores = self.attention_net(attention_input)  # [N, 1]
+         attention_scores = attention_scores.squeeze(-1)  # [N]
+         
++        if self.p6_scatter:  # P6: same math, vectorised (index is 0..M-1 contiguous here)
++            attention_weights = pyg_softmax(attention_scores, batch)
++            return pyg_scatter(node_features * attention_weights.unsqueeze(-1), batch, dim=0, reduce='sum')
++        
+         # Apply softmax within each building block
+         attention_weights = self._scatter_softmax(attention_scores, batch)
+         
+@@ -145,7 +151,8 @@ class BuildingBlockEmbedder(nn.Module):
+             self.attention_pooling = AttentionPooling(
+                 node_dim=bb_cfg.c_node_dim,
+                 hidden_dim=self.attention_hidden_dim,
+-                use_coordinates=self.attention_use_coords
++                use_coordinates=self.attention_use_coords,
++                p6_scatter=bool(getattr(bb_cfg, 'p6_scatter_pooling', False)),  # N3 patch P6 (default off)
+             )
+ 
+     @staticmethod
+diff --git a/molcrystalflow/models/molcrystalflow.py b/molcrystalflow/models/molcrystalflow.py
+index 87cf2b3..4e23e7c 100644
+--- a/molcrystalflow/models/molcrystalflow.py
++++ b/molcrystalflow/models/molcrystalflow.py
+@@ -13,6 +13,7 @@ from molcrystalflow.data import utils as du
+ from molcrystalflow.data.interpolant import (
+     Interpolant,
+     _symmetric_so3,
++    _symmetric_so3_vec,
+     _uniform_cell_trans,
+     _uniform_so3,
+ )
+@@ -296,6 +297,8 @@ class FlowModule(LightningModule):
+         all_pred_rotmats = []
+ 
+         save_trajectories = getattr(self._inference_cfg, 'save_trajectories', True)
++        # N3 patch P3: hold lattice and centroids at the truth (inference.gt_lattice_trans); rotations untouched
++        gt_lattice_trans = bool(getattr(self._inference_cfg, 'gt_lattice_trans', False))
+         all_traj_lattices = []
+         all_traj_trans = []
+         all_traj_rotmats = []
+@@ -314,7 +317,9 @@ class FlowModule(LightningModule):
+                 if self._interpolant_cfg.rots.prior_type == 'uniform':
+                     rotmats_0 = _uniform_so3(len(batch_vec), num_bbs, self.device)
+                 elif self._interpolant_cfg.rots.prior_type == 'symmetric':
+-                    rotmats_0 = _symmetric_so3(len(batch_vec), num_bbs, self.device)
++                    sym_prior = _symmetric_so3_vec if getattr(
++                        self._interpolant_cfg.rots, 'p6_vectorized_prior', False) else _symmetric_so3
++                    rotmats_0 = sym_prior(len(batch_vec), num_bbs, self.device)
+                 else:
+                     raise ValueError(
+                         f"Unknown prior type: {self._interpolant_cfg.rots.prior_type}. "
+@@ -327,6 +332,10 @@ class FlowModule(LightningModule):
+                 lattice_params_0 = torch.cat([lengths_0, angles_0], dim=-1)
+                 lattice_0 = lattice6_to_mat33(lattice_params_0)
+ 
++            if gt_lattice_trans:  # P3: start from the truth (priors are still drawn, so RNG use is unchanged)
++                trans_0 = batch['trans_1'].clone()
++                lattice_0 = batch['lattice_1'].clone()
++
+             # Set up time grid
+             if num_timesteps is None:
+                 num_timesteps = self._interpolant_cfg.sampling.num_timesteps
+@@ -370,6 +379,9 @@ class FlowModule(LightningModule):
+                 lattice_t_2 = self.interpolant._trans_euler_step(
+                     d_t, t_1, pred_lattice_1, lattice_t_1, scaling=0
+                 )
++                if gt_lattice_trans:  # P3: overwrite with the truth after every Euler step
++                    trans_t_2 = batch['trans_1'].clone()
++                    lattice_t_2 = batch['lattice_1'].clone()
+ 
+                 mc_traj.append((trans_t_2, rotmats_t_2, lattice_t_2))
+ 
+@@ -399,6 +411,9 @@ class FlowModule(LightningModule):
+                 )
+             pred_rotmats_1 = model_out['pred_rotmats']
+             pred_lattice_1 = model_out['pred_lattice']
++            if gt_lattice_trans:  # P3: final assembly uses the true lattice and centroids
++                pred_trans_1 = batch['trans_1'].clone()
++                pred_lattice_1 = batch['lattice_1'].clone()
+             batch_vec = batch['batch']                 # [num_bbs], values in 0..num_samples-1
+ 
+             # Gather the correct lattice for each building block
+diff --git a/molcrystalflow/configs/ours_inference_A.yaml b/molcrystalflow/configs/ours_inference_A.yaml
+new file mode 100644
+index 0000000..f4f2eba
+--- /dev/null
++++ b/molcrystalflow/configs/ours_inference_A.yaml
+@@ -0,0 +1,52 @@
++# N3 MCF-A sampling (symmc-flow tasks/n3_protocol.md sec. 3.2 "(ii-A)"). inference.py merges this launch config
++# OVER the checkpoint's config.yaml, so it composes ours_molcrystal_A (refit lattice prior, 16 atom types).
++# Keys that differ per call interpolate to n3_set_on_command_line and raise if not set. Every call:
++# (one visible GPU: run_sampling's Trainer(strategy='ddp', devices='auto') would shard the set across GPUs)
++#   CUDA_VISIBLE_DEVICES=<one GPU> N3_ROOT=<symmc-flow> python molcrystalflow/experiments/inference.py --config-name=ours_inference_A \
++#     inference.ckpt_path=<ckpt> data.cache_dir=<n3_mcf/valsel_as_test|test|devtest> inference.num_samples=16 \
++#     interpolant.sampling.num_timesteps=50 interpolant.rots.sample_schedule=exp interpolant.rots.exp_rate=<s_uR> \
++#     interpolant.trans.scaling=<s_uF> inference.output_dir=<unique> inference.inference_dir=<unique> \
++#     inference.save_trajectories=False data.loader.num_workers=4 inference.seed=<200000 + 1000 s + split>
++defaults:
++  - ours_molcrystal_A
++  - _self_
++
++n3_set_on_command_line: ???
++
++data:
++  cache_dir: ${n3_set_on_command_line}
++  loader:
++    num_workers: 4
++
++interpolant:
++  rots:
++    sample_schedule: exp
++    exp_rate: ${n3_set_on_command_line}
++  trans:
++    scaling: ${n3_set_on_command_line}
++  sampling:
++    num_timesteps: 50
++
++# training seed / run name: not recorded here (this merge would overwrite the checkpoint's own values);
++# they are read from <ckpt_dir>/config.yaml
++experiment:
++  seed: null
++  wandb:
++    name: null
++
++inference:
++  inference_dir: ${n3_set_on_command_line}
++  name: n3_mcfA_inference
++  seed: ${n3_set_on_command_line}
++  task: null
++  output_dir: ${n3_set_on_command_line}
++  ckpt_path: ${n3_set_on_command_line}
++  use_gpu: True
++  num_gpus: 1
++  num_samples: 16
++  save_trajectories: False
++  gt_lattice_trans: false         # MCF-A generates lattice and centroids
++
++hydra:
++  run:
++    dir: ${inference.inference_dir}
+diff --git a/molcrystalflow/configs/ours_inference_R.yaml b/molcrystalflow/configs/ours_inference_R.yaml
+new file mode 100644
+index 0000000..da5448e
+--- /dev/null
++++ b/molcrystalflow/configs/ours_inference_R.yaml
+@@ -0,0 +1,54 @@
++# N3 MCF-R sampling (symmc-flow tasks/n3_protocol.md sec. 3.2 "Sampling harness"). inference.py merges this
++# launch config OVER the checkpoint's config.yaml, so it composes ours_molcrystal_R (never the stock
++# inference.yaml). Keys that differ per call interpolate to n3_set_on_command_line and raise if not set:
++# merging a plain '???' would silently keep the checkpoint's value. Every call:
++# (one visible GPU: run_sampling's Trainer(strategy='ddp', devices='auto') would shard the set across GPUs)
++#   CUDA_VISIBLE_DEVICES=<one GPU> N3_ROOT=<symmc-flow> python molcrystalflow/experiments/inference.py --config-name=ours_inference_R \
++#     inference.ckpt_path=<ckpt> data.cache_dir=<n3_mcf/valsel_as_test|test|devtest> inference.num_samples=16 \
++#     interpolant.sampling.num_timesteps=50 interpolant.rots.sample_schedule=exp interpolant.rots.exp_rate=<s_uR> \
++#     interpolant.trans.scaling=9 ++inference.gt_lattice_trans=true inference.output_dir=<unique> \
++#     inference.inference_dir=<unique> inference.save_trajectories=False data.loader.num_workers=4 \
++#     inference.seed=<100000 + 1000 s + split>
++defaults:
++  - ours_molcrystal_R
++  - _self_
++
++n3_set_on_command_line: ???
++
++data:
++  cache_dir: ${n3_set_on_command_line}
++  loader:
++    num_workers: 4
++
++interpolant:
++  rots:
++    sample_schedule: exp
++    exp_rate: ${n3_set_on_command_line}
++  trans:
++    scaling: 9
++  sampling:
++    num_timesteps: 50
++
++# training seed / run name: not recorded here (this merge would overwrite the checkpoint's own values);
++# they are read from <ckpt_dir>/config.yaml
++experiment:
++  seed: null
++  wandb:
++    name: null
++
++inference:
++  inference_dir: ${n3_set_on_command_line}
++  name: n3_mcfR_inference
++  seed: ${n3_set_on_command_line}
++  task: null
++  output_dir: ${n3_set_on_command_line}
++  ckpt_path: ${n3_set_on_command_line}
++  use_gpu: True
++  num_gpus: 1
++  num_samples: 16
++  save_trajectories: False
++  gt_lattice_trans: true          # P3 (the call also passes ++inference.gt_lattice_trans=true)
++
++hydra:
++  run:
++    dir: ${inference.inference_dir}
+diff --git a/molcrystalflow/configs/ours_lattice.yaml b/molcrystalflow/configs/ours_lattice.yaml
+new file mode 100644
+index 0000000..437e816
+--- /dev/null
++++ b/molcrystalflow/configs/ours_lattice.yaml
+@@ -0,0 +1,13 @@
++# N3 MCF-A lattice prior (tasks/n3_protocol.md sec. 3.2 'MCF lattice-prior refit'): MCF's
++# data-preprocess/lattice_fit.compute_lattice_stats on the standardized TRAIN cells written by
++# scripts/n3_mcf_export.py --set train (n = 1687; primitive cell for centred crystals). Do not edit.
++lattice:
++  lognormal:
++    loc:
++      - 2.0136725562262776
++      - 2.3904593487791086
++      - 2.794985732695032
++    scale:
++      - 0.2513106062302518
++      - 0.22355839347865547
++      - 0.2958515304788396
+diff --git a/molcrystalflow/configs/ours_molcrystal_A.yaml b/molcrystalflow/configs/ours_molcrystal_A.yaml
+new file mode 100644
+index 0000000..ef25459
+--- /dev/null
++++ b/molcrystalflow/configs/ours_molcrystal_A.yaml
+@@ -0,0 +1,32 @@
++# N3 MCF-A (symmc-flow tasks/n3_protocol.md sec. 3.2 "(ii-A)"): released joint objective = molcrystal.yaml +
++# P1 vocabulary, our paths, the refit lattice prior (ours_lattice.yaml, written by scripts/n3_mcf_export.py),
++# and the same step budget / patience conversion as MCF-R. Seed (mandatory: a call without it raises)
++# and run name on the command line:
++#   WANDB_MODE=offline N3_ROOT=<symmc-flow> python molcrystalflow/experiments/train.py \
++#     --config-name=ours_molcrystal_A experiment.seed=<s> experiment.wandb.name=n3_mcfA_s<s>
++defaults:
++  - molcrystal
++  - ours_paths
++  - ours_lattice
++  - _self_
++
++# a plain '???' would not override molcrystal.yaml's 123 (Hydra merges keep the value); an interpolation does
++n3_set_on_command_line: ???
++
++model:
++  bb_embedder:
++    num_atom_types: 16            # P1: Mg, As, Se, Te -> 12-15
++    p6_scatter_pooling: false     # P6 (opt-in; only after its box gate passes)
++
++interpolant:
++  rots:
++    p6_vectorized_prior: false    # P6 (opt-in; only after its box gate passes)
++
++experiment:
++  seed: ${n3_set_on_command_line}  # mandatory: experiment.seed=<s> (the released 123 is never used)
++  trainer:
++    max_epochs: 1715              # 24,010 optimizer steps at ceil(1687/128) = 14 steps per epoch
++  lr_scheduler:
++    patience: 61                  # 62 x 14 = 868 steps (MCF's run: 11 x 79 = 869)
++  wandb:
++    name: n3_mcfA_s${experiment.seed}
+diff --git a/molcrystalflow/configs/ours_molcrystal_R.yaml b/molcrystalflow/configs/ours_molcrystal_R.yaml
+new file mode 100644
+index 0000000..56664a0
+--- /dev/null
++++ b/molcrystalflow/configs/ours_molcrystal_R.yaml
+@@ -0,0 +1,39 @@
++# N3 MCF-R (symmc-flow tasks/n3_protocol.md sec. 3.2 "(ii-R)"): released molcrystal.yaml + P1 vocabulary,
++# our paths, the refit lattice prior (unused by R: lattice.corrupt=False and P3 clamps inference), and the
++# protocol's training overrides. Seed and run name are set on the command line (experiment.seed is
++# mandatory: a call without it raises instead of silently training the released seed 123):
++#   WANDB_MODE=offline N3_ROOT=<symmc-flow> python molcrystalflow/experiments/train.py \
++#     --config-name=ours_molcrystal_R experiment.seed=<s> experiment.wandb.name=n3_mcfR_s<s>
++defaults:
++  - molcrystal
++  - ours_paths
++  - ours_lattice
++  - _self_
++
++# a plain '???' would not override molcrystal.yaml's 123 (Hydra merges keep the value); an interpolation does
++n3_set_on_command_line: ???
++
++model:
++  bb_embedder:
++    num_atom_types: 16            # P1: Mg, As, Se, Te -> 12-15
++    p6_scatter_pooling: false     # P6 (opt-in; only after its box gate passes)
++
++interpolant:
++  rots:
++    p6_vectorized_prior: false    # P6 (opt-in; only after its box gate passes)
++  trans:
++    corrupt: false
++  lattice:
++    corrupt: false
++
++experiment:
++  seed: ${n3_set_on_command_line}  # mandatory: experiment.seed=<s> (the released 123 is never used)
++  training:
++    translation_loss_weight: 0
++    cell_loss_weight: 0
++  trainer:
++    max_epochs: 1715              # 24,010 optimizer steps at ceil(1687/128) = 14 steps per epoch
++  lr_scheduler:
++    patience: 61                  # 62 x 14 = 868 steps (MCF's run: 11 x 79 = 869)
++  wandb:
++    name: n3_mcfR_s${experiment.seed}
+diff --git a/molcrystalflow/configs/ours_paths.yaml b/molcrystalflow/configs/ours_paths.yaml
+new file mode 100644
+index 0000000..3556d44
+--- /dev/null
++++ b/molcrystalflow/configs/ours_paths.yaml
+@@ -0,0 +1,9 @@
++# N3 (symmc-flow tasks/n3_protocol.md sec. 3.2): absolute paths. N3_ROOT = the symmc-flow checkout (env var,
++# set by the launcher); everything CSD-derived lives under its gitignored n3_mcf/.
++paths:
++  root_dir: ${oc.env:N3_ROOT}/n3_mcf
++  log_dir: ${paths.root_dir}/runs/${experiment.wandb.name}
++  wandb_dir: ${paths.root_dir}/runs
++  ckpt_dir: ${paths.log_dir}/ckpt
++  inference_dir: ${paths.log_dir}/inference
++  data_dir: ${paths.root_dir}/trainval

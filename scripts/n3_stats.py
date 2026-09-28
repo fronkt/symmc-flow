@@ -26,13 +26,35 @@ def signflip_p(d, denom=DENOM):
     if u.size == 0:
         return 1.0
     t_obs = abs(int(to_units(d, denom).sum()))
+    g = int(np.gcd.reduce(u))                   # exact rescaling: every attainable sum is a multiple of g
+    u = u // g
+    t_obs = t_obs / g
     total = int(u.sum())
-    # distribution of sum of +-u_j with prob 1/2 each, over support [-total, total]
+    # distribution of sum of +-u_j with prob 1/2 each, over support [-total, total]; the c elements of
+    # equal magnitude v contribute v * (2B - c) with B ~ Binomial(c, 1/2), i.e. one dilated binomial kernel
+    from scipy.stats import binom
+    dist = np.ones(1)
+    for v, cnt in zip(*np.unique(u, return_counts=True)):
+        v, cnt = int(v), int(cnt)
+        ker = np.zeros(2 * v * cnt + 1)
+        ker[::2 * v] = binom.pmf(np.arange(cnt + 1), cnt, 0.5)
+        dist = np.convolve(dist, ker)
+    support = np.arange(-total, total + 1)
+    return float(min(1.0, dist[np.abs(support) >= t_obs - 1e-9].sum()))
+
+
+def _signflip_p_slow(d, denom=DENOM):
+    """Reference implementation (one +-v step per element); used only to test signflip_p."""
+    u = to_units(d, denom)
+    t_obs = abs(int(u.sum()))
+    u = np.abs(u[u != 0])
+    if u.size == 0:
+        return 1.0
+    total = int(u.sum())
     dist = np.zeros(2 * total + 1)
     dist[total] = 1.0
-    for v, cnt in zip(*np.unique(u, return_counts=True)):
-        for _ in range(cnt):
-            dist = 0.5 * (np.roll(dist, v) + np.roll(dist, -v))
+    for v in u:
+        dist = 0.5 * (np.roll(dist, int(v)) + np.roll(dist, -int(v)))
     support = np.arange(-total, total + 1)
     return float(min(1.0, dist[np.abs(support) >= t_obs - 1e-9].sum()))
 
@@ -127,6 +149,12 @@ def _selftest():
         n10, n01 = int(((a == 1) & (b == 0)).sum()), int(((a == 0) & (b == 1)).sum())
         p_mc = binomtest(n10, n10 + n01, 0.5).pvalue if n10 + n01 else 1.0
         assert abs(signflip_p(d) - p_mc) < 1e-9, (signflip_p(d), p_mc)
+    # grouped-binomial convolution == element-by-element reference on seed means and RANDOM expectations
+    for _ in range(30):
+        n = int(rng.integers(20, 300))
+        a = rng.integers(0, 49, n) / 48 * (rng.random(n) < 0.3)
+        b = rng.integers(0, 4, n) / 3 * (rng.random(n) < 0.3)
+        assert abs(signflip_p(a - b) - _signflip_p_slow(a - b)) < 1e-10
     assert np.allclose(holm([0.01, 0.04, 0.03]), [0.03, 0.06, 0.06])
     print("n3_stats selftest ok")
 

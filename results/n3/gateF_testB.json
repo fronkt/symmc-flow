@@ -1,0 +1,146 @@
+{
+ "set": "testB",
+ "protocol": "tasks/n3_protocol.md \u00a73.2 Gate F",
+ "mcf_base": "3c493f8",
+ "p1_maps_patched": {
+  "common": true,
+  "dataset": true,
+  "utils": true
+ },
+ "n": 1000,
+ "complete": true,
+ "export_failure_refcodes": [],
+ "export_failure_reasons": {},
+ "centred": 85,
+ "mult": {
+  "1": 915,
+  "2": 83,
+  "4": 2
+ },
+ "z_MCF": {
+  "1": 5,
+  "2": 270,
+  "3": 1,
+  "4": 676,
+  "6": 1,
+  "8": 47
+ },
+ "K_z": {
+  "K16_z4": 2,
+  "K16_z8": 3,
+  "K1_z1": 5,
+  "K2_z2": 251,
+  "K3_z3": 1,
+  "K4_z2": 19,
+  "K4_z4": 613,
+  "K6_z6": 1,
+  "K8_z4": 61,
+  "K8_z8": 44
+ },
+ "detQ_negative": 378,
+ "primitive_length_tie": {
+  "exact": 14,
+  "near": 10
+ },
+ "gate_check_errors": {},
+ "F1": {
+  "n_set": 1000,
+  "n_exported": 1000,
+  "export_failures": 0,
+  "sidecar_order_ok": true,
+  "atom_types_in_0_16": 1000,
+  "feature_arrays_2_8_4": 1000,
+  "z_times_mult_eq_K": 1000,
+  "pass": true
+ },
+ "F2": {
+  "assemble_le_1e-3A": 1000,
+  "max_assemble_err_A": 3.6130787263025478e-06,
+  "species_decoded_ok": 1000,
+  "match_primary": 1000,
+  "matcher_gated": true,
+  "fail_refcodes": [],
+  "source": "pickle (re-read from disk)",
+  "pickle_cells_identical": 1000,
+  "pass": true
+ },
+ "F3": {
+  "chi_parity_agree_up_to_relabel": 990,
+  "n": 1000,
+  "disagree_refcodes": [
+   "DUJYOX",
+   "OTERAK",
+   "NUBLAB",
+   "GOLGEW",
+   "UVIFOV01",
+   "PAVZOF",
+   "LANZAB",
+   "SAWCAV",
+   "DOMWUB",
+   "JIFNIV"
+  ],
+  "gated": false
+ },
+ "F4": {
+  "copies": 3634,
+  "status": {
+   "fallback": 64,
+   "fix1": 3516,
+   "fix2": 24,
+   "fix3": 30
+  },
+  "descriptor_exception": 0,
+  "label_inconsistent": 0,
+  "determine_bonds": {
+   "AtomValenceException": 4,
+   "ValueError": 114,
+   "ok": 3516
+  },
+  "determine_cap_hit_refcodes": [],
+  "determine_max_iter": 10000000,
+  "zero_basic_chemical": 0,
+  "zero_frac": 0.0,
+  "crystals_with_zero_copy": 0,
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02",
+  "obabel_batch": {
+   "sdf_records": 3634,
+   "copies": 3634,
+   "one_to_one": true,
+   "missing": 0
+  },
+  "pass": true
+ },
+ "F5": {
+  "run": true,
+  "gated": true,
+  "le_1e-4": 1000,
+  "max_rel_err": 2.1671496593391347e-05,
+  "centred_le_1e-4": 85,
+  "fail_refcodes": [],
+  "fail_explained_by_energy_image_shell": 0,
+  "pass": true
+ },
+ "versions": {
+  "python": "3.12.10",
+  "numpy": "2.3.5",
+  "torch": "2.11.0+cpu",
+  "rdkit": "2026.03.3",
+  "pymatgen": "2026.5.4",
+  "ase": "3.28.0",
+  "spglib": "2.7.0",
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02"
+ },
+ "timing_s": {
+  "geometry_and_gates": 67.5,
+  "features": 11.5
+ },
+ "gate_pass": true,
+ "pickle": "n3_mcf/test/test_molcrystal_normalized.pkl.gz",
+ "pickle_sha256": "3d9e8205028767b2adf5444cd2434bffea1f54c271af746b127c53f3ed99213a",
+ "pickle_content_sha256": "4a8e62559d07293ce53066fb8962d3d0368d6f6e1d1eaf5fa6a43467a1e036c7",
+ "pickle_kept_from_previous_export": true,
+ "sidecar_sha256": "c17753da6de6683507d6928977042d6f5db99ae63f00a527bd4e53c1939acb53",
+ "oracle_predictions_kept_from_previous_export": true,
+ "oracle_predictions": "n3_mcf/test/oracle_testB/predictions_16.pt",
+ "oracle_predictions_sha256": "90f52fde2213051c760927b7820c692fe07f532ad4fbbc6588ebb6f84b6b349b"
+}

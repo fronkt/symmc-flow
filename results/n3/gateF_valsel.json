@@ -1,0 +1,135 @@
+{
+ "set": "valsel",
+ "protocol": "tasks/n3_protocol.md \u00a73.2 Gate F",
+ "mcf_base": "3c493f8",
+ "p1_maps_patched": {
+  "common": true,
+  "dataset": true,
+  "utils": true
+ },
+ "n": 400,
+ "complete": true,
+ "export_failure_refcodes": [],
+ "export_failure_reasons": {},
+ "centred": 18,
+ "mult": {
+  "1": 382,
+  "2": 15,
+  "4": 3
+ },
+ "z_MCF": {
+  "1": 2,
+  "2": 97,
+  "3": 1,
+  "4": 276,
+  "8": 24
+ },
+ "K_z": {
+  "K16_z4": 3,
+  "K1_z1": 2,
+  "K2_z2": 93,
+  "K3_z3": 1,
+  "K4_z2": 4,
+  "K4_z4": 262,
+  "K8_z4": 11,
+  "K8_z8": 24
+ },
+ "detQ_negative": 142,
+ "primitive_length_tie": {
+  "exact": 2,
+  "near": 3
+ },
+ "gate_check_errors": {},
+ "F1": {
+  "n_set": 400,
+  "n_exported": 400,
+  "export_failures": 0,
+  "sidecar_order_ok": true,
+  "atom_types_in_0_16": 400,
+  "feature_arrays_2_8_4": 400,
+  "z_times_mult_eq_K": 400,
+  "pass": true
+ },
+ "F2": {
+  "assemble_le_1e-3A": 400,
+  "max_assemble_err_A": 3.6097727488426466e-06,
+  "species_decoded_ok": 400,
+  "match_primary": 400,
+  "matcher_gated": true,
+  "fail_refcodes": [],
+  "source": "pickle (re-read from disk)",
+  "pickle_cells_identical": 400,
+  "pass": true
+ },
+ "F3": {
+  "chi_parity_agree_up_to_relabel": 398,
+  "n": 400,
+  "disagree_refcodes": [
+   "GAFYIX",
+   "WEMVIW"
+  ],
+  "gated": false
+ },
+ "F4": {
+  "copies": 1495,
+  "status": {
+   "fallback": 40,
+   "fix1": 1431,
+   "fix2": 12,
+   "fix3": 12
+  },
+  "descriptor_exception": 0,
+  "label_inconsistent": 0,
+  "determine_bonds": {
+   "AtomValenceException": 4,
+   "ValueError": 60,
+   "ok": 1431
+  },
+  "determine_cap_hit_refcodes": [],
+  "determine_max_iter": 10000000,
+  "zero_basic_chemical": 0,
+  "zero_frac": 0.0,
+  "crystals_with_zero_copy": 0,
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02",
+  "obabel_batch": {
+   "sdf_records": 1495,
+   "copies": 1495,
+   "one_to_one": true,
+   "missing": 0
+  },
+  "pass": true
+ },
+ "F5": {
+  "run": true,
+  "gated": true,
+  "le_1e-4": 400,
+  "max_rel_err": 1.368168835384904e-05,
+  "centred_le_1e-4": 18,
+  "fail_refcodes": [],
+  "fail_explained_by_energy_image_shell": 0,
+  "pass": true
+ },
+ "versions": {
+  "python": "3.12.10",
+  "numpy": "2.3.5",
+  "torch": "2.11.0+cpu",
+  "rdkit": "2026.03.3",
+  "pymatgen": "2026.5.4",
+  "ase": "3.28.0",
+  "spglib": "2.7.0",
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02"
+ },
+ "timing_s": {
+  "geometry_and_gates": 27.6,
+  "features": 4.4
+ },
+ "gate_pass": true,
+ "pickle": "n3_mcf/valsel_as_test/test_molcrystal_normalized.pkl.gz",
+ "pickle_sha256": "8f307494efbd0de5baffe0d61e264ea91cb329396b3a9feb4a4d29bdf74e3a2b",
+ "pickle_content_sha256": "d9be3c6065296b3e240416033b1ea6fb39f782698f67cfc4ae587ac17e717147",
+ "pickle_kept_from_previous_export": true,
+ "sidecar_sha256": "2b51e2837a138f0b1256800d6e812492ccdbb0388d90e76d377e90fd8e9f0436",
+ "oracle_predictions_kept_from_previous_export": true,
+ "oracle_predictions": "n3_mcf/valsel_as_test/oracle_valsel/predictions_16.pt",
+ "oracle_predictions_sha256": "7ea5c6ab9066ad140188e63ff434b316348784801ce1a2666ccf346557bfef89"
+}

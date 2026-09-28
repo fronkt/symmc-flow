@@ -1,0 +1,65 @@
+{
+ "set": "valsel",
+ "n": 400,
+ "n_outside": 7,
+ "omc25_element_set": [
+  "B",
+  "Br",
+  "C",
+  "Cl",
+  "F",
+  "H",
+  "I",
+  "N",
+  "O",
+  "P",
+  "S",
+  "Si"
+ ],
+ "omc25_csv_sha256": "afd58adbbc5fba225def6903af9fd41b374282259512bafe5102a5c53f9d3832",
+ "definition": "union of the elements of mol.composition over all rows (all splits) of omc25-starting-crystals.csv",
+ "crystals": [
+  {
+   "refcode": "RUMHUG",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "YIHGIF",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "LUBVOW",
+   "elements_outside": [
+    "As"
+   ]
+  },
+  {
+   "refcode": "ESUTIZ",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "CUZYAY",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "JACFUO",
+   "elements_outside": [
+    "As"
+   ]
+  },
+  {
+   "refcode": "LOSJAE",
+   "elements_outside": [
+    "As"
+   ]
+  }
+ ]
+}

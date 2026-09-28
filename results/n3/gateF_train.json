@@ -1,0 +1,167 @@
+{
+ "set": "train",
+ "protocol": "tasks/n3_protocol.md \u00a73.2 Gate F",
+ "mcf_base": "3c493f8",
+ "p1_maps_patched": {
+  "common": true,
+  "dataset": true,
+  "utils": true
+ },
+ "n": 1687,
+ "complete": true,
+ "export_failure_refcodes": [],
+ "export_failure_reasons": {},
+ "centred": 136,
+ "mult": {
+  "1": 1551,
+  "2": 129,
+  "4": 7
+ },
+ "z_MCF": {
+  "1": 5,
+  "2": 457,
+  "3": 7,
+  "4": 1112,
+  "6": 4,
+  "8": 102
+ },
+ "K_z": {
+  "K16_z4": 7,
+  "K16_z8": 8,
+  "K1_z1": 5,
+  "K2_z2": 418,
+  "K3_z3": 7,
+  "K4_z2": 39,
+  "K4_z4": 1023,
+  "K6_z6": 4,
+  "K8_z4": 82,
+  "K8_z8": 94
+ },
+ "detQ_negative": 676,
+ "primitive_length_tie": {
+  "exact": 21,
+  "near": 18
+ },
+ "gate_check_errors": {},
+ "F1": {
+  "n_set": 1687,
+  "n_exported": 1687,
+  "export_failures": 0,
+  "sidecar_order_ok": true,
+  "atom_types_in_0_16": 1687,
+  "feature_arrays_2_8_4": 1687,
+  "z_times_mult_eq_K": 1687,
+  "pass": true
+ },
+ "F2": {
+  "assemble_le_1e-3A": 1687,
+  "max_assemble_err_A": 4.751870214211338e-06,
+  "species_decoded_ok": 1687,
+  "match_primary": 1687,
+  "matcher_gated": false,
+  "fail_refcodes": [],
+  "source": "pickle (re-read from disk)",
+  "pickle_cells_identical": 1687,
+  "pass": true
+ },
+ "F3": {
+  "chi_parity_agree_up_to_relabel": 1674,
+  "n": 1687,
+  "disagree_refcodes": [
+   "CUPTEN",
+   "SEQJUT",
+   "FEZLAY",
+   "XEMBEA",
+   "UWOHUN",
+   "KOQQIU",
+   "SAMPIH",
+   "MIHTEE20",
+   "FEDPIO",
+   "KADTUE01",
+   "WONLIV",
+   "BAQGEI",
+   "MCHTEP12"
+  ],
+  "gated": false
+ },
+ "F4": {
+  "copies": 6228,
+  "status": {
+   "fallback": 86,
+   "fix1": 6054,
+   "fix2": 34,
+   "fix3": 54
+  },
+  "descriptor_exception": 0,
+  "label_inconsistent": 0,
+  "determine_bonds": {
+   "AtomValenceException": 6,
+   "ValueError": 164,
+   "cap": 4,
+   "ok": 6054
+  },
+  "determine_cap_hit_refcodes": [
+   "ZAYGOY"
+  ],
+  "determine_max_iter": 10000000,
+  "zero_basic_chemical": 0,
+  "zero_frac": 0.0,
+  "crystals_with_zero_copy": 0,
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02",
+  "obabel_batch": {
+   "sdf_records": 6228,
+   "copies": 6228,
+   "one_to_one": true,
+   "missing": 0
+  },
+  "pass": true
+ },
+ "F5": {
+  "run": true,
+  "gated": false,
+  "le_1e-4": 1684,
+  "max_rel_err": 0.09280471858061867,
+  "centred_le_1e-4": 136,
+  "fail_refcodes": [
+   "SAMPIH",
+   "FEDPIO",
+   "MCHTEP12"
+  ],
+  "fail_explained_by_energy_image_shell": 3,
+  "pass": null
+ },
+ "versions": {
+  "python": "3.12.10",
+  "numpy": "2.3.5",
+  "torch": "2.11.0+cpu",
+  "rdkit": "2026.03.3",
+  "pymatgen": "2026.5.4",
+  "ase": "3.28.0",
+  "spglib": "2.7.0",
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02"
+ },
+ "timing_s": {
+  "geometry_and_gates": 115.6,
+  "features": 296.8
+ },
+ "gate_pass": true,
+ "pickle": "n3_mcf/trainval/train_molcrystal_normalized.pkl.gz",
+ "pickle_sha256": "f397d7045d3c4a93fef41a64c73aad3a5c27f58d82dae70a34f5b80cce887813",
+ "pickle_content_sha256": "b793429063ff62eb586a15693b8843fa2e5ce227deef0131580746592a7a0477",
+ "pickle_kept_from_previous_export": true,
+ "sidecar_sha256": "62b8ebe4b71892fdb194ee47f862a27f3aa9de4e29a53120c5f7ab45b6ae8219",
+ "lattice_prior": {
+  "loc": [
+   2.0136725562262776,
+   2.3904593487791086,
+   2.794985732695032
+  ],
+  "scale": [
+   0.2513106062302518,
+   0.22355839347865547,
+   0.2958515304788396
+  ],
+  "n": 1687,
+  "yaml": "external/mcf/molcrystalflow/configs/ours_lattice.yaml"
+ }
+}

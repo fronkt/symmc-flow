@@ -1,0 +1,185 @@
+{
+ "set": "sel",
+ "n": 300,
+ "labels_file": "results/n3/private/labels_sel.json",
+ "labels_sha256": "b36aeddaa32288f4550d2b0311ee35e12f1c5b9014c8597cbfc1c729e7c2adda",
+ "counts": {
+  "n": 300,
+  "K_stratum": {
+   "<=2": 73,
+   "3-4": 198,
+   ">=6": 29
+  },
+  "K_values": {
+   "1": 1,
+   "2": 72,
+   "3": 1,
+   "4": 197,
+   "8": 28,
+   "16": 1
+  },
+  "z_mcf_stratum": {
+   "1": 1,
+   "2": 75,
+   ">=3": 224
+  },
+  "K_z": {
+   "1,1": 1,
+   "2,2": 72,
+   "3,3": 1,
+   "4,2": 3,
+   "4,4": 194,
+   "8,4": 8,
+   "8,8": 20,
+   "16,4": 1
+  },
+  "centred": 12,
+  "mult": {
+   "1": 288,
+   "2": 11,
+   "4": 1
+  },
+  "class": {
+   "centro": 195,
+   "sohncke": 90,
+   "other": 15
+  },
+  "improper": 210,
+  "chiral": 266,
+  "mixed": 183,
+  "improper_achiral": 27,
+  "sensitivity": {
+   "refined>0.1": {
+    "chiral": 291,
+    "mixed": 204,
+    "improper_achiral": 6
+   },
+   "refined>0.5": {
+    "chiral": 254,
+    "mixed": 171,
+    "improper_achiral": 39
+   },
+   "parser>0.3": {
+    "chiral": 269,
+    "mixed": 186,
+    "improper_achiral": 24
+   }
+  },
+  "iso_cap_hit": 113,
+  "disconnected_graph": 0,
+  "legacy_kept": 114,
+  "legacy_unrep": 186,
+  "legacy_unrep_by_class": {
+   "centro": 176,
+   "sohncke": 0,
+   "other": 10
+  },
+  "formula_disjoint": 269,
+  "omc25_family_overlap": 54,
+  "omc25_nonoverlap": 246,
+  "omc25_formula_overlap": 187,
+  "elements_outside_omc25": 5,
+  "class_x_handedness": {
+   "centro": {
+    "mixed": 173,
+    "improper_achiral": 22,
+    "no_improper": 0
+   },
+   "sohncke": {
+    "mixed": 0,
+    "improper_achiral": 0,
+    "no_improper": 90
+   },
+   "other": {
+    "mixed": 10,
+    "improper_achiral": 5,
+    "no_improper": 0
+   }
+  }
+ },
+ "reference_check": null,
+ "definitions": {
+  "chiral": "n3_chirality refined mirror RMSD > 0.3 A",
+  "centring": "ops with W = I and min-image |t| > 1e-4",
+  "legacy": "old_ok (tuple field 1) of data/<src>/ds_o3.pt.parts",
+  "formula_disjoint": "asym formula not among the 1687 TRAIN formulas",
+  "omc25_family": "refcode[:6] in OMC25 csd_refcode[:6]",
+  "omc25_element_set": "union of the elements of mol.composition over all rows (all splits) of omc25-starting-crystals.csv"
+ },
+ "inputs": {
+  "omc25_csv_sha256": "afd58adbbc5fba225def6903af9fd41b374282259512bafe5102a5c53f9d3832",
+  "omc25_n_families": 46865,
+  "omc25_n_formulas": 26520,
+  "omc25_elements": [
+   "B",
+   "Br",
+   "C",
+   "Cl",
+   "F",
+   "H",
+   "I",
+   "N",
+   "O",
+   "P",
+   "S",
+   "Si"
+  ],
+  "train_n_formulas": 1607,
+  "g1_parts": {
+   "csd_testB": {
+    "n_part_files": 18,
+    "rows": 4500,
+    "unique_refcodes": 4500,
+    "old_ok": 1466,
+    "sha256": {
+     "part_00000.pt": "fbab3fc9717d7693109c640e920d11a2c137dd1109052f8bba9591c2908f83f7",
+     "part_00250.pt": "937aa2c2a3eab487520b779ddb3821c076fe3d6a05a0f5aab32b619d58751c57",
+     "part_00500.pt": "7783a7c1ae432ffe54180a7846871e62a9efb9127be3457368687ab8ed71a791",
+     "part_00750.pt": "fe45833ad281cca9d4dfc292dc4d16cd7b6deeccbb6906e16c483b92a524dfde",
+     "part_01000.pt": "9fc6bf0deb553e348ea9e499089526d2f743569811d2658f8495c8b59453b4d3",
+     "part_01250.pt": "b4125caf9a59abdf7a2339b1e5e867a742daee4fdcc3182fb050bf77fdf85f4a",
+     "part_01500.pt": "df1a88213c6a96bf6a93dc5b965dbacfc422d506a1401fc53d4121599e70af89",
+     "part_01750.pt": "d57a4d64bcbc4261b20769338620caa82f9f57fa532b4f2a9ebd0ff7bc8ed54b",
+     "part_02000.pt": "d7bae5815a8947a8d0b97f50a5b57aa4de825f6d346845995a3d83e08c474d84",
+     "part_02250.pt": "3949d7c34f83b976511ac3ec45185d1f657b6bdaa008df151eed63c3d2dc71d5",
+     "part_02500.pt": "8be95d7053beb807b5bc6dc27d193f4209728d0552124c357b90250a89018348",
+     "part_02750.pt": "b857a01eef59296d5e469f2f9266fc6cf70fee04d8c4de6403b088df27508577",
+     "part_03000.pt": "4f1c984b7cb8e26e651eaebd5e22c509cae1fd6f16494e8e918d0bc3d43c5ff8",
+     "part_03250.pt": "55d4b8bd2fcdf2e4469187a3b06c45e163cd5de8bf1a5c69bc7a6f3fe5b74bf0",
+     "part_03500.pt": "a5f4f88fcf645b8ed7591634fe352e204a7bad37007d8e195af98e99d3078323",
+     "part_03750.pt": "6cbae935ff2cacccae9fa71f14adc351ebe833cb551af71099208c174f1d5535",
+     "part_04000.pt": "6aafa6a67f1bfd4c524bf227914569a7bbdb764d2d0a89f02da455f2f12cad8d",
+     "part_04250.pt": "c4e163c071d93078a97f4ee9e45583191bc0ec4d38d2032243b67b97410b3969"
+    }
+   }
+  },
+  "code_head": "05aa3c9bd009787c1c739ea56b6f512925626db2"
+ },
+ "timing_s": {
+  "chirality": 15.3,
+  "total": 18.4
+ },
+ "workers": 2,
+ "omc25_outside_elements_file": "results/n3/omc25_outside_elements_sel.json",
+ "provenance": {
+  "scripts_sha256": {
+   "scripts/n3_labels.py": "c575574ea0139f9afc449aec1f7ca6a66fef89d0e92e113bd9090a8dce9e6e1c",
+   "scripts/n3_chirality.py": "d62c6f43fd6620119283dabcf0a4f36070ed6e169746a0c2081fca026d44491c",
+   "scripts/n3_common.py": "d08203a8b332755a32eb09ecbdc98057c6cd008264c71c0442dc3ba7f1d4d10a",
+   "scripts/n3_tpool.py": "041156cce24c5a5fe5935bff454716f5bd9a12cea4fabdc7081b79a1852abdc7"
+  },
+  "versions": {
+   "numpy": "2.3.5",
+   "scipy": "1.17.1",
+   "torch": "2.11.0+cpu",
+   "pymatgen": "2026.5.4",
+   "spglib": "2.7.0",
+   "gemmi": "0.7.5",
+   "networkx": "3.5",
+   "ase": "3.28.0",
+   "rdkit": "2026.3.3"
+  },
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0"
+ }
+}

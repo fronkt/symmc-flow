@@ -1,0 +1,119 @@
+{
+ "set": "testB",
+ "n": 1000,
+ "n_outside": 16,
+ "omc25_element_set": [
+  "B",
+  "Br",
+  "C",
+  "Cl",
+  "F",
+  "H",
+  "I",
+  "N",
+  "O",
+  "P",
+  "S",
+  "Si"
+ ],
+ "omc25_csv_sha256": "afd58adbbc5fba225def6903af9fd41b374282259512bafe5102a5c53f9d3832",
+ "definition": "union of the elements of mol.composition over all rows (all splits) of omc25-starting-crystals.csv",
+ "crystals": [
+  {
+   "refcode": "TUWNOO",
+   "elements_outside": [
+    "Te"
+   ]
+  },
+  {
+   "refcode": "TESKEK",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "KOPBAV",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "DAPBIJ",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "TELJEB",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "QUBGOK",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "VEFFOE",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "RIGKIB",
+   "elements_outside": [
+    "Te"
+   ]
+  },
+  {
+   "refcode": "LISFIG",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "BEWLUL01",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "DPHDTE04",
+   "elements_outside": [
+    "Te"
+   ]
+  },
+  {
+   "refcode": "VAQVEO",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "IMUBEX",
+   "elements_outside": [
+    "Te"
+   ]
+  },
+  {
+   "refcode": "XULSEG",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "ROVZIN",
+   "elements_outside": [
+    "Se"
+   ]
+  },
+  {
+   "refcode": "OYEDOO",
+   "elements_outside": [
+    "Se"
+   ]
+  }
+ ]
+}

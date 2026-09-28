@@ -1,0 +1,207 @@
+{
+ "set": "valsel",
+ "n": 400,
+ "labels_file": "results/n3/private/labels_valsel.json",
+ "labels_sha256": "5be6ba7a7ba6e24eca91c2a3dfd5ad07349da8c92065f57495d498bca28bddf9",
+ "counts": {
+  "n": 400,
+  "K_stratum": {
+   "<=2": 95,
+   "3-4": 267,
+   ">=6": 38
+  },
+  "K_values": {
+   "1": 2,
+   "2": 93,
+   "3": 1,
+   "4": 266,
+   "8": 35,
+   "16": 3
+  },
+  "z_mcf_stratum": {
+   "1": 2,
+   "2": 97,
+   ">=3": 301
+  },
+  "K_z": {
+   "1,1": 2,
+   "2,2": 93,
+   "3,3": 1,
+   "4,2": 4,
+   "4,4": 262,
+   "8,4": 11,
+   "8,8": 24,
+   "16,4": 3
+  },
+  "centred": 18,
+  "mult": {
+   "1": 382,
+   "2": 15,
+   "4": 3
+  },
+  "class": {
+   "centro": 271,
+   "sohncke": 108,
+   "other": 21
+  },
+  "improper": 292,
+  "chiral": 354,
+  "mixed": 253,
+  "improper_achiral": 39,
+  "sensitivity": {
+   "refined>0.1": {
+    "chiral": 386,
+    "mixed": 281,
+    "improper_achiral": 11
+   },
+   "refined>0.5": {
+    "chiral": 334,
+    "mixed": 233,
+    "improper_achiral": 59
+   },
+   "parser>0.3": {
+    "chiral": 357,
+    "mixed": 256,
+    "improper_achiral": 36
+   }
+  },
+  "iso_cap_hit": 151,
+  "disconnected_graph": 0,
+  "legacy_kept": 144,
+  "legacy_unrep": 256,
+  "legacy_unrep_by_class": {
+   "centro": 240,
+   "sohncke": 0,
+   "other": 16
+  },
+  "formula_disjoint": 361,
+  "omc25_family_overlap": 73,
+  "omc25_nonoverlap": 327,
+  "omc25_formula_overlap": 245,
+  "elements_outside_omc25": 7,
+  "class_x_handedness": {
+   "centro": {
+    "mixed": 237,
+    "improper_achiral": 34,
+    "no_improper": 0
+   },
+   "sohncke": {
+    "mixed": 0,
+    "improper_achiral": 0,
+    "no_improper": 108
+   },
+   "other": {
+    "mixed": 16,
+    "improper_achiral": 5,
+    "no_improper": 0
+   }
+  }
+ },
+ "reference_check": null,
+ "definitions": {
+  "chiral": "n3_chirality refined mirror RMSD > 0.3 A",
+  "centring": "ops with W = I and min-image |t| > 1e-4",
+  "legacy": "old_ok (tuple field 1) of data/<src>/ds_o3.pt.parts",
+  "formula_disjoint": "asym formula not among the 1687 TRAIN formulas",
+  "omc25_family": "refcode[:6] in OMC25 csd_refcode[:6]",
+  "omc25_element_set": "union of the elements of mol.composition over all rows (all splits) of omc25-starting-crystals.csv"
+ },
+ "inputs": {
+  "omc25_csv_sha256": "afd58adbbc5fba225def6903af9fd41b374282259512bafe5102a5c53f9d3832",
+  "omc25_n_families": 46865,
+  "omc25_n_formulas": 26520,
+  "omc25_elements": [
+   "B",
+   "Br",
+   "C",
+   "Cl",
+   "F",
+   "H",
+   "I",
+   "N",
+   "O",
+   "P",
+   "S",
+   "Si"
+  ],
+  "train_n_formulas": 1607,
+  "g1_parts": {
+   "csd_mol": {
+    "n_part_files": 14,
+    "rows": 3500,
+    "unique_refcodes": 3500,
+    "old_ok": 1144,
+    "sha256": {
+     "part_00000.pt": "2b30aa36bc3fdf59f5d6037fef131690fba816bcb9b0b0a20e2151928d07cb4f",
+     "part_00250.pt": "4d8ce70e40f4dc8298e98a400e8bc8fc51ca43cd5ba199f6231d6a33f5c7095a",
+     "part_00500.pt": "104b1c2e557c11ee60b8f08fcb80509794cf53c58069c8a25c65ac051490d354",
+     "part_00750.pt": "9e87565f7736552dddf5e1e1191cd83ddf872658dc81d729656946f790836113",
+     "part_01000.pt": "c8531a1f243ab1002df65497d302d5449132bb8ea0c103b5a6d1d0595a43eb8b",
+     "part_01250.pt": "7e491ae9e4aa3ed44d85eb54bc05350502c38e5526cda5c41ca9fbf36c8abd61",
+     "part_01500.pt": "f92a3debbe463a7d8695c938bf3c51499dfbba3df837aa25bac4c7577b96c563",
+     "part_01750.pt": "6af178f3192abe6f59b326323d128a17e2758877830d7ff2911fb856aad067fc",
+     "part_02000.pt": "3e8bebb7a72c68b28849cfbe5956cc8ad715afeb49f2a88a24f070afabe480f3",
+     "part_02250.pt": "86613bf0a99d36204883b777632a907eb3c9cbab7de99b50371e33669c40b79a",
+     "part_02500.pt": "af831b1554a646e5388e8c4a1cc5dd29aa54bdc054d4388eb6d22ff7666a517e",
+     "part_02750.pt": "876c010544e07101caca8b2635a1747609b3e440852e6c342475d4c4a65bcf9b",
+     "part_03000.pt": "b1df68c1c24cd1d25e835ed1b653bd619fdb6e73ac93d386dad3fd8db9a715f1",
+     "part_03250.pt": "aaf1270f5551dd0aed4f16d802908b411e1f191e9de66ee7dcb75d943673a766"
+    }
+   },
+   "csd_testB": {
+    "n_part_files": 18,
+    "rows": 4500,
+    "unique_refcodes": 4500,
+    "old_ok": 1466,
+    "sha256": {
+     "part_00000.pt": "fbab3fc9717d7693109c640e920d11a2c137dd1109052f8bba9591c2908f83f7",
+     "part_00250.pt": "937aa2c2a3eab487520b779ddb3821c076fe3d6a05a0f5aab32b619d58751c57",
+     "part_00500.pt": "7783a7c1ae432ffe54180a7846871e62a9efb9127be3457368687ab8ed71a791",
+     "part_00750.pt": "fe45833ad281cca9d4dfc292dc4d16cd7b6deeccbb6906e16c483b92a524dfde",
+     "part_01000.pt": "9fc6bf0deb553e348ea9e499089526d2f743569811d2658f8495c8b59453b4d3",
+     "part_01250.pt": "b4125caf9a59abdf7a2339b1e5e867a742daee4fdcc3182fb050bf77fdf85f4a",
+     "part_01500.pt": "df1a88213c6a96bf6a93dc5b965dbacfc422d506a1401fc53d4121599e70af89",
+     "part_01750.pt": "d57a4d64bcbc4261b20769338620caa82f9f57fa532b4f2a9ebd0ff7bc8ed54b",
+     "part_02000.pt": "d7bae5815a8947a8d0b97f50a5b57aa4de825f6d346845995a3d83e08c474d84",
+     "part_02250.pt": "3949d7c34f83b976511ac3ec45185d1f657b6bdaa008df151eed63c3d2dc71d5",
+     "part_02500.pt": "8be95d7053beb807b5bc6dc27d193f4209728d0552124c357b90250a89018348",
+     "part_02750.pt": "b857a01eef59296d5e469f2f9266fc6cf70fee04d8c4de6403b088df27508577",
+     "part_03000.pt": "4f1c984b7cb8e26e651eaebd5e22c509cae1fd6f16494e8e918d0bc3d43c5ff8",
+     "part_03250.pt": "55d4b8bd2fcdf2e4469187a3b06c45e163cd5de8bf1a5c69bc7a6f3fe5b74bf0",
+     "part_03500.pt": "a5f4f88fcf645b8ed7591634fe352e204a7bad37007d8e195af98e99d3078323",
+     "part_03750.pt": "6cbae935ff2cacccae9fa71f14adc351ebe833cb551af71099208c174f1d5535",
+     "part_04000.pt": "6aafa6a67f1bfd4c524bf227914569a7bbdb764d2d0a89f02da455f2f12cad8d",
+     "part_04250.pt": "c4e163c071d93078a97f4ee9e45583191bc0ec4d38d2032243b67b97410b3969"
+    }
+   }
+  },
+  "code_head": "05aa3c9bd009787c1c739ea56b6f512925626db2"
+ },
+ "timing_s": {
+  "chirality": 0.0,
+  "total": 0.1
+ },
+ "workers": 2,
+ "omc25_outside_elements_file": "results/n3/omc25_outside_elements_valsel.json",
+ "provenance": {
+  "scripts_sha256": {
+   "scripts/n3_labels.py": "c575574ea0139f9afc449aec1f7ca6a66fef89d0e92e113bd9090a8dce9e6e1c",
+   "scripts/n3_chirality.py": "d62c6f43fd6620119283dabcf0a4f36070ed6e169746a0c2081fca026d44491c",
+   "scripts/n3_common.py": "d08203a8b332755a32eb09ecbdc98057c6cd008264c71c0442dc3ba7f1d4d10a",
+   "scripts/n3_tpool.py": "041156cce24c5a5fe5935bff454716f5bd9a12cea4fabdc7081b79a1852abdc7"
+  },
+  "versions": {
+   "numpy": "2.3.5",
+   "scipy": "1.17.1",
+   "torch": "2.11.0+cpu",
+   "pymatgen": "2026.5.4",
+   "spglib": "2.7.0",
+   "gemmi": "0.7.5",
+   "networkx": "3.5",
+   "ase": "3.28.0",
+   "rdkit": "2026.3.3"
+  },
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0"
+ }
+}

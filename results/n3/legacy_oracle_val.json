@@ -1,0 +1,59 @@
+{
+ "set": "val",
+ "n": 100,
+ "flag_kept": 30,
+ "flag_unrepresentable": 70,
+ "evaluated": 30,
+ "missing": 0,
+ "fresh_registry_parsed": 30,
+ "fresh_registry_rejected": 0,
+ "oracle_match": {
+  "primary": 29,
+  "stol0.5": 30,
+  "stol0.8": 30
+ },
+ "timeout": 0,
+ "deterministic_failure": 0,
+ "error": 0,
+ "error_awaiting_rerun": 0,
+ "reruns": 0,
+ "complete": true,
+ "wall_s_sum": 142.1,
+ "config": {
+  "G1_common(max_mols,max_atoms,symprec,conf_tol)": [
+   16,
+   64,
+   0.1,
+   0.3
+  ],
+  "allow_mirror": false,
+  "registry": "fresh per crystal",
+  "timeout_s": 600.0,
+  "truth": "the CIF structure (read_cif)",
+  "fit_order": "fit(cif, rebuilt)"
+ },
+ "this_run_wall_s": 0.0,
+ "private_jsonl_sha256": "ba7f0940e7815d42bb917d42fd9c7b1479702aa58a8d2520df667bf43311764a",
+ "labels_sha256": "caa4c5fb23813659f353bd53ec232f42a5424a59fd98a03104a398b4894cf2eb",
+ "provenance": {
+  "scripts_sha256": {
+   "scripts/n3_legacy_oracle.py": "5e178232f587a6f75def3dbea0f14a7f860de783d1803e69079bc53720f2f4a6",
+   "scripts/n3_tpool.py": "041156cce24c5a5fe5935bff454716f5bd9a12cea4fabdc7081b79a1852abdc7",
+   "scripts/n3_common.py": "d08203a8b332755a32eb09ecbdc98057c6cd008264c71c0442dc3ba7f1d4d10a",
+   "symmc_flow/molcrystal.py": "1addc9f63332af6749c4f446236e919c7a09ecc968098a5253e17f3d351228f4"
+  },
+  "versions": {
+   "numpy": "2.3.5",
+   "scipy": "1.17.1",
+   "torch": "2.11.0+cpu",
+   "pymatgen": "2026.5.4",
+   "spglib": "2.7.0",
+   "gemmi": "0.7.5",
+   "networkx": "3.5",
+   "ase": "3.28.0",
+   "rdkit": "2026.3.3"
+  },
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0"
+ }
+}

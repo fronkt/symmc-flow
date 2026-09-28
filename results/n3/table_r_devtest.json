@@ -1,0 +1,574 @@
+{
+ "set": "devtest",
+ "n": 200,
+ "evaluated_crystals": 200,
+ "partial": false,
+ "complete": {
+  "a": true,
+  "b": true,
+  "c": true,
+  "d": true,
+  "all": true
+ },
+ "missing_column_jobs": {
+  "a": 0,
+  "c": 0,
+  "b": 0,
+  "d_oracle": 0
+ },
+ "rows": {
+  "all": {
+   "n": 200,
+   "a": {
+    "primary": 200,
+    "stol0.5": 200,
+    "stol0.8": 200,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 200
+   },
+   "b": {
+    "primary": 200,
+    "stol0.5": 200,
+    "stol0.8": 200,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 62,
+    "stol0.5": 146,
+    "stol0.8": 197,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 44,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 62,
+    "stol0.5": 145,
+    "stol0.8": 197,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 44
+   },
+   "d": {
+    "flag_kept": 57,
+    "oracle": {
+     "primary": 56,
+     "stol0.5": 57,
+     "stol0.8": 57
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "centro": {
+   "n": 143,
+   "a": {
+    "primary": 143,
+    "stol0.5": 143,
+    "stol0.8": 143,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 143
+   },
+   "b": {
+    "primary": 143,
+    "stol0.5": 143,
+    "stol0.8": 143,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 17,
+    "stol0.5": 90,
+    "stol0.8": 140,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 17,
+    "stol0.5": 90,
+    "stol0.8": 140,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0
+   },
+   "d": {
+    "flag_kept": 12,
+    "oracle": {
+     "primary": 11,
+     "stol0.5": 12,
+     "stol0.8": 12
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "sohncke": {
+   "n": 44,
+   "a": {
+    "primary": 44,
+    "stol0.5": 44,
+    "stol0.8": 44,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 44
+   },
+   "b": {
+    "primary": 44,
+    "stol0.5": 44,
+    "stol0.8": 44,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 44,
+    "stol0.5": 44,
+    "stol0.8": 44,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 44,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 44,
+    "stol0.5": 44,
+    "stol0.8": 44,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 44
+   },
+   "d": {
+    "flag_kept": 44,
+    "oracle": {
+     "primary": 44,
+     "stol0.5": 44,
+     "stol0.8": 44
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "other": {
+   "n": 13,
+   "a": {
+    "primary": 13,
+    "stol0.5": 13,
+    "stol0.8": 13,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 13
+   },
+   "b": {
+    "primary": 13,
+    "stol0.5": 13,
+    "stol0.8": 13,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 1,
+    "stol0.5": 12,
+    "stol0.8": 13,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 1,
+    "stol0.5": 11,
+    "stol0.8": 13,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0
+   },
+   "d": {
+    "flag_kept": 1,
+    "oracle": {
+     "primary": 1,
+     "stol0.5": 1,
+     "stol0.8": 1
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "mixed": {
+   "n": 137,
+   "a": {
+    "primary": 137,
+    "stol0.5": 137,
+    "stol0.8": 137,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 137
+   },
+   "b": {
+    "primary": 137,
+    "stol0.5": 137,
+    "stol0.8": 137,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 1,
+    "stol0.5": 83,
+    "stol0.8": 134,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 1,
+    "stol0.5": 82,
+    "stol0.8": 134,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0
+   },
+   "d": {
+    "flag_kept": 0,
+    "oracle": {
+     "primary": 0,
+     "stol0.5": 0,
+     "stol0.8": 0
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "improper_achiral": {
+   "n": 19,
+   "a": {
+    "primary": 19,
+    "stol0.5": 19,
+    "stol0.8": 19,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 19
+   },
+   "b": {
+    "primary": 19,
+    "stol0.5": 19,
+    "stol0.8": 19,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 17,
+    "stol0.5": 19,
+    "stol0.8": 19,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 17,
+    "stol0.5": 19,
+    "stol0.8": 19,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0
+   },
+   "d": {
+    "flag_kept": 13,
+    "oracle": {
+     "primary": 12,
+     "stol0.5": 13,
+     "stol0.8": 13
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  },
+  "legacy_unrep": {
+   "n": 143,
+   "a": {
+    "primary": 143,
+    "stol0.5": 143,
+    "stol0.8": 143,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "orbit_ok": 143
+   },
+   "b": {
+    "primary": 143,
+    "stol0.5": 143,
+    "stol0.8": 143,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "export_failure": 0,
+    "f2_nonmatch_fail": 0
+   },
+   "c": {
+    "primary": 6,
+    "stol0.5": 89,
+    "stol0.8": 140,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0,
+    "multiple_optima": 0
+   },
+   "c_frozen16": {
+    "primary": 6,
+    "stol0.5": 88,
+    "stol0.8": 140,
+    "timeout": 0,
+    "deterministic": 0,
+    "error": 0,
+    "missing": 0,
+    "from_a_no_improper_op": 0
+   },
+   "d": {
+    "flag_kept": 0,
+    "oracle": {
+     "primary": 0,
+     "stol0.5": 0,
+     "stol0.8": 0
+    },
+    "oracle_fresh_registry_rejected": 0,
+    "oracle_timeout": 0,
+    "oracle_deterministic": 0,
+    "oracle_error": 0,
+    "oracle_missing": 0
+   }
+  }
+ },
+ "a_by_construction": false,
+ "build_step2": null,
+ "b_source": {
+  "status": "computed",
+  "gate": "results/n3/gateF_devtest.json",
+  "gate_sha256": "0f867f7883810c2a9d9bdb1a48b8b5b5de777aed4607a12e66fd5876ba10ffbb",
+  "pickle": "n3_mcf/devtest/test_molcrystal_normalized.pkl.gz",
+  "pickle_sha256": "6c5a4cff41648ad73ca2839f251b0f4e44e0da49c8a989e1d8e4b1f87a216d7c",
+  "exported": 200,
+  "export_failures": 0,
+  "f2_fail_refcodes": 0,
+  "nonmatch_checks_from": "gateF detail (assemble_err <= 1e-3 A and species)",
+  "detail_sha256": "60a7a3eb965a34abdaaf866996976b246421dd6df393a3002c4d88da980fd9a5"
+ },
+ "b_check_vs_gateF2": {
+  "judged": 200,
+  "disagree_with_F2_fail_refcodes": 0,
+  "disagree_with_detail_match": 0
+ },
+ "c_method": "16 frozen + 2.6(i) automorphism start; ties 1e-6 A; distinct > 1e-3 A; any-match",
+ "c_frozen16_method": "16 frozen starts, first strict minimum (protocol text)",
+ "c_diagnostics": {
+  "n_improper_ok": 156,
+  "homochiral_rmsd": {
+   "median": 1.0601500647313633,
+   "min": 0.04419642753649082,
+   "max": 2.1197379933883496,
+   "median_mixed": 1.1484957088822525
+  },
+  "above_refined_mirror_rmsd_1e-6": 0,
+  "frozen16_above_refined_mirror_rmsd_1e-6": 1,
+  "improved_by_automorphism_start_1e-6": 1,
+  "max_rmsd_gain_A": 0.05553729585760503,
+  "multiple_distinct_optima": 0,
+  "outcome_changed_vs_frozen16": {
+   "primary": 0,
+   "stol0.5": 1,
+   "stol0.8": 0
+  },
+  "automorphism_parser_vs_labels_max_abs": 0.0
+ },
+ "d_source": {
+  "legacy_oracle_json": "results/n3/legacy_oracle_devtest.json",
+  "legacy_oracle_jsonl_sha256": "3b834f8bc9fbc293aea42a0b7901fcd6af2ac7504fd589d2b44c6b0531e44468"
+ },
+ "wording": {
+  "final": true,
+  "n": 200,
+  "N_legacy_unrep": 143,
+  "M_legacy_unrep_centro": 131,
+  "N_flag_or_oracle_miss": 144,
+  "M_flag_or_oracle_miss": 132,
+  "oracle_unresolved_flag_kept": 0,
+  "n_mixed": 137,
+  "P_mixed_not_matched_primary": 136,
+  "Q_mixed_matched_stol0.5": 83,
+  "P_frozen16": 136,
+  "Q_frozen16": 82,
+  "mixed_c_unresolved": 0,
+  "rules": {
+   "N, M": "part-file keep flag (\u00a75 d); *_flag_or_oracle_miss adds flag-kept crystals whose det+1 rebuild misses the primary matcher",
+   "P, Q": "c (16 frozen starts + automorphism start, tied optima any-match; proposed A2)",
+   "P_frozen16, Q_frozen16": "the 16 frozen starts alone (protocol text)",
+   "P": "deterministic matcher failures count as non-matches; timeouts, errors and missing rows are excluded and given as mixed_c_unresolved"
+  },
+  "template": "The legacy det+1 pipeline cannot represent N/n test crystals (M of the centrosymmetric ones). The released MolCrystalFlow CSP driver cannot produce P/n_mixed mixed-handedness cells under the default StructureMatcher; a homochiral approximant nevertheless matches Q/n_mixed at stol 0.5.",
+  "text": "The legacy det+1 pipeline cannot represent 143/200 test crystals (131 of the centrosymmetric ones). The released MolCrystalFlow CSP driver cannot produce 136/137 mixed-handedness cells under the default StructureMatcher; a homochiral approximant nevertheless matches 83/137 at stol 0.5.",
+  "text_frozen16": "The legacy det+1 pipeline cannot represent 143/200 test crystals (131 of the centrosymmetric ones). The released MolCrystalFlow CSP driver cannot produce 136/137 mixed-handedness cells under the default StructureMatcher; a homochiral approximant nevertheless matches 82/137 at stol 0.5."
+ },
+ "corpus_context": {
+  "dev": {
+   "cifs": 3500,
+   "kept_det1": 1144,
+   "kept_o3": 2852,
+   "eligible_g2_asym": 1987,
+   "o3_kept_not_eligible": 865
+  },
+  "pool": {
+   "cifs": 4500,
+   "kept_det1": 1466,
+   "kept_o3": 3653,
+   "build_counts": {
+    "pool_cifs": 4500,
+    "o3_kept": 3653,
+    "after_g1_oracle": 3632,
+    "step2_drops": {
+     "not Z'=1 general-position (asym_item)": 1142,
+     "expand oracle (i): orbit": 15
+    },
+    "after_step2": 2475,
+    "step3_family_drops": 19,
+    "step3_wl_drops": 3,
+    "after_step3": 2453,
+    "pool_items_sharing_wl_species_within_pool": 17,
+    "P_after_family_dedup": 2448,
+    "SEL": 300,
+    "TEST_B": 1000
+   }
+  },
+  "note": "MCF's per-copy representation also covers the Z' > 1 and special-position crystals our design excludes (o3_kept_not_eligible)."
+ },
+ "matchers": {
+  "primary": "StructureMatcher() fit(truth, cand)",
+  "stol0.5": "StructureMatcher(ltol=0.3, angle_tol=10, scale=False, stol=0.5).get_rms_dist(truth, cand) is not None",
+  "stol0.8": "StructureMatcher(ltol=0.3, angle_tol=10, scale=False, stol=0.8).get_rms_dist(truth, cand) is not None"
+ },
+ "timing_s": {
+  "this_run_wall": 87.6,
+  "this_run_jobs": 200,
+  "this_run_reruns": 0,
+  "workers": 2,
+  "timeout_per_job": 600.0,
+  "a_job_sum": 699.0,
+  "b_job_sum": 161.4,
+  "c_job_sum": 288.6,
+  "a_job_max": 41.27,
+  "b_job_max": 5.81,
+  "c_job_max": 16.36
+ },
+ "labels_sha256": "3303c34060a7f6def6a9f11519007ee06cba66bb640d66b366ce9fb011472ddb",
+ "private_jsonl_sha256": "c57088e1b4b2657135e2fc5984c75a595cd993498d22ce4d3f98ce38d9ea70c5",
+ "starts16_sha256": "d5f2c23ba01dd773d042d02e1d5ac6bcc1d1605d0ce2966a4c1c65bf0a0d0352",
+ "provenance": {
+  "scripts_sha256": {
+   "scripts/n3_table_r.py": "7bfa83dfeb30c2e10bc6a6ff976066858258390810bf70759085bbe8ba9b2658",
+   "scripts/n3_legacy_oracle.py": "5e178232f587a6f75def3dbea0f14a7f860de783d1803e69079bc53720f2f4a6",
+   "scripts/n3_tpool.py": "76e0a75bfc2308bffe4bc6c687ba3f8ac84845529abf9fba0619104d4543a8a8",
+   "scripts/n3_common.py": "d08203a8b332755a32eb09ecbdc98057c6cd008264c71c0442dc3ba7f1d4d10a",
+   "scripts/n3_chirality.py": "d62c6f43fd6620119283dabcf0a4f36070ed6e169746a0c2081fca026d44491c",
+   "scripts/g2_asym_baselines.py": "80c1aa3dd0a2915a6e2f72642a35e41196ecf5e45ac61dc91bdd68c6aaff3775",
+   "scripts/n3_mcf_export.py": "8d38ff40192b8400e1b5151b93fc764ab6d6d428253e55a1e69da34b7346deba",
+   "external/mcf/data-preprocess/thurlemann23/common.py": "4d8acd1898ba0872df9ea4a2ccf6c0f10dfc674246e1b38281961429edb58874"
+  },
+  "versions": {
+   "numpy": "2.3.5",
+   "scipy": "1.17.1",
+   "torch": "2.11.0+cpu",
+   "pymatgen": "2026.5.4",
+   "spglib": "2.7.0",
+   "gemmi": "0.7.5",
+   "networkx": "3.5",
+   "ase": "3.28.0",
+   "rdkit": "2026.3.3"
+  },
+  "python": "3.12.10",
+  "platform": "Windows-11-10.0.26200-SP0"
+ }
+}

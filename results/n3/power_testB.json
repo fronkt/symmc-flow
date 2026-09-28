@@ -1,0 +1,97 @@
+{
+ "n": 1000,
+ "reps": 4000,
+ "model": "Beta(1.056,13) OURS 7.5%, 3 seeds; exact sign-flip",
+ "rows": [
+  {
+   "delta_pp": 1.5,
+   "arm": "3-seed arm",
+   "power_a05": 0.56725,
+   "power_a05_3": 0.39125
+  },
+  {
+   "delta_pp": 1.5,
+   "arm": "iii-s (m=1)",
+   "power_a05": 0.38675,
+   "power_a05_3": 0.24075
+  },
+  {
+   "delta_pp": 1.5,
+   "arm": "H1 (IUT, 2 arms)",
+   "power_a05": 0.41075,
+   "power_a05_3": 0.2455
+  },
+  {
+   "delta_pp": 2.0,
+   "arm": "3-seed arm",
+   "power_a05": 0.83225,
+   "power_a05_3": 0.7075
+  },
+  {
+   "delta_pp": 2.0,
+   "arm": "iii-s (m=1)",
+   "power_a05": 0.6135,
+   "power_a05_3": 0.449
+  },
+  {
+   "delta_pp": 2.0,
+   "arm": "H1 (IUT, 2 arms)",
+   "power_a05": 0.74325,
+   "power_a05_3": 0.5715
+  },
+  {
+   "delta_pp": 2.5,
+   "arm": "3-seed arm",
+   "power_a05": 0.97175,
+   "power_a05_3": 0.9215
+  },
+  {
+   "delta_pp": 2.5,
+   "arm": "iii-s (m=1)",
+   "power_a05": 0.81575,
+   "power_a05_3": 0.67925
+  },
+  {
+   "delta_pp": 2.5,
+   "arm": "H1 (IUT, 2 arms)",
+   "power_a05": 0.92875,
+   "power_a05_3": 0.85125
+  },
+  {
+   "delta_pp": 3.0,
+   "arm": "3-seed arm",
+   "power_a05": 0.99625,
+   "power_a05_3": 0.98875
+  },
+  {
+   "delta_pp": 3.0,
+   "arm": "iii-s (m=1)",
+   "power_a05": 0.931,
+   "power_a05_3": 0.863
+  },
+  {
+   "delta_pp": 3.0,
+   "arm": "H1 (IUT, 2 arms)",
+   "power_a05": 0.99375,
+   "power_a05_3": 0.9785
+  },
+  {
+   "delta_pp": 4.0,
+   "arm": "3-seed arm",
+   "power_a05": 1.0,
+   "power_a05_3": 1.0
+  },
+  {
+   "delta_pp": 4.0,
+   "arm": "iii-s (m=1)",
+   "power_a05": 0.99825,
+   "power_a05_3": 0.9935
+  },
+  {
+   "delta_pp": 4.0,
+   "arm": "H1 (IUT, 2 arms)",
+   "power_a05": 1.0,
+   "power_a05_3": 1.0
+  }
+ ]
+}

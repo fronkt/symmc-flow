@@ -1125,3 +1125,200 @@ The G1 part-file hashes are in the build JSON.
 
 **Deferred to A2** (still before any arm output on SEL/TEST-B/DEV-TEST): the stratum-label file hashes,
 the fairchem-core version, and the `n3_power.py` table at n = 1000.
+
+### A2 (2026-09-28): implementation clarifications and disclosures
+
+**State when made.** No N3 arm output exists on SEL, TEST-B or DEV-TEST.
+- The only outputs so far are CPU smoke runs on VAL/TRAIN (random-init MCF, the old architecture's first
+  steps, UMA on 2-4 VAL/TRAIN crystals) and input-side gates on all sets.
+- No selection has been made.
+- Every clarification below fills a gap or corrects a fact found while implementing. None changes a
+  hypothesis, a comparator, a set, a matcher or a statistic.
+
+**Records.**
+- Stratum labels, SHA-256 (the files are private):
+
+  | set | SHA-256 |
+  |---|---|
+  | devtest | 3303c34060a7f6def6a9f11519007ee06cba66bb640d66b366ce9fb011472ddb |
+  | val | caa4c5fb23813659f353bd53ec232f42a5424a59fd98a03104a398b4894cf2eb |
+  | sel | b36aeddaa32288f4550d2b0311ee35e12f1c5b9014c8597cbfc1c729e7c2adda |
+  | testB | d813227d1411b896221b1fc0f827ba9860c22e94660768cc5f753bd56b41017d |
+  | valsel | 5be6ba7a7ba6e24eca91c2a3dfd5ad07349da8c92065f57495d498bca28bddf9 |
+
+  DEV-TEST reproduces its reference counts: 178 chiral / 137 mixed / 19 improper-achiral; K 55/119/26.
+  These SHA-256 values depend on the BLAS build. On another machine, compare the label fields, not the
+  file hash.
+- Gate F passes on every set (`results/n3/gateF.json`, all_pass).
+- The power table at n = 1000 (`results/n3/power_testB.json`, 4,000 replicates, exact test) gives power
+  at α 0.05 (and at α/3):
+
+  | arm | Δ = 2 pp | 2.5 pp | 3 pp |
+  |---|---|---|---|
+  | 3-seed arm | 0.83 (0.71) | 0.97 (0.92) | 1.00 (0.99) |
+  | iii-s (m = 1) | 0.61 (0.45) | 0.82 (0.68) | 0.93 (0.86) |
+  | H1 intersection-union | 0.74 (0.57) | 0.93 (0.85) | 0.99 (0.98) |
+
+  The single-run H2 comparator is the least powered.
+- FF* runs on fairchem-core 2.23.0, which requires torch ~2.13, in its own environment. The MCF
+  environment stays on torch 2.7.1 + cu128.
+- The A1 refcode-list SHA-256 values are of the files with LF line endings, as stored in git.
+
+**Export and MCF (§3.2).**
+1. Export step 5. The RDKit `DetermineBonds` call inside MCF's `fix_mol_bonds` strategy 1 runs with
+   maxIterations = 10^7 instead of RDKit's unlimited default. Uncapped, MCF's own pipeline does not
+   terminate on TRAIN crystal ZAYGOY. A molecule that hits the cap goes through MCF's own exception path
+   to strategy 2. Cap hits are listed per set in F4: TRAIN ZAYGOY (4 copies); none in VAL, VALSEL,
+   DEV-TEST or TEST-B. The run used RDKit 2026.03.3, and one obabel process per set, aligned by title
+   and asserted 1:1.
+2. P6(b) is used only if P6 pooling is switched on. It then requires max|Δ|/max|reference| ≤ 1e-5, per
+   output and per input gradient, in float32 on the box GPU. P6 is recorded as two keys:
+   `interpolant.rots.p6_vectorized_prior` and `model.bb_embedder.p6_scatter_pooling`.
+3. **Diagnostic (a) state.** MCF's relative-rotation azimuth feature (atan2 in `gen_edges`, used raw in
+   `rot_unit_dots`) has a branch cut. Exact C2-conjugate copies sit on it, which happens in every
+   symmetric-prior draw at t = 0 and in states with mirror-related copies. (a) is therefore evaluated at a
+   generic state:
+   - the first 10 VALSEL crystals, in one unshuffled batch;
+   - `torch.manual_seed(0)` and `np.random.seed(0)` before loading;
+   - one corrupt_batch draw of that batch gives t and the lattice/centroids;
+   - rotmats_t is replaced by independent per-copy Haar orientations from
+     `torch.Generator().manual_seed(0)`, which then also draws the 3 G and the 3 control sets;
+   - the thread count is recorded.
+   The corrupt_batch-state statistics and the branch-cut edge counts are reported, not gated. Because the
+   prior sits on the cut, the H-invariance of the sampled distribution is approximate. The paper wording
+   and the §4 invariance clause cite each selected checkpoint's 50-step sampler deviation max|R_B −
+   G·R_A|. (b)-(d) are labelled "approximate" if that deviation exceeds 1e-3 on any selected
+   checkpoint. The conditional paper wording adds: "except where a relative-rotation axis lies on the
+   branch cut of MCF's azimuth feature, which the symmetric prior's exact C2 conjugates reach at t = 0;
+   the 50-step sampler deviation measures its effect". +G's inherited RESID is exact only for draws with
+   no branch-cut edge, and the number of draws that have one is reported.
+4. MCF's sampler cannot run in float64 (openfold casts pred_R to float32). The reported 50-step deviation
+   comes from MCF's own `FlowModule.forward` in float32. A float64 replica of the Euler loop is reported
+   beside it, labelled as a replica.
+5. (ii-A) "minimum interplanar spacing" means the smallest height V/|a_j × a_k| of the generated cell
+   L_gen as sampled, before the F5 supercell.
+6. Gate C-b uses the released 750-structure TEST pickle in 3 unshuffled batches of 250 (the released
+   batch_size.test of 512 would give only 2 batches), with one CPU thread per process. It passes only when
+   both the CPU half (bitwise) and the GPU half pass.
+7. Gate C-a scoring. MCF's own scorer rebuilds each lattice from its six parameters but keeps the
+   Cartesian coordinates in the original frame. For cells not in pymatgen's parameter orientation it
+   therefore reads a different structure than the one stored (VAL 68/100 and DEV-TEST 115/200 of our
+   exports).
+   - C-a (i) compares MCF's scorer with `n3_score.py --mcf-reading`, which emulates that reading. The
+     agreement of n3_score's own adapter is reported beside it, and every disagreement is traced. A
+     disagreement that disappears in --mcf-reading mode is attributed to MCF's reader and does not
+     change n3_score.
+   - C-a (ii) compares the medians from MCF's scorer (the one behind Fig. 3a) with Fig. 3a, and prints
+     n3_score's own medians beside them.
+   - Whether MCF's published numbers are affected is NOT claimed. It is reported only as an observation
+     about the released scorer.
+8. **Generator errors and non-finite draws** (§1.3):
+   - A draw with any non-finite lattice, centroid, rotation or coordinate is an arm failure. RESID must be
+     finite on every other draw and NaN on these.
+   - If `inference.py` fails, the call is retried once in a fresh process at the same seed. If it fails
+     again, the set is sampled in chunks of 25 crystals, in sidecar order, with chunk j at
+     inference.seed + 1,000,000·(j+1).
+   - A chunk that fails twice is sampled one crystal at a time, with crystal q of chunk j at
+     inference.seed + 1,000,000·(j+1) + 1,000·(q+1), two attempts each. A crystal that fails both is a
+     generator error: a MISS, listed by refcode.
+   - If nothing succeeds, the run stops as a harness failure.
+   - The old architecture's sampler retries a failing chunk one crystal at a time, then one draw at a
+     time, with the same priors. A draw that still fails is an invalid draw. Resource and device errors
+     abort the run, which then resumes; they are never counted as a MISS.
+9. The MCF RESID geodesic is computed in float64 as atan2(sin, cos) of R_passᵀ·R_ret (the arccos form has
+   a ≈4e-4 rad float32 floor near 0). resid_16.pt also stores the pass's rotations. The ii-S oracle
+   figure "max 0.014°" in §3.2 was that floor; the true maxima are 8.1e-6° (VAL 100/100) and 7.3e-6°
+   (DEV-TEST 200/200).
+10. Diagnostic (b) and the ii-S oracle are input-side but not in the §1.1 list. They run on SEL/VALSEL
+    only after VALSEL sampling, and on TEST-B only at step 9.
+11. (ii-A) selection. Stage 1 candidates are the top-3 valid/loss checkpoints and last. Stage 2 ranks by
+    seed-summed any-of-10 at stol 1.0. Selector ties follow §2.3.
+12. Training seeds and run names are read from `<ckpt_dir>/config.yaml`. The launch yamls force
+    `experiment.seed` to be given explicitly.
+13. MCF's standardization mirrors the cell when det Q = −1 (VAL 38/100, DEV-TEST 93/200, TRAIN 676/1687,
+    VALSEL 142/400, TEST-B 378/1000). Every mapping uses X = X_MCF·Qᵀ with the stored Q. The matchers do
+    not distinguish enantiomorphs.
+
+**OLD iv-P (§3.4).**
+14. Items are stored padded to 16 × 64. Each batch is trimmed to its real slots and atoms before the
+    forward pass; padding is masked everywhere, so real-slot outputs are equal up to float rounding.
+    Whether the EGNN runs on real molecules only (`--pack`) is fixed in the step-4 amendment, before any
+    iv-P training. It then applies to all five runs and every iv-P sampling run, together with the
+    sampling device and `--crystals-per-batch`.
+15. The fixed-draw val loss is Σ |v_R − u_R|² over (crystal, draw, real slot), divided by that count, with
+    clean packing and flow.interpolate targets.
+16. Ties:
+    - an lr tie goes to 3e-4, then the lower lr;
+    - a best-epoch tie goes to the earlier epoch;
+    - a Stage-B tie still open after draw@1, any@16 and val loss goes to ascending epoch.
+    iv-S candidates carry the RESID of their source iv-P draw.
+17. iv-P uses prior_vol_per_atom = the TRAIN mean. This is inert, because lambda_lattice = 0 and the
+    conditioning uses the true lattice.
+18. iv-A's TRAIN count is 599, not 598 (part-file flag). iv-A is not run.
+19. Unseen coset keys: SEL 2 copies in 1 crystal; TEST-B 27 copies in 6 crystals; VAL and DEV-TEST 0. The
+    slot → op bijection holds on SEL 300/300 and TEST-B 1000/1000. TRAIN keeps its 9 orbit-failure
+    crystals (argmin op labels).
+
+**CLASSICAL and FF* (§3.3).**
+20. **FF* configuration** is fixed ONCE at the step-4 gate by `n3_classical.py ffconfig`, recorded in the
+    step-4 amendment, and identical for the truths, iii-s, i-E and BASIN on every set.
+    - Call: `load_predict_unit(ckpt, inference_settings=S, device='cuda', atom_refs=...)`, task 'omc'.
+    - S is 'batch' (unmerged, uncompiled, GENERAL backend) unless 'default' (with a fresh predict unit per
+      crystal and job) wins the timing gate including its restart and recompile costs.
+    - The fairchem-core version, the A1 weight hashes and the resolved inference state of a probe call are
+      recorded. Every FF* call must return that state; a mismatch is an environment error (the job stops
+      and re-runs), never an FF* failure.
+    - The production dtype is fixed in the same amendment, before any VALSEL truth is minimised.
+    - TEST-B and DEV-TEST truths run after the VALSEL truths, under the same configuration.
+21. The finite-difference check runs in float64, with a pass iff the relative gradient error ≤ 1e-4 for
+    each of 5 VAL crystals × {true pose, one Haar pose}. Float32 figures are reported beside it.
+22. **L-BFGS on SO(3):**
+    - right-trivialised gradients; s = t·d, y = g_{k+1} − g_k; lr 1; first step min(1, 1/|g|_1);
+      c1 1e-4, c2 0.9; at most 25 line-search evaluations; tolerance_change 1e-9;
+    - the evaluation cap is enforced inside line searches;
+    - a line search that ends without strong Wolfe, a non-descent direction or no energy decrease stops
+      the run at the line search's lowest point (UNCONVERGED);
+    - when the cap interrupts a line search, the lowest trial point below the current iterate is
+      returned, and CONVERGED is the gradient test at the returned pose.
+23. FF* retries: all structures of a failed call are retried one per call in a single fresh process. A
+    server that cannot start, or one whose version or resolved state differs from the fixed
+    configuration, is an environment error.
+24. If the step-4 gate shows out-of-memory at 64 starts, a round may be split into consecutive predict
+    calls of at most N atoms, with N fixed in the step-4 amendment.
+25. Grid pre-rotation is left multiplication, Q·G_i, with G_i in HEALPix ring order ×
+    ψ_k = (k + ½)·2π/24.
+26. **Seed index on split 0.** For arms seeded by i on VAL/SEL (iii-u, iv-P), i is the VALSEL position
+    (SEL j → 100 + j). iii-u draws are float64 randn(16,3,3) → QR with sign and determinant fix, from
+    `torch.Generator().manual_seed(seed)`. OURS: the seed is set once per crystal, and the arm's
+    checkpoints are sampled in seed order from that stream (the g2_rank convention; OURS-N2's stored VAL
+    draws come from a 5-checkpoint stream).
+27. X–H normalisation: an H bonded to C/N/O (parent = the nearest bonded non-H atom under the §1.1 graph
+    rule) is moved along the X–H vector to exactly 1.089 / 1.015 / 0.993 Å, lengthening or shortening.
+    Other H atoms are unchanged. Counts are reported.
+28. **Disclosure.** Local CPU smoke runs FF*-minimised a few arm candidates before any H2 FORM existed.
+    Each used UMA s-1p1 'batch' float32, at most 10 evaluations per start, and no matching of any kind:
+    - iii-s starts on VAL crystals 26 and 78;
+    - i-E on the iii-u draws of VAL 26, and BASIN on its pick;
+    - in review, TRAIN crystal 57.
+    All of those outputs were deleted. They carry no information about the FORM, which is a fixed
+    threshold on FF*-minimised truths.
+29. OMC25's element set = the union of elements in mol.composition over all rows of the A1 csv =
+    {B, Br, C, Cl, F, H, I, N, O, P, S, Si}. Crystals outside it: DEV-TEST 1, VAL 2, SEL 5, TEST-B 16
+    (listed in `results/n3/omc25_outside_elements_*.json`).
+
+**Scoring and selection (§2).**
+30. For reused stored N1/N2 draws, the recorded e_lj (3 dp) and torque_end (5 dp) are the selector inputs.
+    Recomputing LJ on the scored structure changes no LJ pick (all 100 near-tie crystal-seeds checked).
+31. A deterministic energy() failure gives a non-finite selector input, which ranks last; the draw stays
+    valid. Only a failure of generation itself is an arm MISS.
+32. The §1.3 "slow" threshold is 1200 s. A slow fit is re-run alone with no limit, so the threshold changes
+    only scheduling, never an outcome.
+33. For H1, the two-stage seed caveat applies if EITHER component's interval contains 0. Table 1 s.d. is
+    the sample s.d. (ddof = 1).
+34. **Table R (§5).**
+    - (c) ICP starts are the 16 listed plus the best automorphism rotation of §2.6 (i). The approximant is
+      the lowest-RMSD end point. If geometrically distinct end points (> 1e-3 Å apart) tie within
+      1e-6 Å, each is built and matched, and the crystal counts as matched if any does.
+    - The 16-start-only column is reported beside it: DEV-TEST Q 82 vs 83; VAL 39 vs 40; P unchanged.
+    - The 600 s limit applies per (crystal, column) job. A timeout is counted and not re-run. An error or
+      crash is re-run once in a fresh process, and an identical recurrence is a deterministic non-match.

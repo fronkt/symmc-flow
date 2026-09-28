@@ -1,0 +1,128 @@
+{
+ "set": "devtest",
+ "protocol": "tasks/n3_protocol.md \u00a73.2 Gate F",
+ "mcf_base": "3c493f8",
+ "p1_maps_patched": {
+  "common": true,
+  "dataset": true,
+  "utils": true
+ },
+ "n": 200,
+ "complete": true,
+ "export_failure_refcodes": [],
+ "export_failure_reasons": {},
+ "centred": 12,
+ "mult": {
+  "1": 188,
+  "2": 10,
+  "4": 2
+ },
+ "z_MCF": {
+  "2": 56,
+  "4": 129,
+  "8": 15
+ },
+ "K_z": {
+  "K16_z4": 2,
+  "K2_z2": 55,
+  "K4_z2": 1,
+  "K4_z4": 118,
+  "K8_z4": 9,
+  "K8_z8": 15
+ },
+ "detQ_negative": 93,
+ "primitive_length_tie": {
+  "exact": 1,
+  "near": 1
+ },
+ "gate_check_errors": {},
+ "F1": {
+  "n_set": 200,
+  "n_exported": 200,
+  "export_failures": 0,
+  "sidecar_order_ok": true,
+  "atom_types_in_0_16": 200,
+  "feature_arrays_2_8_4": 200,
+  "z_times_mult_eq_K": 200,
+  "pass": true
+ },
+ "F2": {
+  "assemble_le_1e-3A": 200,
+  "max_assemble_err_A": 3.305677387812769e-06,
+  "species_decoded_ok": 200,
+  "match_primary": 200,
+  "matcher_gated": true,
+  "fail_refcodes": [],
+  "source": "pickle (re-read from disk)",
+  "pickle_cells_identical": 200,
+  "pass": true
+ },
+ "F3": {
+  "chi_parity_agree_up_to_relabel": 199,
+  "n": 200,
+  "disagree_refcodes": [
+   "WIRPIA"
+  ],
+  "gated": false
+ },
+ "F4": {
+  "copies": 748,
+  "status": {
+   "fallback": 8,
+   "fix1": 728,
+   "fix3": 12
+  },
+  "descriptor_exception": 0,
+  "label_inconsistent": 0,
+  "determine_bonds": {
+   "ValueError": 20,
+   "ok": 728
+  },
+  "determine_cap_hit_refcodes": [],
+  "determine_max_iter": 10000000,
+  "zero_basic_chemical": 0,
+  "zero_frac": 0.0,
+  "crystals_with_zero_copy": 0,
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02",
+  "obabel_batch": {
+   "sdf_records": 748,
+   "copies": 748,
+   "one_to_one": true,
+   "missing": 0
+  },
+  "pass": true
+ },
+ "F5": {
+  "run": true,
+  "gated": true,
+  "le_1e-4": 200,
+  "max_rel_err": 2.2710013380103426e-05,
+  "centred_le_1e-4": 12,
+  "fail_refcodes": [],
+  "fail_explained_by_energy_image_shell": 0,
+  "pass": true
+ },
+ "versions": {
+  "python": "3.12.10",
+  "numpy": "2.3.5",
+  "torch": "2.11.0+cpu",
+  "rdkit": "2026.03.3",
+  "pymatgen": "2026.5.4",
+  "ase": "3.28.0",
+  "spglib": "2.7.0",
+  "obabel": "Open Babel 3.1.0 -- Feb 17 2026 -- 06:52:02"
+ },
+ "timing_s": {
+  "geometry_and_gates": 16.8,
+  "features": 2.9
+ },
+ "gate_pass": true,
+ "pickle": "n3_mcf/devtest/test_molcrystal_normalized.pkl.gz",
+ "pickle_sha256": "6c5a4cff41648ad73ca2839f251b0f4e44e0da49c8a989e1d8e4b1f87a216d7c",
+ "pickle_content_sha256": "18c01d2998a635f7828b689f4850bebf33cfde98f6f5334ca3085a986031af08",
+ "pickle_kept_from_previous_export": true,
+ "sidecar_sha256": "8aa8a2e4468e608b4a338b83e2d2b07b03d4acdd1593b30073c169f528474141",
+ "oracle_predictions_kept_from_previous_export": true,
+ "oracle_predictions": "n3_mcf/devtest/oracle_devtest/predictions_16.pt",
+ "oracle_predictions_sha256": "020df44a482ad7afc661024588742f2080356111e4f1c3b7e834d1997ec1d747"
+}
