@@ -1,0 +1,81 @@
+{
+ "counts": {
+  "pool_cifs": 4500,
+  "o3_kept": 3653,
+  "after_g1_oracle": 3632,
+  "step2_drops": {
+   "not Z'=1 general-position (asym_item)": 1142,
+   "expand oracle (i): orbit": 15
+  },
+  "after_step2": 2475,
+  "step3_family_drops": 19,
+  "step3_wl_drops": 3,
+  "after_step3": 2453,
+  "pool_items_sharing_wl_species_within_pool": 17,
+  "P_after_family_dedup": 2448,
+  "SEL": 300,
+  "TEST_B": 1000
+ },
+ "describe": {
+  "sel": {
+   "K": {
+    "1": 1,
+    "2": 72,
+    "3": 1,
+    "4": 197,
+    "8": 28,
+    "16": 1
+   },
+   "class": {
+    "sohncke": 90,
+    "centro": 195,
+    "other": 15
+   }
+  },
+  "testB": {
+   "K": {
+    "1": 5,
+    "2": 251,
+    "3": 1,
+    "4": 632,
+    "6": 1,
+    "8": 105,
+    "16": 5
+   },
+   "class": {
+    "centro": 679,
+    "sohncke": 270,
+    "other": 51
+   }
+  }
+ },
+ "sha256": {
+  "sel_refcodes.txt": "08858943cde80676da590325373828d00aabbb0f1957bc992ac910ac4f3cbb5f",
+  "testB_refcodes.txt": "3fb458eb6b0eb5a70874616e7f9027d94f10bad3a8f8597360f3cbabf60be256",
+  "g1_cache ds_o3.pt": "2f44d8a0418fb02abdac644a7ca181c5bd2c2b6454f77991738a6a65465a384c",
+  "g1_parts": {
+   "part_00000.pt": "fbab3fc9717d7693109c640e920d11a2c137dd1109052f8bba9591c2908f83f7",
+   "part_00250.pt": "937aa2c2a3eab487520b779ddb3821c076fe3d6a05a0f5aab32b619d58751c57",
+   "part_00500.pt": "7783a7c1ae432ffe54180a7846871e62a9efb9127be3457368687ab8ed71a791",
+   "part_00750.pt": "fe45833ad281cca9d4dfc292dc4d16cd7b6deeccbb6906e16c483b92a524dfde",
+   "part_01000.pt": "9fc6bf0deb553e348ea9e499089526d2f743569811d2658f8495c8b59453b4d3",
+   "part_01250.pt": "b4125caf9a59abdf7a2339b1e5e867a742daee4fdcc3182fb050bf77fdf85f4a",
+   "part_01500.pt": "df1a88213c6a96bf6a93dc5b965dbacfc422d506a1401fc53d4121599e70af89",
+   "part_01750.pt": "d57a4d64bcbc4261b20769338620caa82f9f57fa532b4f2a9ebd0ff7bc8ed54b",
+   "part_02000.pt": "d7bae5815a8947a8d0b97f50a5b57aa4de825f6d346845995a3d83e08c474d84",
+   "part_02250.pt": "3949d7c34f83b976511ac3ec45185d1f657b6bdaa008df151eed63c3d2dc71d5",
+   "part_02500.pt": "8be95d7053beb807b5bc6dc27d193f4209728d0552124c357b90250a89018348",
+   "part_02750.pt": "b857a01eef59296d5e469f2f9266fc6cf70fee04d8c4de6403b088df27508577",
+   "part_03000.pt": "4f1c984b7cb8e26e651eaebd5e22c509cae1fd6f16494e8e918d0bc3d43c5ff8",
+   "part_03250.pt": "55d4b8bd2fcdf2e4469187a3b06c45e163cd5de8bf1a5c69bc7a6f3fe5b74bf0",
+   "part_03500.pt": "a5f4f88fcf645b8ed7591634fe352e204a7bad37007d8e195af98e99d3078323",
+   "part_03750.pt": "6cbae935ff2cacccae9fa71f14adc351ebe833cb551af71099208c174f1d5535",
+   "part_04000.pt": "6aafa6a67f1bfd4c524bf227914569a7bbdb764d2d0a89f02da455f2f12cad8d",
+   "part_04250.pt": "c4e163c071d93078a97f4ee9e45583191bc0ec4d38d2032243b67b97410b3969"
+  },
+  "n3_asym_pool.pt": "3c212e6729fab83fe6e42857bc7b02174c225431339692fd409d14c382fcae93"
+ },
+ "seeds": {
+  "perm": 20261001
+ }
+}

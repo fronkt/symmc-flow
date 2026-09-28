@@ -1081,4 +1081,47 @@ passed, each z_MCF row carries MCF's diagnostic-(b) ceiling, labelled oracle.
 
 ---------------------------------------------------------------------------------------------------
 ## 9. Amendments
-(none yet)
+
+### A1 (2026-09-28, 02:3x EDT): TEST-B / SEL frozen
+**State when made.** No N3 arm output exists on SEL, TEST-B or DEV-TEST. Local CPU smoke tests of the
+arm harnesses run only on VAL/TRAIN, with random-init or existing G2 weights, and no selection uses them.
+
+**Build step 1** (disclosure §1.4g). This is the G1 parse of the 4,500 pool CIFs:
+`python scripts/g1_o3_reparse.py --cif-dir data/csd_testB/cif --manifest data/csd_testB/manifest.csv --cache data/csd_testB/ds_o3.pt --out results/n3/g1_o3_reparse_testB.json --workers 5`.
+It was started 2026-09-28 00:14:57 EDT and finished 01:28 EDT, before the protocol commit 8f7e494
+(01:59:41 EDT). It produced 3,653 O(3)-kept items with no timeouts.
+
+**Pre-commit filter validation.** Before the commit, the step-2 expand-oracle filter was checked on the
+dev corpus. VAL 100/100 and DEV-TEST 200/200 pass. TRAIN has exactly 9 orbit failures, as the review
+predicted.
+
+**Build steps 2-6** (`scripts/n3_build_testB.py --workers 6`) ran after the commit and finished 02:20
+EDT (`results/n3/n3_build_testB.json`):
+
+| step | outcome |
+|---|---|
+| start | 4,500 CIFs → 3,653 O(3)-kept |
+| G1 oracle | 3,632 remain |
+| step 2 | dropped 1,142 not Z'=1 general position and 15 orbit failures; 0 failed StructureMatcher → 2,475 |
+| step 3 | dropped 19 by family and 3 by WL hash → 2,453 (17 of these share a WL species with another pool item) |
+| step 4 | family dedup → \|P\| = 2,448 |
+| step 5 | **SEL = 300, TEST-B = 1,000** |
+
+TEST-B composition: K 1:5, 2:251, 3:1, 4:632, 6:1, 8:105, 16:5; class centro 679, Sohncke 270, other 51.
+
+**SHA-256:**
+
+| file | SHA-256 |
+|---|---|
+| `tasks/n3_sets/sel_refcodes.txt` | 08858943cde80676da590325373828d00aabbb0f1957bc992ac910ac4f3cbb5f |
+| `tasks/n3_sets/testB_refcodes.txt` | 3fb458eb6b0eb5a70874616e7f9027d94f10bad3a8f8597360f3cbabf60be256 |
+| G1 cache `data/csd_testB/ds_o3.pt` | 2f44d8a0418fb02abdac644a7ca181c5bd2c2b6454f77991738a6a65465a384c |
+| pool cache `data/csd_testB/n3_asym_pool.pt` | 3c212e6729fab83fe6e42857bc7b02174c225431339692fd409d14c382fcae93 |
+| UMA `checkpoints/uma-s-1p1.pt` (1,173,759,575 B) | 07068e9c76702ca173d13155095f2117c1b327ec228557e64cd2709c777b824a |
+| UMA `references/iso_atom_elem_refs.yaml` | 8d6b57a33c6a139f80cd706f253a030bd9d93cbfb1bbe33fba066e23b7e8c29e |
+| `facebook/OMC25` `omc25-starting-crystals.csv` | afd58adbbc5fba225def6903af9fd41b374282259512bafe5102a5c53f9d3832 |
+
+The G1 part-file hashes are in the build JSON.
+
+**Deferred to A2** (still before any arm output on SEL/TEST-B/DEV-TEST): the stratum-label file hashes,
+the fairchem-core version, and the `n3_power.py` table at n = 1000.
