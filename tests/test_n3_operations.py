@@ -498,3 +498,40 @@ def test_explicit_prior_projection_is_labeled_assumed_and_never_approval_eligibl
     Path(args.rates).write_text(json.dumps(rates))
     with pytest.raises(SystemExit, match="explicit assumed=True"):
         TG.cmd_project(args)
+
+
+def fake_infer_measurement(tmp_path, monkeypatch, failed, printed=True, rc=1):
+    """Run TG.measure on a stand-in for `n3_mcf_run.py infer` that leaves a check.json and exits rc."""
+    repo, out, _, _ = measurement_world(tmp_path, monkeypatch)
+    run_dir = tmp_path / "run"
+    run_dir.mkdir()
+    (run_dir / "check.json").write_text(json.dumps({
+        "pass": not failed, "failed": failed, "info": {"nonfinite_draws": 631, "crystals_without_finite_draw": 13}}))
+    tail = {"run_dir": str(run_dir), "check_pass": not failed, "sampling_sec": 36.0, "resid_sec": 5.4}
+    code = (f"print({json.dumps(json.dumps(tail))})\n" if printed else "") + f"raise SystemExit({rc})"
+    spec = {"kind": "mcf_infer", "env": "mcf", "gpu": False, "n": 50, "cmds": [(str(repo), [sys.executable, "-c", code])]}
+    args = SimpleNamespace(workers=2, gpu="0", concurrency=1, ivp_cpb=[1, 8])
+    return TG.measure("mcf_infer_A_n50", spec, args)
+
+
+def test_timing_infer_accepts_only_smoke_weight_resid_check_failures(tmp_path, monkeypatch):
+    res = fake_infer_measurement(tmp_path, monkeypatch, sorted(TG.SMOKE_WEIGHT_CHECKS))
+    assert res["ok"] and res["check_pass"] is False and res["call_s"] == 41.4
+    assert set(res["check_failed"]) == TG.SMOKE_WEIGHT_CHECKS
+    assert res["check_info"] == {"nonfinite_draws": 631, "crystals_without_finite_draw": 13}
+
+
+def test_timing_infer_passing_check_is_recorded(tmp_path, monkeypatch):
+    res = fake_infer_measurement(tmp_path, monkeypatch, [], rc=0)
+    assert res["ok"] and res["check_pass"] is True and "check_failed" not in res
+
+
+@pytest.mark.parametrize("failed", [["resid_finite_on_finite_draws", "config_num_timesteps"], ["clamp_lattice_atol_1e-5"]])
+def test_timing_infer_rejects_other_check_failures(tmp_path, monkeypatch, failed):
+    res = fake_infer_measurement(tmp_path, monkeypatch, failed)
+    assert not res["ok"] and "infer check did not pass" in res["error"]
+
+
+def test_timing_infer_rejects_a_crash_without_its_check_line(tmp_path, monkeypatch):
+    res = fake_infer_measurement(tmp_path, monkeypatch, sorted(TG.SMOKE_WEIGHT_CHECKS), printed=False)
+    assert not res["ok"] and res["error"].startswith("failed (1)")

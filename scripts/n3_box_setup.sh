@@ -79,7 +79,17 @@ cmd_check() {
   echo "free disk at $ROOT: ${disk} GB"
   [ "$disk" -ge "$MIN_DISK_GB" ] || die "less than ${MIN_DISK_GB} GB free"
   command -v python3 >/dev/null || die "no python3 (needed by n3_box_manifest.py unpack/verify)"
+  echo "C compiler: $(command -v gcc || command -v cc || echo 'none (setup installs gcc)')"
   echo "check: OK"
+}
+
+ensure_cc() {  # Triton in the FF env builds its CUDA launcher with a C compiler, even for the uncompiled 'batch' path
+  if [ "$DRY" = 1 ]; then echo "+ ensure a C compiler (apt-get install gcc if none)"; return 0; fi
+  if command -v gcc >/dev/null || command -v cc >/dev/null; then echo "C compiler: $(command -v gcc || command -v cc)"; return 0; fi
+  command -v apt-get >/dev/null || die "no C compiler and no apt-get: FF (Triton) needs gcc"
+  run apt-get update -qq
+  DEBIAN_FRONTEND=noninteractive run apt-get install -y -qq gcc
+  [ "$DRY" = 1 ] || command -v gcc >/dev/null || die "gcc install failed"
 }
 
 ensure_conda() {
@@ -280,15 +290,18 @@ PY
   fi
   run "$(envpy mcf)" "$ROOT/scripts/n3_mcf_smoke.py" --set val --n 4
   run "$(envpy ff)" "$ROOT/scripts/n3_ffstar.py" info
+  # toy cell (not CSD data) through the CUDA server: catches a missing Triton compiler before any FF job
+  run "$(envpy symmc)" "$ROOT/scripts/n3_ffstar.py" selftest --device cuda --settings batch --ff-python "$(envpy ff)"
   echo "data: OK"
 }
 
 case "$mode" in
   check) cmd_check ;;
   wheels) cmd_wheels ;;
-  mcf|ff|symmc) cmd_check; cmd_wheels; ensure_conda; "cmd_$mode"; write_envfile ;;
+  mcf|symmc) cmd_check; cmd_wheels; ensure_conda; "cmd_$mode"; write_envfile ;;
+  ff) cmd_check; cmd_wheels; ensure_cc; ensure_conda; cmd_ff; write_envfile ;;
   smoke) cmd_smoke ;;
   data) ensure_conda; cmd_data ;;
-  all) cmd_check; cmd_wheels; ensure_conda; cmd_mcf; cmd_ff; cmd_symmc; write_envfile; cmd_smoke ;;
+  all) cmd_check; cmd_wheels; ensure_cc; ensure_conda; cmd_mcf; cmd_ff; cmd_symmc; write_envfile; cmd_smoke ;;
   *) die "unknown mode $mode (check|wheels|all|mcf|ff|symmc|smoke|data)" ;;
 esac

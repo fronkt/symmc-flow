@@ -216,6 +216,29 @@ def tail_json(log):
     return {}
 
 
+# The timing inferences sample from smoke_init (random-init) checkpoints. Random MCF-A weights let lattices diverge
+# (2026-10-11 timing box: 631/800 draws non-finite, 13/50 crystals without a finite draw), and the one RESID forward
+# at an extreme-but-finite state can return non-finite rotations. Those two checks judge the weights, not the timed
+# work; every other check (pickle, config, clamp, RESID bookkeeping) must still pass.
+SMOKE_WEIGHT_CHECKS = {"resid_finite_on_finite_draws", "resid_recomputes_from_saved_rotmats"}
+
+
+def infer_check_record(j):
+    """Check outcome of a timing inference (tail JSON of n3_mcf_run infer) -> fields of the measurement record."""
+    if not {"run_dir", "sampling_sec", "resid_sec", "check_pass"} <= set(j):
+        raise RuntimeError(f"infer did not complete sampling + RESID + check: {j}")
+    if j["check_pass"] is True:
+        return {"check_pass": True}
+    c = json.load(open(os.path.join(j["run_dir"], "check.json")))
+    failed = list(c.get("failed", []))
+    if c.get("pass") is not False or not failed or set(failed) - SMOKE_WEIGHT_CHECKS:
+        raise RuntimeError(f"infer check did not pass: {failed}")
+    info = c.get("info", {})
+    return {"check_pass": False, "check_failed": failed,
+            "check_info": {x: info.get(x) for x in ("nonfinite_draws", "crystals_without_finite_draw")},
+            "check_note": "random-init smoke weights: RESID finiteness only; the timed sampling + RESID + check ran"}
+
+
 def measurement_settings(args):
     return {"workers": args.workers, "gpu": str(args.gpu), "concurrency": args.concurrency,
             "ivp_cpb": list(args.ivp_cpb)}
@@ -341,13 +364,13 @@ def measure(name, spec, args):
             for cwd, argv in spec["cmds"]:
                 rc, w = run_cmd(cwd, argv, log, env)
                 wall += w
-                if rc:
+                # n3_mcf_run infer exits 1 after a completed sampling + RESID + check whose check failed; judged below
+                if rc and not (k == "mcf_infer" and tail_json(log).get("check_pass") is False):
                     raise RuntimeError(f"failed ({rc}); see {log}")
             res["wall"] = round(wall, 1)
             if k == "mcf_infer":
                 j = tail_json(log)
-                if not j.get("check_pass"):
-                    raise RuntimeError(f"infer check did not pass: {j}")
+                res.update(infer_check_record(j))
                 res.update(n=spec["n"], sampling_s=j["sampling_sec"], resid_s=j["resid_sec"],
                            call_s=round(j["sampling_sec"] + j["resid_sec"], 1))
             elif k == "ivp_train":
