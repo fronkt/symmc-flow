@@ -107,7 +107,10 @@ python3 - "$WORK" "$MDIR" "$VERIFY_ONLY" "$search_failed" <<'PY'
 import datetime, hashlib, json, os, sys
 work, mdir, verify_only, search_failed = sys.argv[1:]
 plan = json.load(open(os.path.join(work, "plan.json")))
-private = {(int(size), sha) for size, sha in plan["csd_hashes"]}
+# A zero-byte inventory entry carries no data, and its hash matches every empty file on the box (/.dockerenv,
+# lock files, empty __init__.py: 3,274 false hits on the 2026-10-11 timing box), so it is not searched.
+empty = sum(1 for size, _ in plan["csd_hashes"] if int(size) == 0)
+private = {(int(size), sha) for size, sha in plan["csd_hashes"] if int(size) > 0}
 sizes = {s for s, _ in private}
 hits, errors, candidates = [], [], 0
 lines = open(os.path.join(work, "all_files"), encoding="utf-8").read().splitlines()
@@ -131,7 +134,8 @@ search_errors = open(os.path.join(work, "search_errors"), encoding="utf-8").read
 ok = not (names or hits or errors or search_errors or int(search_failed))
 rec = {"verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "pass": ok,
        "verify_only": verify_only == "1", "targets": plan["targets"], "labels": plan["labels"],
-       "files_searched": len(lines), "manifest_hashes": len(private), "files_hashed": candidates,
+       "files_searched": len(lines), "manifest_hashes": len(private), "empty_inventory_entries": empty,
+       "files_hashed": candidates,
        "name_hits": names, "hash_hits": hits, "errors": errors + search_errors,
        "discard_outputs": plan["discard_outputs"], "pullback_receipt": plan["pullback_receipt"]}
 stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")

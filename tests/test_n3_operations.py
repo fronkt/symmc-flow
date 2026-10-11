@@ -535,3 +535,50 @@ def test_timing_infer_rejects_other_check_failures(tmp_path, monkeypatch, failed
 def test_timing_infer_rejects_a_crash_without_its_check_line(tmp_path, monkeypatch):
     res = fake_infer_measurement(tmp_path, monkeypatch, sorted(TG.SMOKE_WEIGHT_CHECKS), printed=False)
     assert not res["ok"] and res["error"].startswith("failed (1)")
+
+
+def can_symlink(tmp):
+    try:
+        os.symlink(tmp / "absent", tmp / "probe_link")
+        return True
+    except (OSError, NotImplementedError):
+        return False
+
+
+def pullback_world(tmp_path, monkeypatch):
+    if not can_symlink(tmp_path):
+        pytest.skip("symlinks need privileges on this host (run on Linux / the box)")
+    root, man = tmp_path / "box", manifest(step=4)
+    (root / "data/n3_sets").mkdir(parents=True)
+    (root / "data/n3_sets/train.pt").write_bytes(b"synthetic TRAIN input")
+    BM.write_manifest_files(man, root / BM.MAN_SUBDIR)
+    wb = root / "n3_mcf/_timing/wandb/wandb"
+    (wb / "offline-run-1/logs").mkdir(parents=True)
+    (wb / "offline-run-1/logs/debug.log").write_text("run log")
+    (root / ".n3_box/cache/wandb").mkdir(parents=True)
+    (root / ".n3_box/cache/wandb/core.log").write_text("core log")
+    monkeypatch.setenv("N3_MANIFEST_DIR", str(tmp_path / "manifests"))
+    return root, wb
+
+
+def test_pullback_lists_in_root_wandb_symlinks_without_packing_them(tmp_path, monkeypatch):
+    root, wb = pullback_world(tmp_path, monkeypatch)
+    os.symlink("offline-run-1", wb / "latest-run")
+    os.symlink("offline-run-1/logs/debug.log", wb / "debug.log")
+    os.symlink(root / ".n3_box/cache/wandb/core.log", wb / "offline-run-1/logs/debug-core.log")
+    BM.cmd_pullback(SimpleNamespace(root=str(root), out=str(tmp_path / "return"), label="t"))
+    with tarfile.open(tmp_path / "return/n3_pullback_t.tar") as tf:
+        members = {m.name: m for m in tf.getmembers()}
+    assert "n3_mcf/_timing/wandb/wandb/offline-run-1/logs/debug.log" in members
+    assert all(m.isfile() for m in members.values())
+    links = json.loads((tmp_path / "manifests/pullback_t.skipped_symlinks.json").read_text())
+    assert {x["path"] for x in links} == {"n3_mcf/_timing/wandb/wandb/latest-run", "n3_mcf/_timing/wandb/wandb/debug.log",
+                                         "n3_mcf/_timing/wandb/wandb/offline-run-1/logs/debug-core.log"}
+
+
+def test_pullback_refuses_a_symlink_leaving_the_box_root(tmp_path, monkeypatch):
+    root, wb = pullback_world(tmp_path, monkeypatch)
+    (tmp_path / "outside.txt").write_text("not box data")
+    os.symlink(tmp_path / "outside.txt", wb / "offline-run-1/logs/debug-core.log")
+    with pytest.raises(SystemExit, match="leaves the box root"):
+        BM.cmd_pullback(SimpleNamespace(root=str(root), out=str(tmp_path / "return"), label="t"))

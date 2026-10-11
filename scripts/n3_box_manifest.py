@@ -665,6 +665,15 @@ PULL_ROOTS = ["results/n3", "n3_mcf/runs", "n3_mcf/infer", "n3_mcf/_gateC", "n3_
 PULL_SKIP = ("__pycache__",)
 
 
+def pull_link(p, root):
+    """A symlink met by pullback -> {path, target}; refuses one whose target resolves outside the box root."""
+    rp = os.path.relpath(p, root).replace(os.sep, "/")
+    base, dest = os.path.realpath(root), os.path.realpath(p)
+    if os.path.commonpath([base, dest]) != base:
+        raise SystemExit(f"symlink leaves the box root: {rp} -> {os.readlink(p)}")
+    return {"path": rp, "target": os.readlink(p)}
+
+
 def cmd_pullback(args):
     """Box, §7 step 8: tar every file the run wrote under PULL_ROOTS (uploaded files with unchanged hashes are left
     out), with a manifest; all of it is CSD-derived (csd=1) and is deleted by n3_box_cleanup.sh afterwards."""
@@ -682,15 +691,21 @@ def cmd_pullback(args):
             man = validate_manifest(json.load(open(os.path.join(mdir, fn))), root)
             for f in man["files"]:
                 uploaded[f["path"]] = f["sha256"]
-    files = []
+    files, links = [], []
     for pr in PULL_ROOTS:
         base = os.path.join(root, pr)
         for d, dirs, fs in os.walk(base):
             dirs[:] = [x for x in dirs if x not in PULL_SKIP]
-            if any(os.path.islink(os.path.join(d, x)) for x in dirs):
-                raise SystemExit(f"symlink in pullback output directory {d}")
+            # wandb offline runs leave pointer symlinks (latest-run, debug*.log): they carry no data of their own.
+            # A link inside the box root is listed, not packed (its target is pulled as a file or deleted with the
+            # root at cleanup); a link leaving the root stops the pullback.
+            for x in [x for x in dirs + fs if os.path.islink(os.path.join(d, x))]:
+                links.append(pull_link(os.path.join(d, x), root))
+            dirs[:] = [x for x in dirs if not os.path.islink(os.path.join(d, x))]
             for fn in fs:
                 p = os.path.join(d, fn)
+                if os.path.islink(p):
+                    continue
                 rp = os.path.relpath(p, root).replace(os.sep, "/")
                 safe_path(rp, root)
                 h = sha256(p)
@@ -707,6 +722,9 @@ def cmd_pullback(args):
     os.makedirs(home, exist_ok=True)
     for m in mfiles:
         shutil.copy2(m, os.path.join(home, os.path.basename(m)))
+    if links:
+        json.dump(links, open(os.path.join(home, label + ".skipped_symlinks.json"), "w"), indent=1)
+        print(f"{len(links)} in-root symlinks listed, not packed -> {os.path.join(home, label + '.skipped_symlinks.json')}")
     tar = os.path.join(args.out, f"n3_{label}.tar")
     with tarfile.open(tar + ".tmp", "w", format=tarfile.PAX_FORMAT) as tf:
         for f in files:
