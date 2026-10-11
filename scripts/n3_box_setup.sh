@@ -65,8 +65,11 @@ cmd_check() {
     return 0
   fi
   [ "$(uname -s)" = Linux ] || die "not Linux"
-  command -v nvidia-smi >/dev/null || die "no nvidia-smi"
   local n cu disk mem
+  if [ "${N3_NO_GPU_CHECK:-0}" = 1 ]; then  # HPC login node: build the envs here; smoke/data run in the GPU job
+    echo "N3_NO_GPU_CHECK=1: GPU / driver checks deferred to smoke (run it on the GPU node)"
+  else
+  command -v nvidia-smi >/dev/null || die "no nvidia-smi"
   n=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
   nvidia-smi --query-gpu=index,name,memory.total,driver_version --format=csv,noheader
   cu=$(nvidia-smi | sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p' | head -1)
@@ -75,6 +78,7 @@ cmd_check() {
   [ "$n" -eq 1 ] || echo "WARNING: $n GPUs; every job is pinned to CUDA_VISIBLE_DEVICES=0 (inference.py shards on >1)"
   awk -v a="$cu" -v b="$MIN_DRIVER_CUDA" 'BEGIN{split(a,x,".");split(b,y,".");exit !((x[1]>y[1])||(x[1]==y[1]&&x[2]>=y[2]))}' \
     || die "driver CUDA $cu < $MIN_DRIVER_CUDA: FF cu130 needs a newer driver (rent with cuda_max_good>=13.0)"
+  fi
   disk=$(df -BG --output=avail "$ROOT" | tail -1 | tr -dc 0-9)
   echo "free disk at $ROOT: ${disk} GB"
   [ "$disk" -ge "$MIN_DISK_GB" ] || die "less than ${MIN_DISK_GB} GB free"

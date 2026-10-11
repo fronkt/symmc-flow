@@ -15,7 +15,7 @@ GPU box (each measurement is a subprocess in its own env: PY_MCF / PY_SYMMC / N3
                             and check included -> per-call overhead c0 and per-crystal cost c1.
   ivp_train_{trim,pack}     n3_old_symmc.py train, 3 epochs (318 steps): epochs 2-3 from hist.jsonl.
   ivp_sample_{enc}_b{N}     n3_old_symmc.py sample on 50 VAL crystals x 16 draws x 50 RK4 steps (+ LJ workers).
-  ff_{batch,default}_{float32,float64}   n3_classical.py fftime: 20 VAL crystals (K=2 x7, 4 x7, >=8 x6),
+  ff_{batch,default,merged}_{float32,float64}   n3_classical.py fftime: 20 VAL crystals (K=2 x7, 4 x7, >=8 x6),
                             single calls and batched 64.
   ff_min_truth_{float32,float64}          n3_classical.py ffmin --truth, 20 VAL truths (evaluations used,
                             convergence), 'batch' settings. Truth + FF* only; no pose is matched.
@@ -57,6 +57,8 @@ MCF_TIMING = os.path.join(REPO, "n3_mcf", "_timing")
 S_DRAWS = 16
 TIMING_SEED = 990000
 MCF_EPOCHS, MCF_STEPS_PER_EPOCH, IVP_EPOCHS, IVP_RUNS = 1715, 14, 60, 5
+# FF* candidates timed at step 4; the MOLE-merging ones restart their server per crystal (n3_classical.FF_MERGING)
+FF_SETTINGS, FF_PER_CRYSTAL = ("batch", "default", "merged"), ("default", "merged")
 
 
 def py(env):
@@ -127,7 +129,7 @@ def measurements(args):
                 py("symmc"), "scripts/n3_old_symmc.py", "sample", "--run", "<run dir of ivp_train>", "--epoch", "3",
                 "--set", "val", "--limit", "50", "--workers", str(min(W, 8)), "--crystals-per-batch", str(b),
                 "--device", "cuda", "--arm", f"ivPtiming{enc}b{b}"] + (["--pack"] if enc == "pack" else []))]}
-    for st in ("batch", "default"):
+    for st in FF_SETTINGS:
         for dt in ("float32", "float64"):
             M[f"ff_{st}_{dt}"] = {"env": "symmc", "gpu": True, "kind": "ff_time", "settings": st, "dtype": dt,
                                   "cmds": [(REPO, [py("symmc"), "scripts/n3_classical.py", "fftime", "--set", "val",
@@ -642,7 +644,7 @@ def cmd_rates(args):
             r = J.get(f"ivp_sample_{enc}_b{b}")
             if r:
                 g.setdefault("ivp_sample_gpu_s_per_crystal", {}).setdefault(enc, {})[str(b)] = r["gpu_s_per_crystal"]
-    for st in ("batch", "default"):
+    for st in FF_SETTINGS:
         for dt in ("float32", "float64"):
             r = J.get(f"ff_{st}_{dt}")
             if r:
@@ -651,9 +653,9 @@ def cmd_rates(args):
                     "batched": fit_power([x["atoms"] for x in rows], [x["sec_per_struct_batched"] for x in rows]),
                     "single": fit_power([x["atoms"] for x in rows], [x["sec_single"] for x in rows]),
                     "warm_s_mean": sum(x["warm_sec"] for x in rows) / len(rows),
-                    "startup_s": (sum(x["warm_sec"] for x in rows) / len(rows) if st == "default"
+                    "startup_s": (sum(x["warm_sec"] for x in rows) / len(rows) if st in FF_PER_CRYSTAL
                                   else max(x["warm_sec"] for x in rows)),
-                    "startup_scope": "crystal" if st == "default" else "job",
+                    "startup_scope": "crystal" if st in FF_PER_CRYSTAL else "job",
                     "rate_basis": "end-to-end call wall; startup/recompile charged separately"}
     for dt in ("float32", "float64"):
         r = J.get(f"ff_min_truth_{dt}")
@@ -778,7 +780,7 @@ def validate_projection_inputs(R, ST, cfg):
         for key in ("single", "batched"):
             model(ff[key], "FF* " + key)
         positive(ff["startup_s"], "FF* startup", zero=True)
-        if ff["startup_scope"] != ("crystal" if cfg["ff"].startswith("default_") else "job"):
+        if ff["startup_scope"] != ("crystal" if cfg["ff"].rsplit("_", 1)[0] in FF_PER_CRYSTAL else "job"):
             raise ValueError("FF* startup scope does not match its server restart policy")
         for key in ("energy_s", "press_s", "fit_primary_s", "rms_mcf05_s", "rms_mcf08_s", "rms_mcf10_s",
                     "screen_s", "ours_sample_s"):

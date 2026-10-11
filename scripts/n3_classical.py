@@ -45,8 +45,9 @@ full runs of truths / search / ie / basin refuse to start without it or with any
 server reply must show the resolved inference state recorded there (n3_ffstar.FFConfigError otherwise).
 search / ie / basin also need the full-VALSEL anchor file made under the same configuration and from the
 current VALSEL fftruth bundle, and TEST-B / DEV-TEST truths need the full VALSEL fftruth bundle made under it.
---ff-settings is fairchem's inference_settings name; with default/turbo the server is restarted per crystal
-because fairchem merges the MOLE experts for one composition; --ff-dtype float64 for the FD check;
+--ff-settings is fairchem's inference_settings name or an N3 candidate (n3_ffstar.N3_SETTINGS); with
+default/turbo/merged the server is restarted per crystal because fairchem merges the MOLE experts for one
+composition; --ff-dtype float64 for the FD check;
 --ff-max-atoms splits a round into sub-batches (0 = off). Every FF* bundle's meta lists the stop reason of
 every minimisation and the §3.3 deterministic-failure summary (runs ended by ff_fail_start / ff_fail, refcodes).
 Every FF* evaluation uses a copy
@@ -889,12 +890,15 @@ def _ff_row(ff, s0):
             "ff_retries": ff.stats["retries"] - s0["retries"], "ff_det": ff.stats["deterministic"] - s0["deterministic"]}
 
 
+FF_MERGING = ("default", "turbo", "merged")
+
+
 def _ff_done():
-    """After each crystal. With MOLE-merging settings (default/turbo) a fairchem 2.23 server merges the experts
+    """After each crystal. With MOLE-merging settings (FF_MERGING) a fairchem 2.23 server merges the experts
     for the first composition it sees and falls back for good on the next, so a fresh server per crystal
     keeps every crystal on the same code path whatever the processing order."""
     c = _STATE.get("cfg") or {}
-    if c.get("settings") in ("default", "turbo") and _STATE.get("ff") is not None:
+    if c.get("settings") in FF_MERGING and _STATE.get("ff") is not None:
         _STATE["ff"].close()
         _STATE["ff"] = None
 

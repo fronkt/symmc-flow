@@ -58,6 +58,13 @@ def sha256(path):
 
 
 # ------------------------------------------------------------------------------ server (fairchem venv)
+# §7 step-4 candidates beyond fairchem's presets. "merged": default's MOLE merge without torch.compile (which
+# recompiled per batch shape on the 2026-10-11 timing box) or activation checkpointing (on in "batch"). The merge
+# holds for one composition, so the client restarts the server per crystal (n3_classical._ff_done).
+N3_SETTINGS = {"merged": dict(tf32=False, activation_checkpointing=False, merge_mole=True, compile=False,
+                              external_graph_gen=False, internal_graph_gen_version=2)}
+
+
 def _load(args):
     import copy
     import torch
@@ -67,8 +74,11 @@ def _load(args):
     from fairchem.core.units.mlip_unit.api.inference import guess_inference_settings
     torch.set_num_threads(args.threads)
     settings = args.settings
+    if args.settings in N3_SETTINGS:                 # an N3 candidate beyond fairchem's named presets
+        from fairchem.core.units.mlip_unit.api.inference import InferenceSettings
+        settings = InferenceSettings(**N3_SETTINGS[args.settings])
     if args.dtype != "float32":                      # non-default precision: the named preset, recast
-        settings = copy.deepcopy(guess_inference_settings(args.settings))
+        settings = copy.deepcopy(guess_inference_settings(settings))
         settings.base_precision_dtype = getattr(torch, args.dtype)
     t0 = time.time()
     unit = load_predict_unit(args.ckpt, inference_settings=settings, device=args.device,

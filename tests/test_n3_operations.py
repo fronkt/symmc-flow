@@ -247,6 +247,21 @@ def test_default_ff_cost_includes_per_crystal_restart_and_compile():
     assert default["gpu_h"] > batch["gpu_h"] + 20
 
 
+@pytest.mark.parametrize("scope", ["crystal", "job"])
+def test_merged_ff_candidate_must_charge_a_server_start_per_crystal(scope):
+    rates, stats, cfg = projection_world()
+    rates["gpu"]["ff"]["merged_float32"] = copy.deepcopy(rates["gpu"]["ff"]["batch_float32"])
+    rates["gpu"]["ff"]["merged_float32"]["startup_scope"] = scope
+    cfg["ff"] = "merged_float32"
+    if scope == "job":
+        with pytest.raises(ValueError, match="startup scope"):
+            TG.validate_projection_inputs(rates, stats, cfg)
+    else:
+        TG.validate_projection_inputs(rates, stats, cfg)
+        batch = TG.totals(TG.build_jobs(projection_world()[0], stats, dict(cfg, ff="batch_float32")), cfg)
+        assert TG.totals(TG.build_jobs(rates, stats, cfg), cfg)["gpu_h"] > batch["gpu_h"] + 20
+
+
 @pytest.mark.parametrize("fault", ["missing_rate", "nan_rate", "truncated_set", "wrong_set_size", "invalid_degrade", "no_cpu_cores"])
 def test_projection_refuses_incomplete_or_invalid_inputs(fault):
     rates, stats, cfg = projection_world()
