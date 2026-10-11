@@ -1,137 +1,146 @@
 #!/usr/bin/env bash
-# N3 §7 step 8, last part: delete every CSD-derived file on the box and prove by search that none remains.
-# Run ONLY after the pull-back tar was copied to the laptop and `n3_box_manifest.py unpack --no-overwrite` there
-# printed PASS (tasks/n3_runbook.md, step 8). Then destroy the box.
+# N3 §7 step 8: dedicated Linux box only; verified pullback, cleanup, then destroy.
+# Deletes ONLY explicit, canonical private root/upload and N3_EXTRA_DELETE_FILE targets.
+# Shared HOME caches, credentials and broad /tmp or /dev/shm globs are never deletion targets.
+# Setup confines caches/tmp/wandb to the box root. Searches cover N3_FIND_ROOTS (newline-separated,
+# default /) plus /dev/shm. Any failed search or hash makes verification FAIL.
+# Manifests, laptop receipt and timestamped cleanup receipt remain in N3_MANIFEST_DIR.
 #
-#   bash scripts/n3_box_cleanup.sh                       # asks for the word DELETE (N3_YES=1 skips the prompt)
-#   N3_CLEANUP_VERIFY_ONLY=1 bash scripts/n3_box_cleanup.sh   # search only, delete nothing
-#
-# Deletes: the box root (code, inputs, exports, per-set caches, checkpoints, draws, match rows, wandb offline
-# dirs, hydra outputs), the upload dir (tars), ~/.cache/huggingface, wandb caches/configs, /tmp and /dev/shm
-# leftovers of our jobs (torch file_system sharing, tempfile dirs), and $N3_EXTRA_DELETE.
-# Verifies, over $N3_FIND_ROOTS (default /; /proc /sys /dev /run pruned; /dev/shm searched):
-#   (a) NAME: no file or directory matching the CSD-derived name patterns below (site-packages / conda pkgs are
-#       pruned for this part only, where generic names like train.pt or wandb/ are package files);
-#   (b) HASH: no regular file anywhere whose (size, SHA-256) equals a csd=1 row of any manifest in
-#       $N3_MANIFEST_DIR (the step-5 / step-7 upload manifests and the pull-back manifest; only files of a
-#       listed size are hashed).
-# Prints PASS or FAIL (exit 0 / 1). Paths printed on FAIL are box paths, never file content.
-set -uo pipefail
+# N3_PULLBACK_RECEIPT=/root/n3_manifests/pullback_step7.unpack_receipt.json bash scripts/n3_box_cleanup.sh
+# N3_CLEANUP_PLAN_ONLY=1 bash scripts/n3_box_cleanup.sh   # no deletion or search
+# N3_CLEANUP_VERIFY_ONLY=1 bash scripts/n3_box_cleanup.sh # no deletion
+# N3_DISCARD_OUTPUTS=1: only a protocol stop/box failure; discard outputs unscored.
+set -euo pipefail
+say() { echo "[n3-cleanup] $*"; }
+die() { say "FAIL: $*" >&2; exit 1; }
+[ "$(uname -s)" = Linux ] || die "cleanup runs only on the dedicated Linux box"
 
-if [ -z "${N3_CLEANUP_REEXEC:-}" ]; then        # run from a copy: the original is deleted with the root
-  cp "$0" /tmp/n3_box_cleanup.sh 2>/dev/null && N3_CLEANUP_REEXEC=1 exec bash /tmp/n3_box_cleanup.sh "$@"
-fi
-
-ROOT=${N3_BOX_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." 2>/dev/null && pwd)}
+# Resolve the root before re-executing a copy outside the deletion tree.
+ROOT=${N3_BOX_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 MDIR=${N3_MANIFEST_DIR:-$HOME/n3_manifests}
 UPLOAD=${N3_UPLOAD_DIR:-$HOME/n3_upload}
-FIND_ROOTS=${N3_FIND_ROOTS:-/}
-TMP_DIRS=${N3_TMP_DIRS:-/tmp}
-SHM_DIR=${N3_SHM_DIR:-/dev/shm}
 VERIFY_ONLY=${N3_CLEANUP_VERIFY_ONLY:-0}
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/cleanupwork.XXXXXX")   # name outside every delete pattern below
-trap 'rm -rf "$WORK"' EXIT
-
-say() { echo "[n3-cleanup] $*"; }
-
-# ---------------------------------------------------------------------------------------------- preconditions
-shopt -s nullglob
-tsvs=("$MDIR"/*.tsv)
-[ ${#tsvs[@]} -gt 0 ] || { say "FAIL: no manifests (*.tsv) in $MDIR; the hash search needs them"; exit 1; }
-pulls=("$MDIR"/pullback_*.tsv)
-if [ ${#pulls[@]} -eq 0 ] && [ "${N3_ALLOW_NO_PULLBACK:-0}" != 1 ] && [ "$VERIFY_ONLY" != 1 ]; then
-  say "refusing: no pull-back manifest in $MDIR (run n3_box_manifest.py pullback and verify it on the laptop first;"
-  say "N3_ALLOW_NO_PULLBACK=1 deletes anyway, e.g. after a stop under §7 'Overrun', where step-7 output is discarded)"
-  exit 1
+PLAN_ONLY=${N3_CLEANUP_PLAN_ONLY:-0}
+if [ -z "${N3_CLEANUP_SCRIPT_DIR:-}" ]; then
+  self=$(mktemp -d /tmp/n3-cleanup-script.XXXXXX)
+  cp "$0" "$self/cleanup.sh"
+  cp "$(dirname "${BASH_SOURCE[0]}")/n3_box_manifest.py" "$self/n3_box_manifest.py"
+  export N3_CLEANUP_SCRIPT_DIR=$self N3_BOX_ROOT=$ROOT
+  exec bash "$self/cleanup.sh" "$@"
 fi
-say "root $ROOT | manifests: $(printf '%s ' "${tsvs[@]##*/}")"
-
-if [ "$VERIFY_ONLY" != 1 ]; then
-  # our jobs must be finished: list them (no pgrep -f / pkill -f; nothing is killed here)
-  if ps -eo pid=,args= >/dev/null 2>&1; then
-    busy=$(ps -eo pid=,args= | grep -E "python[0-9.]* .*(n3_|molcrystalflow|inference\.py|train\.py)" \
-           | grep -v -E "grep|n3_box_cleanup" || true)
-    if [ -n "$busy" ] && [ "${N3_FORCE:-0}" != 1 ]; then
-      say "refusing: N3 jobs still running (kill them by PID first, or N3_FORCE=1):"; echo "$busy"; exit 1
-    fi
-  else
-    say "note: ps -eo unavailable; running-job check skipped"
-  fi
-  if [ "${N3_YES:-0}" != 1 ]; then
-    read -r -p "[n3-cleanup] type DELETE to remove every CSD-derived file on this box: " ans
-    [ "$ans" = DELETE ] || { say "aborted"; exit 1; }
-  fi
-  # ------------------------------------------------------------------------------------------- delete
-  del() {
-    for p in "$@"; do
-      [ -e "$p" ] || [ -L "$p" ] || continue
-      case "$p" in "$WORK"|"$0") continue ;; esac
-      rm -rf -- "$p" && say "deleted $p"
-    done
-  }
-  case "$ROOT" in /|/root|/home|/home/*/|"$HOME"|"") say "FAIL: refusing to delete root '$ROOT'"; exit 1 ;; esac
-  del "$ROOT" "$UPLOAD"
-  del "$HOME/.cache/huggingface" "$HOME/.cache/wandb" "$HOME/.config/wandb" "$HOME/.local/share/wandb" \
-      "$HOME/.netrc"
-  for t in $TMP_DIRS; do
-    del "$t"/wandb* "$t"/n3_* "$t"/n3* "$t"/torch_* "$t"/pymp-* "$t"/tmp* "$t"/*.tar "$t"/*.pkl.gz "$t"/*.pt
-  done
-  del "$SHM_DIR"/torch_* "$SHM_DIR"/n3* "$SHM_DIR"/__KMP_REGISTERED_LIB_*
-  # shellcheck disable=SC2086
-  [ -n "${N3_EXTRA_DELETE:-}" ] && del $N3_EXTRA_DELETE
+SELF_DIR=$N3_CLEANUP_SCRIPT_DIR
+[ "$(dirname "$SELF_DIR")" = /tmp ] && [[ "$(basename "$SELF_DIR")" =~ ^n3-cleanup-script\.[A-Za-z0-9]+$ ]] \
+  && [ ! -L "$SELF_DIR" ] && [ "$(realpath -- "$SELF_DIR")" = "$SELF_DIR" ] \
+  || die "unsafe cleanup-script temporary directory"
+WORK=$(mktemp -d /tmp/n3-cleanup-work.XXXXXX)
+trap 'rm -rf -- "$WORK" "$SELF_DIR"' EXIT
+opts=(--root "$ROOT" --upload "$UPLOAD" --manifest-dir "$MDIR" --out "$WORK/plan.json")
+[ -z "${N3_EXTRA_DELETE_FILE:-}" ] || opts+=(--extras-file "$N3_EXTRA_DELETE_FILE")
+[ -z "${N3_PULLBACK_RECEIPT:-}" ] || opts+=(--pullback-receipt "$N3_PULLBACK_RECEIPT")
+if [ "${N3_DISCARD_OUTPUTS:-0}" = 1 ] || [ "$VERIFY_ONLY" = 1 ] || [ "$PLAN_ONLY" = 1 ]; then
+  opts+=(--discard-outputs)
 fi
-
-# ------------------------------------------------------------------------------------------------ verify
-PRUNE=( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path "$MDIR" -o -path "$WORK" )
-NAME_PRUNE=( -o -path '*/site-packages' -o -path '*/pkgs' -o -path '*/conda-meta' -o -path '*/dist-packages' )
-fpat=( -name '*_molcrystal_normalized*' -o -name 'g2_asym.pt' -o -name 'n3_asym_pool.pt' -o -name 'ds_o3.pt*'
-       -o -name '*.cif' -o -name 'items_*.pt' -o -name '*_sidecar.json' -o -name 'predictions_*.pt'
-       -o -name 'resid_*.pt' -o -name '*.ckpt' -o -name 'eval_s[0-9].pt' -o -name 'n2c_s*.pt'
-       -o -name 'uma-s-1p1.pt' -o -name 'iso_atom_elem_refs.yaml' -o -name 'n3_*.tar' -o -name '*.pkl.gz'
-       -o -name '*_valsel.pt' -o -name '*_testB.pt' -o -name '*_devtest.pt' -o -name '*_val.pt' -o -name '*_sel.pt'
-       -o -name '*_train.pt' -o -name '*_valsel.jsonl' -o -name '*_testB.jsonl' -o -name '*_devtest.jsonl'
-       -o -name '*_val.jsonl' -o -name '*_sel.jsonl' -o -name 'train.pt' -o -name 'val.pt' -o -name 'test.pt'
-       -o -name 'sel.pt' -o -name 'valsel.pt' -o -name 'testB.pt' -o -name 'devtest.pt' -o -name 'fftruth_*'
-       -o -name 'ffstar_config.json' -o -name 'n3_selection.json' -o -name 'ivP_frozen.json' )
-dpat=( -name 'n3_mcf' -o -name 'symmc-flow' -o -name 'set_caches' -o -name 'offline-run-*' -o -name 'run-*-n3_*'
-       -o -name 'wandb' -o -name 'mcf_release' -o -name 'thurlemann23' -o -name '.n3_box' -o -name 'n3_upload'
-       -o -name 'n3_timing' -o -name '_timing' )
-: > "$WORK/name_hits"
-for r in $FIND_ROOTS "$SHM_DIR"; do
-  [ -d "$r" ] || continue
-  find "$r" \( "${PRUNE[@]}" "${NAME_PRUNE[@]}" \) -prune -o \( -type f \( "${fpat[@]}" \) -print \) \
-       -o \( -type d \( "${dpat[@]}" \) -print -prune \) 2>/dev/null >> "$WORK/name_hits"
-done
-sort -u -o "$WORK/name_hits" "$WORK/name_hits"
-
-# (size, sha256) of every csd=1 manifest row
-awk -F'\t' '$1==1 {print $2"\t"$3}' "${tsvs[@]}" | sort -u > "$WORK/csd_rows"
-cut -f1 "$WORK/csd_rows" | sort -u > "$WORK/sizes"
-cut -f2 "$WORK/csd_rows" | sort -u > "$WORK/shas"
-: > "$WORK/all_files"
-for r in $FIND_ROOTS "$SHM_DIR"; do
-  [ -d "$r" ] || continue
-  find "$r" \( "${PRUNE[@]}" \) -prune -o -type f -printf '%s\t%p\n' 2>/dev/null >> "$WORK/all_files"
-done
-awk -F'\t' 'NR==FNR {s[$1]=1; next} ($1 in s) {print substr($0, index($0, "\t")+1)}' \
-    "$WORK/sizes" "$WORK/all_files" | sort -u > "$WORK/candidates"
-: > "$WORK/hash_hits"
-while IFS= read -r f; do
-  h=$(sha256sum -- "$f" 2>/dev/null | cut -d' ' -f1) || continue
-  grep -qx -- "$h" "$WORK/shas" && echo "$f" >> "$WORK/hash_hits"
-done < "$WORK/candidates"
-
-n_files=$(wc -l < "$WORK/all_files"); n_cand=$(wc -l < "$WORK/candidates")
-n_rows=$(wc -l < "$WORK/csd_rows"); n_name=$(wc -l < "$WORK/name_hits"); n_hash=$(wc -l < "$WORK/hash_hits")
-say "searched $FIND_ROOTS + $SHM_DIR: $n_files files; $n_rows csd manifest hashes; $n_cand size-matched files hashed"
-say "name-pattern hits: $n_name   hash hits: $n_hash"
-if [ "$n_name" -gt 0 ]; then say "NAME hits:"; head -50 "$WORK/name_hits"; fi
-if [ "$n_hash" -gt 0 ]; then say "HASH hits:"; head -50 "$WORK/hash_hits"; fi
-if [ "$n_name" -eq 0 ] && [ "$n_hash" -eq 0 ]; then
-  say "PASS: no CSD-derived file remains (by name and by manifest hash)"
-  if [ "$VERIFY_ONLY" != 1 ] && [ "${N3_KEEP_MANIFESTS:-0}" != 1 ]; then rm -rf -- "$MDIR"; say "deleted $MDIR"; fi
-  say "now destroy the box (vastai destroy instance <id>) and record it"
+python3 "$SELF_DIR/n3_box_manifest.py" cleanup-plan "${opts[@]}" || die "target/inventory/pullback preflight failed"
+MDIR=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["manifest_dir"])' "$WORK/plan.json")
+if [ "$PLAN_ONLY" = 1 ]; then
+  say "plan validated; no files deleted"
   exit 0
 fi
-say "FAIL: CSD-derived files remain (delete them, then re-run with N3_CLEANUP_VERIFY_ONLY=1)"
-exit 1
+mapfile -t targets < <(python3 - "$WORK/plan.json" <<'PY'
+import json, sys
+for p in json.load(open(sys.argv[1]))["targets"]:
+    print(p)
+PY
+)
+if [ "$VERIFY_ONLY" != 1 ]; then
+  ps -eo pid=,args= > "$WORK/processes" || die "cannot check whether jobs are still running"
+  busy=$(awk '$0 ~ /python[0-9.]* .*n3_|python[0-9.]* .*molcrystalflow|python[0-9.]* .*inference\.py|python[0-9.]* .*train\.py/ && $0 !~ /n3_box_cleanup|n3_box_manifest|cleanup.sh/ {print}' "$WORK/processes")
+  [ -z "$busy" ] || { say "refusing: jobs still running; finish or stop by explicit PID"; echo "$busy"; exit 1; }
+  if [ "${N3_YES:-0}" != 1 ]; then
+    read -r -p "[n3-cleanup] type DELETE to remove the listed private directories: " ans
+    [ "$ans" = DELETE ] || die "aborted"
+  fi
+  for target in "${targets[@]}"; do
+    [ ! -L "$target" ] || die "target became a symlink: $target"
+    [ "$(realpath -m -- "$target")" = "$target" ] || die "target resolution changed: $target"
+    rm -rf -- "$target" || die "failed to remove explicit private target $target"
+    say "deleted $target"
+  done
+fi
+
+# Roots are read without shell word splitting or glob expansion.
+roots=()
+while IFS= read -r r; do
+  [ -n "$r" ] && roots+=("$r")
+done <<< "${N3_FIND_ROOTS:-/}"
+roots+=(/dev/shm)
+PRUNE=( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path "$MDIR" -o -path "$WORK" -o -path "$SELF_DIR" )
+NAME_PRUNE=( -o -path '*/site-packages' -o -path '*/pkgs' -o -path '*/conda-meta' -o -path '*/dist-packages' )
+fpat=( -name '*_molcrystal_normalized*' -o -name '*.cif' -o -name '*.pkl.gz' -o -name '*_sidecar.json'
+       -o -name 'g2_asym.pt' -o -name 'n3_asym_pool.pt' -o -name 'ds_o3.pt*' -o -name 'items_*.pt'
+       -o -name 'predictions_*.pt' -o -name 'resid_*.pt' -o -name '*.ckpt' -o -name 'eval_s[0-9].pt'
+       -o -name 'n2c_s*.pt' -o -name 'uma-s-1p1.pt' -o -name 'iso_atom_elem_refs.yaml' -o -name 'n3_*.tar'
+       -o -name '*_valsel.pt' -o -name '*_testB.pt' -o -name '*_devtest.pt' -o -name '*_val.pt'
+       -o -name '*_sel.pt' -o -name '*_train.pt' -o -name 'train.pt' -o -name 'val.pt' -o -name 'sel.pt'
+       -o -name 'valsel.pt' -o -name 'testB.pt' -o -name 'devtest.pt' -o -name 'fftruth_*' )
+dpat=( -name 'n3_mcf' -o -name 'set_caches' -o -name 'n3_sets' -o -name 'offline-run-*'
+       -o -name 'run-*-n3_*' -o -name 'wandb' -o -name 'mcf_release' -o -name 'thurlemann23'
+       -o -name '.n3_box' -o -name 'n3_upload' )
+: > "$WORK/name_hits"
+: > "$WORK/all_files"
+: > "$WORK/search_errors"
+search_failed=0
+for r in "${roots[@]}"; do
+  [ -d "$r" ] || { echo "missing search root: $r" >> "$WORK/search_errors"; search_failed=1; continue; }
+  find "$r" \( "${PRUNE[@]}" "${NAME_PRUNE[@]}" \) -prune \
+      -o \( -type f \( "${fpat[@]}" \) -print \) \
+      -o \( -type d \( "${dpat[@]}" \) -print -prune \) \
+      >> "$WORK/name_hits" 2>> "$WORK/search_errors" || search_failed=1
+  find "$r" \( "${PRUNE[@]}" \) -prune -o -type f -printf '%s\t%p\n' \
+      >> "$WORK/all_files" 2>> "$WORK/search_errors" || search_failed=1
+done
+sort -u -o "$WORK/name_hits" "$WORK/name_hits"
+sort -u -o "$WORK/all_files" "$WORK/all_files"
+
+# Compare exact (size,hash) pairs; retain a receipt on PASS or FAIL.
+python3 - "$WORK" "$MDIR" "$VERIFY_ONLY" "$search_failed" <<'PY'
+import datetime, hashlib, json, os, sys
+work, mdir, verify_only, search_failed = sys.argv[1:]
+plan = json.load(open(os.path.join(work, "plan.json")))
+private = {(int(size), sha) for size, sha in plan["csd_hashes"]}
+sizes = {s for s, _ in private}
+hits, errors, candidates = [], [], 0
+lines = open(os.path.join(work, "all_files"), encoding="utf-8").read().splitlines()
+for line in lines:
+    try:
+        size, path = line.split("\t", 1)
+        size = int(size)
+        if size not in sizes:
+            continue
+        candidates += 1
+        h = hashlib.sha256()
+        with open(path, "rb") as f:
+            for b in iter(lambda: f.read(1 << 20), b""):
+                h.update(b)
+        if (size, h.hexdigest()) in private:
+            hits.append(path)
+    except Exception as e:
+        errors.append(f"file search/hash failed: {type(e).__name__}")
+names = open(os.path.join(work, "name_hits"), encoding="utf-8").read().splitlines()
+search_errors = open(os.path.join(work, "search_errors"), encoding="utf-8").read().splitlines()
+ok = not (names or hits or errors or search_errors or int(search_failed))
+rec = {"verified_at": datetime.datetime.now(datetime.timezone.utc).isoformat(), "pass": ok,
+       "verify_only": verify_only == "1", "targets": plan["targets"], "labels": plan["labels"],
+       "files_searched": len(lines), "manifest_hashes": len(private), "files_hashed": candidates,
+       "name_hits": names, "hash_hits": hits, "errors": errors + search_errors,
+       "discard_outputs": plan["discard_outputs"], "pullback_receipt": plan["pullback_receipt"]}
+stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+out = os.path.join(mdir, "cleanup_receipt_" + stamp + ".json")
+json.dump(rec, open(out, "w"), indent=1)
+print(f"[n3-cleanup] searched {len(lines)} files; hashed {candidates}; name hits {len(names)}; hash hits {len(hits)}; errors {len(rec['errors'])}")
+print(f"[n3-cleanup] {'PASS' if ok else 'FAIL'}; retained receipt: {out}")
+for p in (names + hits + rec["errors"])[:50]:
+    print("[n3-cleanup]", p)
+sys.exit(0 if ok else 1)
+PY
+say "now destroy the box by its instance ID and retain the destruction receipt"

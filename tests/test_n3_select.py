@@ -1,6 +1,5 @@
-"""§7 step 6 assembler (scripts/n3_select.py) on SYNTHETIC selection records and bundles (no CSD content, no
-match, nothing written outside pytest's tmp_path). The OURS / OURS-N2 checkpoints are the real committed-path
-files (hashed only)."""
+"""§7 step 6 assembler on synthetic records, bundles and checkpoints. No CSD content, truth loading,
+sampling or matching; nothing written outside pytest's tmp_path."""
 import json
 import os
 import sys
@@ -14,6 +13,23 @@ sys.path.insert(0, os.path.join(REPO, "scripts"))
 import n3_select as NS  # noqa: E402
 
 SEEDS = (0, 1, 2)
+
+
+@pytest.fixture(autouse=True)
+def synthetic_frozen_ours(tmp_path, monkeypatch):
+    """Keep every test independent of the user's actual checkpoints and stored draws."""
+    frozen = {}
+    for arm in ("OURS", "OURS-N2"):
+        checkpoints, bundles = {}, {}
+        for seed in SEEDS:
+            checkpoint = tmp_path / f"{arm}_s{seed}.pt"
+            checkpoint.write_bytes(f"synthetic {arm} {seed}".encode())
+            bundle = tmp_path / f"{arm}_s{seed}_devtest.pt"
+            bundle.write_bytes(f"stored synthetic {arm} {seed}".encode())
+            checkpoints[str(seed)] = {"ckpt": str(checkpoint), "sha256": NS.C.sha256(str(checkpoint))}
+            bundles[str(seed)] = {"bundle": str(bundle), "sha256": NS.C.sha256(str(bundle))}
+        frozen[arm] = {"selector": "lj", "checkpoints": checkpoints, "devtest_bundles": bundles}
+    monkeypatch.setattr(NS, "ours_frozen", lambda P: frozen)
 R_LAB = {0: "ep10_st140", 1: "ep12_st168", 2: "last"}          # MCF-R Stage-A checkpoint per seed
 R_CHOSEN = {0: "ep20_st280", 1: "ep12_st168", 2: "last"}       # MCF-R Stage-B choice (at s_uR 2)
 G_CHOSEN = {0: "ep20_st280", 1: "last", 2: "ep30_st420"}       # +G Stage-B choice (at s_uR 3)
@@ -34,13 +50,17 @@ class World:
     def bundle(self, name, run=None):
         p = self.d / name
         if not p.exists():
-            torch.save({"arm": name, "meta": {"run": run} if run else {}}, p)
+            torch.save({"arm": name, "set": "valsel", "meta": {"run": run} if run else {}}, p)
         return str(p)
 
     def ckpt(self, arm, s, lab):
         key = (arm, s, lab)
-        self.ck.setdefault(key, f"{arm}{s}{lab}".encode().hex().ljust(64, "0")[:64])
-        return {"ckpt": f"n3_mcf/runs/n3_mcf{arm}_s{s}/ckpt/{lab}.ckpt", "ckpt_sha256": self.ck[key],
+        path = self.tmp / "checkpoints" / f"{arm}_s{s}" / (lab + ".ckpt")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"{arm}{s}{lab}".encode())
+        (path.parent / "config.yaml").write_text(f"experiment:\n  seed: {s}\n")
+        self.ck[key] = NS.C.sha256(str(path))
+        return {"ckpt": str(path), "ckpt_sha256": self.ck[key],
                 "ckpt_label": lab, "train_seed": s}
 
     def record(self, role, cfg, stage_a=None, stage_b=None, menu="default", reference=None):
@@ -53,8 +73,40 @@ class World:
                "bundles_sha256": {p: NS.C.sha256(p) for p in paths}}
         if stage_a is not None:
             rec["menu"] = NS.MENU if menu == "default" else menu
+            rows = []
+            tie = stage_a["tie"]
+            for cell in cfg["stage_a"]["cells"]:
+                for selector in rec["menu"] or [None]:
+                    wins = (cell["label"], selector) == (stage_a["chosen"]["cell"], stage_a["chosen"]["selector"])
+                    row = {"cell": cell["label"], "selector": selector, "n": 400,
+                           "preferred": cell["label"] == cfg["stage_a"].get("prefer_cell"), "order": len(rows),
+                           "draw1": 1.0, "any16": 30.0}
+                    for key in tie:
+                        if key in ("selector", "prefer_cell"):
+                            continue
+                        row[key] = (12.0 if wins else 8.0) if key == tie[0] else row.get(key, 2.0)
+                        if key.startswith(("hits", "picked")):
+                            row[key + "_per_seed"] = [row[key] / len(cell["bundles"])] * len(cell["bundles"])
+                    rows.append(row)
+            stage_a["table"] = rows
+            if rows:
+                _, stage_a["decided_by"] = NS.ranked(rows, tie)
             rec["stage_a"] = stage_a
         if stage_b is not None:
+            for seed, candidates in cfg["stage_b"]["seeds"].items():
+                rows = []
+                for candidate in candidates:
+                    wins = candidate["label"] == stage_b["seeds"][seed]["chosen"]
+                    row = {**candidate, "order": len(rows), "draw1": 1.0, "any16": 30.0}
+                    for key in stage_b["tie"]:
+                        if key == "val_loss":
+                            continue
+                        row[key] = (12.0 if wins else 8.0) if key == stage_b["tie"][0] else row.get(key, 2.0)
+                        if key.startswith(("hits", "picked")):
+                            row[key + "_per_seed"] = [row[key]]
+                    rows.append(row)
+                stage_b["seeds"][seed]["table"] = rows
+                _, stage_b["seeds"][seed]["decided_by"] = NS.ranked(rows, stage_b["tie"])
             rec["stage_b"] = stage_b
         if reference:
             rec["reference"] = reference
@@ -71,9 +123,11 @@ class World:
 
     def build(self):
         W = self
+        fftruth = W.bundle("fftruth_s-1_valsel.pt")
         W.write("degrade", {"items": W.degrade, "amendment": "A3 (2026-10-01): step-4 degrade decision"})
         W.write("anchor", {"summary": {"set": "valsel", "n": 400, "anchoring": 0.42, "anchoring_val_only": 0.45,
-                                       "form": "BASIN", "partial": False, "fftruth_sha256": "0" * 64},
+                                       "form": "BASIN", "partial": False, "fftruth": fftruth,
+                                       "fftruth_sha256": NS.C.sha256(fftruth)},
                            "rows": [{"refcode": "NOT_COPIED"}]})
         W.write("gate_c", {"C-a": {"i_pass": True, "ii_pass_test": False, "ii_pass_val": False, "pass": False},
                            "C-b": {"pass": True}, "C-c": {"pass": True}})
@@ -81,7 +135,8 @@ class World:
             cells = [{"label": role, "bundles": [W.bundle(f"{arm}_s{s}_valsel.pt") for s in SEEDS]}]
             W.record(role, {"name": role, "mode_tiebreak": "lj", "stage_a": {"cells": cells}},
                      stage_a=W.sa(role, "lj" if role == "iii-p" else "random"), menu=NS.MENU_CLASSICAL)
-        ref = {"path": "results/n3/private/draws/p1ref_s-1_valsel.pt", "sha256": "1" * 64, "arm": "p1ref",
+        refpath = W.bundle("p1ref_s-1_valsel.pt")
+        ref = {"path": refpath, "sha256": NS.C.sha256(refpath), "arm": "p1ref",
                "order": "cand_ref"}
         for role, arm in (("p1-ours", "p1-ours"), ("p1-iii-p", "iii-p")):
             cells = [{"label": role, "bundles": [W.bundle(f"{arm}_s{s}_valsel.pt") for s in SEEDS]}]
@@ -130,8 +185,13 @@ class World:
                  stage_a=W.sa(cells[0]["label"], "resid", ("picked@mcf10", "selector")), menu=NS.MCFA_MENU)
         # iv-P / iv-S
         ep = {0: 12, 1: 30, 2: 7}
-        cand = {str(s): {"best": ep[s] if s != 1 else 9, "last": 30} for s in SEEDS}
-        W.write("ivP_window", {"lr": 0.0003, "window": 30, "late_extension": False, "candidates": cand,
+        cand = {str(s): {"best": ep[s] if s != 1 else 9, "last": 30, "val_best": 1.0, "val_last": 1.0} for s in SEEDS}
+        train_config = {"encoder": "packed", "trim": True, "batch_size": 16, "steps_per_epoch_cap": 0,
+                        "table_sha256": "1" * 64, "items_sha256": "2" * 64, "n_cosets": 153}
+        W.write("ivP_window", {"lr": 0.0003, "window_step1": 30, "window": 30, "late_extension": False,
+                               "improving_seed0": {"lr1e-4": False, "lr3e-4": False, "lr1e-3": False},
+                               "lr_min_val_in_window": {"lr1e-4": 2.0, "lr3e-4": 1.0, "lr1e-3": 3.0},
+                               "seeds_complete_at_lr": [0, 1, 2], "train_config": train_config, "candidates": cand,
                                "scorer_config": "results/n3/private/select/ivP.json"})
         seeds = {str(s): [{"label": f"ep{e:02d}", "bundle": W.bundle(f"ivP_lr3e-4_ep{e:02d}_s{s}_valsel.pt"),
                            "val_loss": 1.0} for e in sorted({cand[str(s)]["best"], 30})] for s in SEEDS}
@@ -139,17 +199,25 @@ class World:
                          "stage_a": {"cells": [{"label": "best", "bundles": [seeds[str(s)][0]["bundle"] for s in SEEDS]}]},
                          "stage_b": {"selector": "from_stage_a", "seeds": seeds}},
                  stage_a=W.sa("best", "mode@0.5"),
-                 stage_b={"selector": "mode@0.5", "seeds": {str(s): {"chosen": f"ep{ep[s]:02d}"} for s in SEEDS}})
+                 stage_b={"selector": "mode@0.5", "tie": ["picked", "draw1", "any16", "val_loss"],
+                          "seeds": {str(s): {"chosen": f"ep{ep[s]:02d}"} for s in SEEDS}})
         runs = [f"python scripts/n3_old_symmc.py sample --run lr3e-4_s{s} --epoch {ep[s]} --set {st} --arm ivP "
                 f"--crystals-per-batch 8 --device cuda --pack" for st in ("testB", "devtest") for s in SEEDS] + \
                [f"python scripts/n3_old_symmc.py ivs --bundle results/n3/private/draws/ivP_s{s}_{st}.pt"
                 for st in ("testB", "devtest") for s in SEEDS]
+        ckpts = {}
+        for s in SEEDS:
+            checkpoint = W.tmp / "checkpoints" / f"lr3e-4_s{s}" / f"ep{ep[s]:02d}.pt"
+            checkpoint.parent.mkdir(parents=True, exist_ok=True)
+            checkpoint.write_bytes(f"OLD {s} {ep[s]}".encode())
+            ckpts[str(s)] = str(checkpoint)
         W.write("ivP_frozen", {"arm": "iv-P", "lr": 0.0003, "window": 30, "selector": "mode@0.5",
                                "epoch_per_seed": {str(s): e for s, e in ep.items()},
-                               "checkpoints": {str(s): f"results/n3/private/old/runs/lr3e-4_s{s}/ep{e:02d}.pt"
-                                               for s, e in ep.items()},
-                               "checkpoint_sha256": {str(s): "2" * 64 for s in SEEDS},
-                               "sampling": {"encoder": "packed", "crystals_per_batch": 8, "device_type": "cuda"},
+                               "checkpoints": ckpts,
+                               "checkpoint_sha256": {s: NS.C.sha256(path) for s, path in ckpts.items()},
+                               "train_config": train_config,
+                               "sampling": {"encoder": "packed", "crystals_per_batch": 8, "device_type": "cuda",
+                                            "draws": 16, "rk4_steps": 50},
                                "step7_runs": runs})
         cells = [{"label": "ivS", "bundles": [W.bundle(f"ivS_lr3e-4_ep{ep[s]:02d}_s{s}_valsel.pt") for s in SEEDS]}]
         W.record("ivS", {"name": "ivS", "mode_tiebreak": "resid", "stage_a": {"cells": cells}},
@@ -165,8 +233,12 @@ class World:
     def diag(self, lab, arm, sha, u, f, verdict="PASS", dev=1.1e-5):
         self.write(f"diag_a:{lab}", {"diagnostic": "a (equivariance)", "label": lab, "arm": arm, "ckpt_sha256": sha,
                                      "reportable": True, "provenance_repeat": lab == "thurlemann",
+                                     "set": "valsel", "dtype": "float64", "device": "cpu", "n_crystals": 10, "G_trials": 3,
                                      "knobs": {"s_uR": u, "s_uF": 9.0 if f is None else f, "steps": 50},
                                      "statistics": {"q": 1e-15, "lat": 1e-14, "tr": 2e-15, "R": 6.6e-7},
+                                     "tolerances": {"q": 1e-6, "lat": 1e-6, "tr": 1e-6, "R": 1e-5},
+                                     "requirements_met": {"q": True, "lat": True, "tr": True, "R": True},
+                                     "states": {"generic": {"controls_min": {"q": 0.01, "lat": 0.01, "tr": 0.01, "R": 0.01}}},
                                      "verdict": verdict, "sampler_deviation": {"float32_native": {"R": dev}},
                                      "sampler_deviation_threshold_1e-3": {"float32_native": dev <= 1e-3}})
 
@@ -176,8 +248,9 @@ def _run(W, **kw):
     return sel, P
 
 
-def test_complete_world_assembles_every_frozen_choice(tmp_path):
+def test_complete_world_assembles_every_frozen_choice(tmp_path, monkeypatch):
     W = World(tmp_path)
+    monkeypatch.setattr(NS.C, "load_set", lambda *args, **kwargs: pytest.fail("selection must not read a truth set"))
     sel, P = _run(W)
     assert P.rows == []
     F = sel["frozen"]
@@ -196,6 +269,10 @@ def test_complete_world_assembles_every_frozen_choice(tmp_path):
     assert sel["gate_c"]["gate_ca_ii_failed"] is True
     assert sel["report_configs"]["testB"]["gate_ca_failed"] is True
     a = sel["mcf_diagnostic_a"]
+    assert sel["schema_version"] == 1 and sel["complete"] is True
+    assert len({row["path"] for row in sel["step7_inputs"]}) == len(sel["step7_inputs"])
+    for row in sel["step7_inputs"]:
+        assert row["sha256"] == NS.C.sha256(NS.rel(row["path"]))
     assert a["verdict"] == "PASS" and set(a["per_checkpoint"]) == {"mcfR_s0", "mcfR_s1", "mcfR_s2", "mcfRG_s1",
                                                                    "mcfRG_s2", "mcfA_s0", "mcfA_s1", "mcfA_s2",
                                                                    "thurlemann"}
@@ -216,7 +293,7 @@ def test_run_list_has_every_arm_with_seeds(tmp_path):
         for s in SEEDS:
             r = runs[f"MCF-R/{st}/s{s}"]
             assert f"inference.seed = {100000 + 1000 * s + sp}" in r["seeds"]
-            assert f"--ckpt n3_mcf/runs/n3_mcfR_s{s}/ckpt/{R_CHOSEN[s]}.ckpt --set {st} --s_uR 2 " in r["commands"][0]
+            assert f"--ckpt {NS.rp(W.ckpt('R', s, R_CHOSEN[s])['ckpt'])} --set {st} --s_uR 2 " in r["commands"][0]
             g = runs[f"MCF-R+G/{st}/s{s}"]                           # +G selected (ckpt, s_uR) of its own
             assert g["commands"][0].startswith("python scripts/n3_mcf_run.py infer") and "--s_uR 3" in g["commands"][0]
             assert g["commands"][-1].startswith("python scripts/n3_mcf_gauge.py")
@@ -235,11 +312,17 @@ def test_run_list_has_every_arm_with_seeds(tmp_path):
     nine = {r["id"] for r in sel["runs"]["step9"]}
     assert {"diag-b/testB", "diag-b/devtest", "diag-c/testB/s0"} <= nine
     cfg = sel["report_configs"]["testB"]
+    assert cfg["arms"]["MCF-R"]["kind"] == "cells" and cfg["arms"]["MCF-R"]["seed_ids"] == [0, 1, 2]
+    assert cfg["arms"]["iii-s"]["seed_ids"] == [-1]
     assert cfg["h2_form"] == "BASIN" and set(cfg["h2_basin"]) == {"OURS", "OURS-N2", "iii-s", "i-E"}
     assert cfg["arms"]["MCF-R+G"]["selector"] == "resid" and cfg["arms"]["floor"]["selector"] == "random"
     sc = " ".join(sel["runs"]["step9_scoring"]["testB"])
     assert "--reference results/n3/private/draws/fftruth_s-1_testB.pt" in sc and "--selector lj_pre" in sc
     assert all("--step9" in c for c in sel["runs"]["step9_scoring"]["testB"] if " match " in c or " basin " in c)
+    diagnostics = {row["id"]: row for row in sel["runs"]["step9"]}
+    assert " haar-floor " in diagnostics["haar-floor/testB"]["commands"][-1]
+    assert "n3_mcf_diag.py d --ceiling" in diagnostics["diag-d/testB/primary"]["commands"][-1]
+    assert all("--draws all" in command for command in diagnostics["diag-c/testB/s0"]["commands"][1:])
 
 
 def test_missing_record_refuses_to_write_and_dry_run_lists_it(tmp_path, monkeypatch, capsys):
@@ -295,8 +378,11 @@ def test_degrade_items_shape_selection_and_runs(tmp_path):
     A = sel["frozen"]["MCF-A"]
     assert A["seeds"] == [0] and (A["s_uF"], A["s_uR"]) == (9.0, 3.0) and A["native_stols"] == [0.8, 1.0]
     ids = [r["id"] for r in sel["runs"]["step7"]]
-    assert not [i for i in ids if i.endswith("/devtest") or "/devtest/" in i if not i.startswith("ours")]
+    assert not [i for i in ids if (i.endswith("/devtest") or "/devtest/" in i) and
+                i.startswith(("MCF", "iv-", "p1", "iii-u"))]
     assert "ours/devtest" in ids and "ours_n2/devtest" in ids
+    assert {"fftruth/devtest", "iii-s/devtest", "basin-ours/devtest/s2", "basin-ours_n2/devtest/s2"} <= set(ids)
+    assert set(sel["report_configs"]["devtest"]["h2_basin"]) == {"OURS", "OURS-N2", "iii-s"}
     runs = {r["id"]: r for r in sel["runs"]["step7"]}
     assert "--from-ie" in " ".join(runs["i-E+basin-ours/testB/s0"]["commands"])
     for s in (1, 2):                                                   # degrade 6: direct BASIN of the LJ pick
@@ -346,3 +432,56 @@ def test_classical_select_configs(tmp_path):
     assert cfg["p1-iii-p"]["reference"] == "results/n3/private/draws/p1ref_s-1_valsel.pt"
     assert cfg["p1-iii-p"]["stage_a"]["cells"][0]["bundles"][2] == "results/n3/private/draws/iii-p_s2_valsel.pt"
     assert cfg["p1-ours"]["menu"] == ["lj", "lj_pre", "random"] and "resid" not in cfg["iii-p"]["menu"]
+
+
+@pytest.mark.parametrize("role,mutation,expected", [
+    ("iii-u", lambda rec: rec.update(bundles_sha256={}), "coverage"),
+    ("iii-p", lambda rec: rec["stage_a"].update(table=[]), "score table"),
+    ("iii-p", lambda rec: rec["stage_a"]["chosen"].update(selector="random"), "not the winner"),
+    ("iii-u", lambda rec: rec["stage_a"]["table"][0].update(hits_per_seed=[0, 0, 0]), "per-seed"),
+    ("ivP_window", lambda rec: rec.update(lr_min_val_in_window={"lr1e-4": 0.1, "lr3e-4": 1.0, "lr1e-3": 3.0}),
+     "seed-0 VAL losses"),
+    ("ivP_window", lambda rec: rec.update(window_step1=60), "window rule"),
+    ("ivP_frozen", lambda rec: rec["step7_runs"].pop(), "exactly match"),
+    ("ivP_frozen", lambda rec: rec["sampling"].update(draws=8), "16 draws"),
+    ("ivP", lambda rec: rec["stage_b"].update(selector="lj"), "Stage A's selector"),
+    ("anchor", lambda rec: rec["summary"].update(anchoring=float("nan")), "finite rate"),
+    ("iii-u", lambda rec: rec.update(config=[]), "must be objects"),
+    ("ivP_frozen", lambda rec: rec.update(lr="invalid"), "invalid record data"),
+    ("diag_a:mcfR_s0", lambda rec: rec["states"]["generic"]["controls_min"].update(R=1e-8), "PASS contradicts"),
+])
+def test_invalid_records_cannot_produce_a_complete_freeze(tmp_path, role, mutation, expected):
+    world = World(tmp_path)
+    record = json.load(open(world.inputs[role]))
+    mutation(record)
+    world.write(role, record)
+    selection, problems = _run(world)
+    assert selection["complete"] is False
+    assert any(expected in message for _, message in problems.rows), problems.rows
+
+
+@pytest.mark.parametrize("artifact", ["reference", "truth", "checkpoint", "config"])
+def test_missing_private_artifacts_fail_closed_even_with_legacy_flag(tmp_path, artifact):
+    world = World(tmp_path)
+    if artifact == "reference":
+        path = json.load(open(world.inputs["p1-ours"]))["reference"]["path"]
+    elif artifact == "truth":
+        path = json.load(open(world.inputs["anchor"]))["summary"]["fftruth"]
+    else:
+        path = world.ckpt("R", 0, R_CHOSEN[0])["ckpt"]
+        if artifact == "config":
+            path = os.path.join(os.path.dirname(path), "config.yaml")
+    os.remove(path)
+    selection, problems = _run(world, allow_absent=True)
+    assert selection["complete"] is False and any("absent" in message for _, message in problems.rows)
+
+
+def test_native_mcf_checkpoint_filename_maps_to_the_draw_label(tmp_path):
+    checkpoint = tmp_path / "epoch_020-step_00280-valid_loss_1.0000.ckpt"
+    checkpoint.write_bytes(b"selected native checkpoint")
+    (tmp_path / "config.yaml").write_text("experiment:\n  seed: 0\n")
+    run = {"ckpt": str(checkpoint), "ckpt_sha256": NS.C.sha256(str(checkpoint)),
+           "ckpt_label": "ep20_st280", "train_seed": 0, "s_uR": 2.0}
+    problems = NS.Problems()
+    result = NS.checkpoint_meta(problems, "mcfR_B", "mcfR_ep20_st280_u2_s0_valsel.pt", run, "R", "0", 2.0)
+    assert problems.rows == [] and result["ckpt_label"] == "ep20_st280"

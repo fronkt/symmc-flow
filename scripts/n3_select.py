@@ -6,7 +6,8 @@ complete list of permitted TEST-B / DEV-TEST runs with exact commands and seeds 
 scoring commands and report configs, and the SHA-256 of every input record. It refuses to write while any
 required record is missing or inconsistent (--dry-run lists what is present, missing or invalid). Nothing here
 matches anything or reads a truth; bundles are only hashed (and the chosen MCF bundles' meta read for their
-checkpoints).
+checkpoints). Recorded score tables must cover every configured candidate, and their winners are recomputed
+without evaluating structures. The complete freeze includes checksummed private step7_inputs for a new box.
 
 Inputs (role -> default path; --inputs <json> overrides any of them):
   degrade        results/n3/private/select/degrade.json   the §7 step-4 degrade decision (input, from the dated
@@ -30,11 +31,12 @@ Inputs (role -> default path; --inputs <json> overrides any of them):
 
     python scripts/n3_select.py --dry-run                 # what is present / missing / invalid
     python scripts/n3_select.py                           # validate everything and write results/n3/n3_selection.json
-    python scripts/n3_select.py --inputs my_paths.json --out <path> [--allow-absent-bundles] [--diag-a-unresolved]
+    python scripts/n3_select.py --inputs my_paths.json --out <path> [--diag-a-unresolved]
     python scripts/n3_select.py --write-configs           # select configs of iii-u, iii-p, P1 (OURS, iii-p)
 
 Degrade items (§7, fixed at step 4) shape the run list: 2 -> MCF-A native stols {0.8, 1.0}; 3 -> MCF-A seed 0;
-4 -> no MCF-A knob grid (9, 3); 5 -> no DEV-TEST run for any arm but the stored OURS / OURS-N2 draws; 6 -> i-E and
+4 -> no MCF-A knob grid (9, 3); 5 -> drop optional new DEV-TEST arms, retaining the stored OURS / OURS-N2 rows
+and their iii-s / FF-truth / three-seed BASIN support; 6 -> i-E and
 the steric BASIN P1 on seed 0 (OURS seeds 1-2 get their H2 BASIN candidate by a direct `basin` of the LJ pick);
 7 -> no i-E (every OURS BASIN candidate by a direct `basin`). If diagnostic (a) is FAILED, (b)-(d) are not listed.
 """
@@ -42,6 +44,7 @@ import argparse
 import json
 import math
 import os
+import pickle
 import re
 import subprocess
 import sys
@@ -137,9 +140,13 @@ class Inputs:
             return None
         try:
             d = json.load(open(rel(path)))
-        except ValueError as e:
+        except (ValueError, OSError) as e:
             self.status[role] = "invalid"
             self.P.err(role, f"not JSON: {e}")
+            return None
+        if not isinstance(d, dict):
+            self.status[role] = "invalid"
+            self.P.err(role, "record must be a JSON object")
             return None
         self.data[role], self.sha[role], self.status[role] = d, C.sha256(rel(path)), "present"
         return d
@@ -147,12 +154,30 @@ class Inputs:
 
 def check_bundles(P, role, rec, allow_absent):
     """Every bundle a select record scored is a VALSEL bundle and unchanged since (SHA-256 of the record)."""
-    for p, h in (rec.get("bundles_sha256") or {}).items():
+    configured = [p for cell in rec["config"].get("stage_a", {}).get("cells", []) for p in cell["bundles"]]
+    configured += [c["bundle"] for candidates in rec["config"].get("stage_b", {}).get("seeds", {}).values()
+                   for c in candidates]
+    norm = lambda p: os.path.normcase(os.path.abspath(rel(p)))
+    hashes = rec["bundles_sha256"]
+    if {norm(p) for p in configured} != {norm(p) for p in hashes}:
+        P.err(role, "bundle SHA-256 coverage does not equal the configured candidate bundles")
+    if len({norm(p) for p in hashes}) != len(hashes):
+        P.err(role, "duplicate bundle paths in SHA-256 record")
+    ref = rec.get("reference")
+    artifacts = dict(hashes)
+    if ref:
+        if ref.get("path") != rec["config"].get("reference"):
+            P.err(role, "reference path differs from the scored configuration")
+        if ref.get("order") != "cand_ref":
+            P.err(role, "reference matching order must be cand_ref")
+        artifacts[ref.get("path", "")] = ref.get("sha256")
+    for p, h in artifacts.items():
+        if not isinstance(h, str) or re.fullmatch(r"[0-9a-f]{64}", h) is None:
+            P.err(role, f"{p}: missing or invalid SHA-256")
         if not os.path.basename(p).endswith("_valsel.pt"):
             P.err(role, f"{p}: not a VALSEL bundle (selection is on VALSEL only, §1.1)")
         if not os.path.exists(rel(p)):
-            if not allow_absent:
-                P.err(role, f"{p}: scored bundle absent (pass --allow-absent-bundles to record it unverified)")
+            P.err(role, f"{p}: scored bundle absent (a step-6 freeze requires every scored artifact)")
         elif C.sha256(rel(p)) != h:
             P.err(role, f"{p}: changed since it was scored")
 
@@ -161,13 +186,104 @@ def is_record(P, role, rec, stages):
     if not isinstance(rec, dict) or not all(k in rec for k in ("name", "matcher", "config", "bundles_sha256")):
         P.err(role, "not an n3_score.py select record")
         return False
-    for st in stages:
-        if st not in rec:
-            P.err(role, f"record has no {st}")
-            return False
+    before = len(P.rows)
+    if not isinstance(rec["config"], dict) or not isinstance(rec["bundles_sha256"], dict):
+        P.err(role, "config and bundles_sha256 must be objects")
+        return False
+    if rec.get("reference") is not None and not isinstance(rec["reference"], dict):
+        P.err(role, "reference must be an object")
+        return False
+    if rec.get("reference") and not isinstance(rec["reference"].get("path"), str):
+        P.err(role, "reference path must be a string")
+        return False
+    try:
+        for st in stages:
+            cfg, result = rec["config"][st], rec[st]
+            if not isinstance(cfg, dict) or not isinstance(result, dict):
+                raise ValueError(f"{st} config and result must be objects")
+            tie = result["tie"]
+            if not isinstance(tie, list) or not tie or not all(isinstance(t, str) for t in tie):
+                raise ValueError(f"{st}: missing ranking keys")
+            if st == "stage_a":
+                cells = cfg["cells"]
+                if not isinstance(cells, list) or not cells:
+                    raise ValueError("stage_a: empty candidate cells")
+                labels = [c["label"] for c in cells]
+                if any(not isinstance(c["bundles"], list) or not c["bundles"] or
+                       not all(isinstance(p, str) and p for p in c["bundles"]) for c in cells):
+                    raise ValueError("stage_a: candidate bundles must be nonempty path lists")
+                if len(set(labels)) != len(labels):
+                    raise ValueError("stage_a: duplicate candidate cell labels")
+                menu = rec.get("menu") or [None]
+                expected = [(c["label"], s) for c in cells for s in menu]
+                rows = result["table"]
+                if not isinstance(rows, list) or [(r["cell"], r["selector"]) for r in rows] != expected:
+                    raise ValueError("stage_a: incomplete or reordered cell/selector score table")
+                for row in rows:
+                    cell = next(c for c in cells if c["label"] == row["cell"])
+                    if row.get("n") != 400 or row.get("preferred") is not (row["cell"] == cfg.get("prefer_cell")):
+                        raise ValueError("stage_a: scores must cover 400 VALSEL crystals and the configured preference")
+                    validate_scores(row, tie, len(cell["bundles"]))
+                chosen, decider = ranked(rows, tie)
+                if result["chosen"] != {"cell": chosen["cell"], "selector": chosen["selector"]}:
+                    raise ValueError("stage_a: chosen cell/selector is not the winner of the recorded score table")
+                if result.get("decided_by") != decider:
+                    raise ValueError("stage_a: decided_by disagrees with the recorded score table")
+            else:
+                seeds = cfg["seeds"]
+                if not isinstance(seeds, dict) or not seeds or set(seeds) != set(result["seeds"]):
+                    raise ValueError("stage_b: missing or unexpected seed scores")
+                for seed, candidates in seeds.items():
+                    if not isinstance(candidates, list) or not candidates:
+                        raise ValueError(f"stage_b seed {seed}: empty candidates")
+                    labs = [c["label"] for c in candidates]
+                    if len(set(labs)) != len(labs):
+                        raise ValueError(f"stage_b seed {seed}: duplicate checkpoint labels")
+                    rows = result["seeds"][seed]["table"]
+                    if not isinstance(rows, list) or [r["label"] for r in rows] != labs:
+                        raise ValueError(f"stage_b seed {seed}: incomplete or reordered checkpoint score table")
+                    for row, candidate in zip(rows, candidates):
+                        if row["bundle"] != candidate["bundle"] or row["val_loss"] != candidate.get("val_loss"):
+                            raise ValueError(f"stage_b seed {seed}: bundle or VAL loss differs from config")
+                        validate_scores(row, tie, 1)
+                    chosen, decider = ranked(rows, tie)
+                    if result["seeds"][seed]["chosen"] != chosen["label"]:
+                        raise ValueError(f"stage_b seed {seed}: chosen checkpoint is not the recorded score winner")
+                    if result["seeds"][seed].get("decided_by") != decider:
+                        raise ValueError(f"stage_b seed {seed}: decided_by disagrees with the score table")
+    except (KeyError, TypeError, ValueError, AttributeError, StopIteration) as e:
+        P.err(role, f"invalid selection record: {e}")
+        return False
     if rec.get("matcher") != "primary":
         P.err(role, f"matcher {rec.get('matcher')} (every VALSEL selection is under the primary matcher)")
-    return True
+    return len(P.rows) == before
+
+
+def validate_scores(row, tie, n_seeds):
+    """Validate cached aggregate scores without loading structures or computing a match."""
+    for key in tie:
+        if key in ("selector", "prefer_cell"):
+            continue
+        value = row.get(key)
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+            raise ValueError(f"score {key} must be finite")
+        if key != "val_loss" and not 0 <= value <= 400 * n_seeds:
+            raise ValueError(f"score {key} is outside the VALSEL hit range")
+        if key.startswith(("hits", "picked")):
+            per = row.get(key + "_per_seed")
+            if not isinstance(per, list) or len(per) != n_seeds or any(
+                    isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v) or not 0 <= v <= 400
+                    for v in per) or not math.isclose(sum(per), value, abs_tol=1e-8):
+                raise ValueError(f"score {key} needs consistent per-seed hits")
+
+
+def ranked(rows, tie):
+    """Use the scorer's deterministic ranking; this function never loads or matches candidate structures."""
+    import n3_score as S
+    if not rows or [r.get("order") for r in rows] != list(range(len(rows))):
+        raise ValueError("score row order is missing or inconsistent")
+    ordered, decider = S._rank(rows, tie)
+    return ordered[0], decider
 
 
 def cells_of(rec):
@@ -189,7 +305,55 @@ def bundle_meta(P, role, path):
     if not os.path.exists(rel(path)):
         P.err(role, f"{path}: the chosen bundle is needed for its checkpoint (meta.run) but is absent")
         return None
-    return C.load_bundle(rel(path))["meta"]
+    try:
+        bundle = C.load_bundle(rel(path))
+        if bundle.get("set") != "valsel":
+            raise ValueError("selected metadata must come from a VALSEL bundle")
+        meta = bundle["meta"]
+        if not isinstance(meta, dict):
+            raise ValueError("meta must be an object")
+        return meta
+    except (KeyError, TypeError, ValueError, OSError, EOFError, RuntimeError, pickle.UnpicklingError) as e:
+        P.err(role, f"{path}: invalid bundle metadata: {e}")
+        return None
+
+
+def checkpoint_meta(P, role, path, run, arm, seed, u, f=None):
+    """Pin selected MCF checkpoint/config files, including when copied back from the GPU box."""
+    parsed = parse_mcf(path)
+    label = parsed["label"]
+    checkpoint = run.get("ckpt")
+    if not isinstance(checkpoint, str) or not checkpoint:
+        P.err(role, f"seed {seed}: missing selected checkpoint path")
+        return None
+    # meta.run stores the box's absolute path; its repo suffix remains stable after download.
+    suffix = checkpoint.replace("\\", "/").find("n3_mcf/runs/")
+    if suffix >= 0:
+        checkpoint = checkpoint.replace("\\", "/")[suffix:]
+    if run.get("train_seed") != int(seed) or run.get("s_uR") != u or (f is not None and run.get("s_uF") != f):
+        P.err(role, f"seed {seed}: chosen bundle meta.run does not match its seed/sampler knobs")
+    basename = os.path.basename(checkpoint)
+    epoch_step = re.match(r"epoch_(\d+)-step_(\d+)", basename)
+    file_label = "last" if basename == "last.ckpt" else (
+        f"ep{int(epoch_step[1])}_st{int(epoch_step[2])}" if epoch_step else
+        re.sub(r"[^A-Za-z0-9]+", "_", os.path.splitext(basename)[0])[:40])
+    if run.get("ckpt_label") != label or file_label != label:
+        P.err(role, f"seed {seed}: chosen checkpoint label/path does not match the bundle")
+    expected = f"n3_mcf/runs/n3_mcf{arm}_s{seed}/ckpt/{basename}"
+    if suffix >= 0 and checkpoint != expected:
+        P.err(role, f"seed {seed}: checkpoint {checkpoint} is not {expected}")
+    sha = run.get("ckpt_sha256")
+    if not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{64}", sha) is None:
+        P.err(role, f"seed {seed}: missing or invalid checkpoint SHA-256")
+    if not os.path.isfile(rel(checkpoint)):
+        P.err(role, f"seed {seed}: selected checkpoint absent: {checkpoint}")
+    elif C.sha256(rel(checkpoint)) != sha:
+        P.err(role, f"seed {seed}: selected checkpoint changed since sampling")
+    config = os.path.join(os.path.dirname(checkpoint), "config.yaml")
+    if not os.path.isfile(rel(config)):
+        P.err(role, f"seed {seed}: selected checkpoint config absent: {config}")
+    return {"ckpt": rp(checkpoint), "ckpt_sha256": sha, "ckpt_label": label, "valsel_bundle": path,
+            "config": rp(config), "config_sha256": C.sha256(rel(config)) if os.path.isfile(rel(config)) else None}
 
 
 def seeded_cell(P, role, cell, prefix, n_seeds=3):
@@ -225,8 +389,10 @@ def single_cell(P, I, role, prefix_re, menu, mtb=None, ref_arm=None, allow_absen
         P.err(role, f"menu {rec.get('menu')} != {menu}")
     if mtb is not None and rec["config"].get("mode_tiebreak") != mtb:
         P.err(role, f"mode_tiebreak {rec['config'].get('mode_tiebreak')} != {mtb}")
+    if menu == MENU and rec["config"].get("mode_tiebreak") not in (None, "resid"):
+        P.err(role, "learned-arm MODE ties must use RESID")
     tie = rec["stage_a"].get("tie") or []
-    if not tie or tie[0] != "hits" or tie[-1] != "selector":
+    if tie != ["hits", "selector"]:
         P.err(role, f"tie {tie}: rank by seed-summed hits, §2.3 selector preference last")
     ref = rec.get("reference")
     if ref_arm is not None and (not ref or ref.get("arm") != ref_arm
@@ -249,13 +415,22 @@ def mcf_r(P, I, pre, allow_absent, same_cells_as=None):
         role = f"{pre}_A"
         check_bundles(P, role, ra, allow_absent)
         cells, us, keys = cells_of(ra), {}, set()
+        stage_a_labels = {seed: set() for seed in SEEDS}
         for c in cells:
             ps = seeded_cell(P, role, c, pre)
             if ps:
+                if any(x["f"] is not None for x in ps):
+                    P.err(role, "MCF-R sampler cells must not introduce a joint-objective s_uF knob")
+                for x in ps:
+                    stage_a_labels[x["seed"]].add(x["label"])
                 us[c["label"]] = ps[0]["u"]
                 keys |= {(x["label"], x["u"], x["seed"]) for x in ps}
         if set(us.values()) != MCFR_U or len(us) != len(cells):
             P.err(role, f"s_uR cells {sorted(set(us.values()))} != {sorted(MCFR_U)} (one cell each)")
+        if any(len(labels) != 1 for labels in stage_a_labels.values()):
+            P.err(role, "Stage A must reuse one checkpoint per seed across all five s_uR cells")
+        if ra["config"].get("mode_tiebreak") not in (None, "resid"):
+            P.err(role, "learned-arm MODE ties must use RESID")
         if ra.get("menu") != MENU:
             P.err(role, f"menu {ra.get('menu')} != the §2.3 menu")
         if ra["stage_a"].get("tie") != ["hits", "draw1", "any16", "prefer_cell", "selector"]:
@@ -285,9 +460,12 @@ def mcf_r(P, I, pre, allow_absent, same_cells_as=None):
         for s, cands in sorted(seeds.items()):
             if not 1 <= len(cands) <= 4:
                 P.err(role, f"seed {s}: {len(cands)} candidates (top-3 valid/loss + last)")
+            if "last" not in [c["label"] for c in cands]:
+                P.err(role, f"seed {s}: candidate list must include the last checkpoint")
             for c in cands:
                 x = parse_mcf(c["bundle"])
-                if x is None or x["arm"] != pre or x["seed"] != int(s) or x["u"] != out["s_uR"]:
+                if x is None or x["arm"] != pre or x["seed"] != int(s) or x["u"] != out["s_uR"] or \
+                        x["label"] != c["label"] or x["f"] is not None:
                     P.err(role, f"seed {s}: {c['bundle']} is not a {pre} seed-{s} bundle at s_uR {g(out['s_uR'])}")
                 if not isinstance(c.get("val_loss"), (int, float)) or not math.isfinite(c["val_loss"]):
                     P.err(role, f"seed {s}: {c['label']} has no finite fixed-draw VAL loss")
@@ -300,12 +478,9 @@ def mcf_r(P, I, pre, allow_absent, same_cells_as=None):
             if m is None:
                 continue
             run = m.get("run") or {}
-            if int(run.get("train_seed", -1)) != int(s) or float(run.get("s_uR", -1)) != out["s_uR"]:
-                P.err(role, f"seed {s}: {bpath} meta.run does not match (train_seed {run.get('train_seed')}, "
-                            f"s_uR {run.get('s_uR')})")
-            ck[s] = {"ckpt": rp(run.get("ckpt", "")), "ckpt_sha256": run.get("ckpt_sha256"),
-                     "ckpt_label": run.get("ckpt_label", parse_mcf(bpath)["label"]), "valsel_bundle": bpath,
-                     "decided_by": B["seeds"][s].get("decided_by")}
+            selected = checkpoint_meta(P, role, bpath, run, "R", s, out["s_uR"])
+            if selected:
+                ck[s] = {**selected, "decided_by": B["seeds"][s].get("decided_by")}
         out["checkpoints"] = ck
     return out
 
@@ -329,9 +504,14 @@ def mcf_a(P, I, degrade, allow_absent):
         if sorted(sd) != [str(s) for s in seeds]:
             P.err("mcfA_1", f"seeds {sorted(sd)} != {seeds}")
         for s, cands in sorted(sd.items()):
+            if not 1 <= len(cands) <= 4:
+                P.err("mcfA_1", f"seed {s}: {len(cands)} candidates (top-3 valid/loss + last)")
+            if "last" not in [c["label"] for c in cands]:
+                P.err("mcfA_1", f"seed {s}: candidate list must include the last checkpoint")
             for c in cands:
                 x = parse_mcf(c["bundle"])
-                if x is None or x["arm"] != "mcfA" or x["seed"] != int(s) or (x["f"], x["u"]) != (9.0, 3.0):
+                if x is None or x["arm"] != "mcfA" or x["seed"] != int(s) or \
+                        (x["f"], x["u"]) != (9.0, 3.0) or x["label"] != c["label"]:
                     P.err("mcfA_1", f"seed {s}: {c['bundle']} is not an MCF-A seed-{s} bundle at (s_uF 9, s_uR 3)")
             lab = B["seeds"].get(s, {}).get("chosen")
             bpath = next((c["bundle"] for c in cands if c["label"] == lab), None)
@@ -341,9 +521,9 @@ def mcf_a(P, I, degrade, allow_absent):
             m = bundle_meta(P, "mcfA_1", bpath)
             if m is not None:
                 run = m.get("run") or {}
-                ck[s] = {"ckpt": rp(run.get("ckpt", "")), "ckpt_sha256": run.get("ckpt_sha256"),
-                         "ckpt_label": run.get("ckpt_label", parse_mcf(bpath)["label"]), "valsel_bundle": bpath,
-                         "decided_by": B["seeds"][s].get("decided_by")}
+                selected = checkpoint_meta(P, "mcfA_1", bpath, run, "A", s, 3.0, 9.0)
+                if selected:
+                    ck[s] = {**selected, "decided_by": B["seeds"][s].get("decided_by")}
     out["checkpoints"] = ck
     labels = {int(s): v["ckpt_label"] for s, v in ck.items()}
     knobs = (9.0, 3.0)
@@ -385,9 +565,11 @@ def mcf_a(P, I, degrade, allow_absent):
         if r3.get("menu") != MCFA_MENU:
             P.err("mcfA_3", f"menu {r3.get('menu')} != {MCFA_MENU}")
         tie = r3["stage_a"].get("tie") or []
-        if not tie or tie[0] != "picked@mcf10" or tie[-1] != "selector":
+        if tie != ["picked@mcf10", "selector"]:
             P.err("mcfA_3", f"tie {tie}: picked@1 at stol 1.0 (picked@mcf10), selector preference last")
         out["selector"] = chosen_a(r3)["selector"]
+        if out["selector"] not in MCFA_MENU:
+            P.err("mcfA_3", "chosen selector is not in the MCF-A menu")
         out["stage3_decided_by"] = r3["stage_a"].get("decided_by")
     return out
 
@@ -408,15 +590,109 @@ def iv_p(P, I, allow_absent):
                             f"{win.get('lr')} / {win.get('window')}")
     if fz.get("selector") != chosen_a(rec)["selector"]:
         P.err("ivP_frozen", f"selector {fz.get('selector')} != the record's Stage A {chosen_a(rec)['selector']}")
+    if rec.get("menu") != MENU or rec["config"].get("mode_tiebreak") != "resid":
+        P.err("ivP", "needs the frozen selector menu and RESID MODE tie-break")
+    if rec["stage_a"].get("tie") != ["hits", "selector"]:
+        P.err("ivP", "Stage A ties must follow selector preference only")
+    if rec["stage_b"].get("selector") != chosen_a(rec)["selector"]:
+        P.err("ivP", "Stage B must use Stage A's selector")
+    if rec["stage_b"].get("tie") != ["picked", "draw1", "any16", "val_loss"]:
+        P.err("ivP", "Stage B must rank picked -> draw1 -> any16 -> VAL loss")
+    lr, window = win.get("lr"), win.get("window")
+    if lr not in (1e-4, 3e-4, 1e-3) or window not in (30, 60):
+        P.err("ivP_window", "lr must be one of the three frozen rates and window 30 or 60")
+        return None
+    if not isinstance(win.get("candidates"), dict):
+        P.err("ivP_window", "checkpoint candidates must be an object")
+        return None
+    minima, improving = win.get("lr_min_val_in_window"), win.get("improving_seed0")
+    tags = {"lr1e-4": 1e-4, "lr3e-4": 3e-4, "lr1e-3": 1e-3}
+    if not isinstance(minima, dict) or set(minima) != set(tags) or any(
+            isinstance(v, bool) or not isinstance(v, (float, int)) or not math.isfinite(v) for v in minima.values()):
+        P.err("ivP_window", "needs all three finite seed-0 fixed-draw VAL-loss minima")
+    elif tags[min(tags, key=lambda tag: (minima[tag], tags[tag] != 3e-4, tags[tag]))] != lr:
+        P.err("ivP_window", "lr does not follow the recorded seed-0 VAL losses and tie preference")
+    if not isinstance(improving, dict) or set(improving) != set(tags) or any(type(v) is not bool for v in improving.values()):
+        P.err("ivP_window", "needs the three seed-0 improvement decisions")
+    else:
+        initial = 60 if any(improving.values()) else 30
+        if win.get("window_step1") != initial or type(win.get("late_extension")) is not bool or \
+                (window != initial and not (initial == 30 and window == 60 and win.get("late_extension"))) or \
+                (window == initial and win.get("late_extension")):
+            P.err("ivP_window", "window/late extension disagrees with the frozen 2% window rule")
+    if win.get("seeds_complete_at_lr") != [0, 1, 2]:
+        P.err("ivP_window", "all three chosen-lr runs must be complete")
+    if fz.get("train_config") != win.get("train_config") or not isinstance(win.get("train_config"), dict):
+        P.err("ivP_frozen", "training configuration differs from the selected window")
+    if sorted(rec["stage_b"]["seeds"]) != ["0", "1", "2"]:
+        P.err("ivP", "Stage B needs seeds 0, 1, 2")
+    if any(re.fullmatch(r"ep\d{2}", v["chosen"]) is None for v in rec["stage_b"]["seeds"].values()):
+        P.err("ivP", "Stage B checkpoint labels must be epXX")
+        return None
     ep = {s: int(v["chosen"][2:]) for s, v in rec["stage_b"]["seeds"].items()}
     if {str(k): v for k, v in (fz.get("epoch_per_seed") or {}).items()} != {k: v for k, v in ep.items()}:
         P.err("ivP_frozen", f"epochs {fz.get('epoch_per_seed')} != the record's Stage B {ep}")
     for s in ("0", "1", "2"):
         c = (win.get("candidates") or {}).get(s)
-        if c is None or ep.get(s) not in (c.get("best"), c.get("last")):
+        if not isinstance(c, dict) or ep.get(s) not in (c.get("best"), c.get("last")):
             P.err("ivP", f"seed {s}: epoch {ep.get(s)} is not a window candidate {c}")
+            continue
+        if type(c.get("best")) is not int or not 1 <= c["best"] <= (window or 0) or c.get("last") != window:
+            P.err("ivP_window", f"seed {s}: candidates must be best in window and last epoch {window}")
+            return None
+        candidates = rec["config"]["stage_b"]["seeds"].get(s, [])
+        labels = [candidate["label"] for candidate in candidates]
+        expected = [f"ep{e:02d}" for e in sorted({c["best"], c["last"]})]
+        if labels != expected:
+            P.err("ivP", f"seed {s}: Stage B candidates {labels} != window candidates {expected} in ascending epoch order")
+        for candidate in candidates:
+            epoch = int(candidate["label"][2:]) if re.fullmatch(r"ep\d{2}", candidate["label"]) else None
+            loss = c.get("val_best") if epoch == c["best"] else c.get("val_last")
+            if candidate.get("val_loss") != loss:
+                P.err("ivP", f"seed {s}: checkpoint VAL loss differs from selection_window")
+            wanted = f"ivP_lr{float(lr):.0e}_ep{epoch:02d}_s{s}_valsel.pt".replace("e-0", "e-") if epoch else ""
+            if os.path.basename(candidate["bundle"]) != wanted:
+                P.err("ivP", f"seed {s}: candidate bundle is not the selected lr/epoch")
+    acells = cells_of(rec)
+    if len(acells) != 1 or len(acells[0]["bundles"]) != 3:
+        P.err("ivP", "Stage A needs the three lowest-VAL-loss checkpoints in one cell")
+    else:
+        for s, bundle in enumerate(acells[0]["bundles"]):
+            c = (win.get("candidates") or {}).get(str(s), {})
+            wanted = f"ivP_lr{float(lr):.0e}_ep{c.get('best', 0):02d}_s{s}_valsel.pt".replace("e-0", "e-")
+            if os.path.basename(bundle) != wanted:
+                P.err("ivP", f"seed {s}: Stage A does not use the window's best checkpoint")
     if sorted((fz.get("checkpoint_sha256") or {})) != ["0", "1", "2"] or not fz.get("step7_runs"):
         P.err("ivP_frozen", "needs the checkpoint SHA-256 of seeds 0-2 and the step-7 run list")
+    sampling = fz.get("sampling") or {}
+    if sampling.get("encoder") not in ("packed", "published") or sampling.get("draws") != 16 or \
+            sampling.get("rk4_steps") != 50 or sampling.get("device_type") not in ("cpu", "cuda") or \
+            type(sampling.get("crystals_per_batch")) is not int or sampling["crystals_per_batch"] < 1:
+        P.err("ivP_frozen", "sampling configuration must fix encoder, batch, device, 16 draws and 50 RK4 steps")
+    else:
+        flags = f" --crystals-per-batch {sampling['crystals_per_batch']} --device {sampling['device_type']}" + \
+                (" --pack" if sampling["encoder"] == "packed" else "")
+        tag = ("lr" + f"{float(lr):.0e}").replace("e-0", "e-")
+        expected_runs = [f"python scripts/n3_old_symmc.py sample --run {tag}_s{s} --epoch {ep.get(str(s))} "
+                         f"--set {st} --arm ivP{flags}" for st in ("testB", "devtest") for s in SEEDS]
+        expected_runs += [f"python scripts/n3_old_symmc.py ivs --bundle results/n3/private/draws/ivP_s{s}_{st}.pt"
+                          for st in ("testB", "devtest") for s in SEEDS]
+        if fz.get("step7_runs") != expected_runs:
+            P.err("ivP_frozen", "step-7 runs do not exactly match every frozen epoch/seed/sampling setting")
+    checkpoints = fz.get("checkpoints") or {}
+    if sorted(checkpoints) != ["0", "1", "2"]:
+        P.err("ivP_frozen", "needs checkpoint paths for all three seeds")
+    for s, checkpoint in checkpoints.items():
+        sha = (fz.get("checkpoint_sha256") or {}).get(s)
+        if not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{64}", sha) is None:
+            P.err("ivP_frozen", f"seed {s}: invalid checkpoint SHA-256")
+        if not isinstance(checkpoint, str) or os.path.basename(checkpoint) != f"ep{ep.get(s, 0):02d}.pt":
+            P.err("ivP_frozen", f"seed {s}: checkpoint path does not match the frozen epoch")
+            continue
+        if not os.path.isfile(rel(checkpoint)):
+            P.err("ivP_frozen", f"seed {s}: selected checkpoint absent")
+        elif C.sha256(rel(checkpoint)) != sha:
+            P.err("ivP_frozen", f"seed {s}: selected checkpoint changed since freezing")
     return {"lr": fz.get("lr"), "window": fz.get("window"), "late_extension": win.get("late_extension"),
             "selector": fz.get("selector"), "epoch_per_seed": fz.get("epoch_per_seed"),
             "checkpoints": fz.get("checkpoints"), "checkpoint_sha256": fz.get("checkpoint_sha256"),
@@ -431,13 +707,22 @@ def anchor(P, I):
     if d is None:
         return None
     s = d.get("summary") or {}
+    if not isinstance(s, dict):
+        P.err("anchor", "summary must be an object")
+        return None
     if s.get("set") != "valsel" or s.get("n") != 400 or s.get("partial"):
         P.err("anchor", f"not a full VALSEL anchor (set {s.get('set')}, n {s.get('n')}, partial {s.get('partial')})")
     form = s.get("form")
-    if form not in ("EXACT", "BASIN") or form != ("EXACT" if (s.get("anchoring") or 0) >= 0.5 else "BASIN"):
+    rate = s.get("anchoring")
+    if isinstance(rate, bool) or not isinstance(rate, (float, int)) or not math.isfinite(rate) or not 0 <= rate <= 1:
+        P.err("anchor", "anchoring must be a finite rate in [0, 1]")
+        return None
+    if form not in ("EXACT", "BASIN") or form != ("EXACT" if rate >= 0.5 else "BASIN"):
         P.err("anchor", f"FORM {form} does not follow the 50% rule at anchoring {s.get('anchoring')}")
-    b = C.bundle_path("fftruth", -1, "valsel")
-    if os.path.exists(b) and C.sha256(b) != s.get("fftruth_sha256"):
+    b = rel(s.get("fftruth") or C.bundle_path("fftruth", -1, "valsel"))
+    if os.path.basename(b) != "fftruth_s-1_valsel.pt" or not os.path.isfile(b):
+        P.err("anchor", "full VALSEL FF* truth bundle is absent or has the wrong identity")
+    elif C.sha256(b) != s.get("fftruth_sha256"):
         P.err("anchor", f"{rp(b)} changed since the anchor was computed")
     keep = ("anchoring", "anchoring_val_only", "form", "form_rule", "labels", "no_minimum", "match_det_fail",
             "median_drift_deg", "fftruth", "fftruth_sha256", "match", "ffident", "fairchem_core")
@@ -458,6 +743,9 @@ def ours_frozen(P):
             P.err(name, f"missing checkpoints {miss}")
             continue
         dev = {s: C.bundle_path(arm, s, "devtest") for s in SEEDS}
+        for s, path in dev.items():
+            if not os.path.isfile(path):
+                P.err(name, f"seed {s}: stored DEV-TEST bundle absent: {rp(path)}")
         out[name] = {"frozen": "protocol §3.1 (no VALSEL knob)", "selector": "lj", "S": O.S_DRAWS, "euler_steps": O.STEPS,
                      "checkpoints": {str(s): {"ckpt": rp(p), "sha256": C.sha256(p)} for s, p in zip(SEEDS, ck)},
                      "seeds": {"testB": f"per crystal i: {O.SEED_BASE['testB']} + i, set once; checkpoints sampled in "
@@ -492,6 +780,24 @@ def diag_a(P, I, frozen, degrade, unresolved):
             continue
         if d.get("diagnostic") != "a (equivariance)" or not d.get("reportable", False):
             P.err(role, "not a reportable (un-shimmed) diagnostic-(a) record")
+        if d.get("label") != lab or d.get("dtype") != "float64" or d.get("device") != "cpu" or \
+                d.get("n_crystals") != 10 or d.get("G_trials") != 3 or (d.get("knobs") or {}).get("steps") != 50:
+            P.err(role, "diagnostic (a) must use its frozen label, 10 crystals, 3 G trials, CPU float64 and 50 steps")
+        if lab != "thurlemann" and d.get("set") != "valsel":
+            P.err(role, "selected-checkpoint diagnostic (a) must use VALSEL")
+        tolerances = {"q": 1e-6, "lat": 1e-6, "tr": 1e-6, "R": 1e-5}
+        stats = d.get("statistics") or {}
+        controls = (d.get("states") or {}).get("generic", {}).get("controls_min") or {}
+        requirements = d.get("requirements_met") or {}
+        for key, tolerance in tolerances.items():
+            value, control = stats.get(key), controls.get(key)
+            if any(isinstance(v, bool) or not isinstance(v, (float, int)) or not math.isfinite(v) or v < 0
+                   for v in (value, control)):
+                P.err(role, f"diagnostic (a): missing/non-finite {key} statistic or per-copy control")
+            elif requirements.get(key) is not (value <= tolerance) or (d.get("tolerances") or {}).get(key) != tolerance:
+                P.err(role, f"diagnostic (a): {key} requirement/tolerance disagrees with its statistic")
+            elif d.get("verdict") == "PASS" and (value > tolerance or control <= 100 * value):
+                P.err(role, f"diagnostic (a): PASS contradicts {key} statistic/control")
         if lab == "thurlemann":
             if not d.get("provenance_repeat"):
                 P.err(role, "the Thurlemann repeat must be a --provenance run")
@@ -534,7 +840,7 @@ def degrade_record(P, I):
     if d is None:
         return None, set()
     items = d.get("items")
-    if not isinstance(items, list) or not all(isinstance(k, int) and k in DEGRADE for k in items):
+    if not isinstance(items, list) or not all(type(k) is int and k in DEGRADE for k in items):
         P.err("degrade", f"items {items}: a list of degrade item numbers 1-7")
         return d, set()
     if sorted(items) != list(range(1, len(items) + 1)):
@@ -572,6 +878,19 @@ def build_runs(F, degrade, a_pass):
                     f"stored {'N1' if arm == 'ours' else 'N2'} DEV-TEST draws (g2_rank base 50000 + i); no new sampling",
                     [_dp(arm, s, st) for s in SEEDS], "local conversion (done); the bundles are uploaded at step 7")
         if st not in sets:
+            # Degrade 5 retains the stored OURS/N2 DEV rows and their never-reduced H2 support.
+            add(step7, f"iii-s/{st}", "iii-s", st,
+                [f"{PY_C} screen --set {st} --workers {{W}}", f"{PY_C} search --set {st} --workers {{G}}"],
+                "deterministic (grid seed 20260927); 64 lowest minimised, <= 100 evaluations",
+                [_dp("iii-s", -1, st)], "box, step 7 (FF*)")
+            add(step7, f"fftruth/{st}", "fftruth", st, [f"{PY_C} truths --set {st} --workers {{G}}"],
+                "deterministic; <= 1,000 evaluations", [_dp("fftruth", -1, st)], "box, step 7 (FF*)")
+            for arm in ("ours", "ours_n2"):
+                for seed in SEEDS:
+                    add(step7, f"basin-{arm}/{st}/s{seed}", f"basin-{arm}", st,
+                        [f"{PY_C} basin --draws {_dp(arm, seed, st)} --workers {{G}}"],
+                        "deterministic (FF*); stored arm's LJ pick", [_dp(f"basin-{arm}", seed, st)],
+                        "box, step 7 (FF*)")
             continue
         for b in SEEDS:
             add(step7, f"iii-u/{st}/b{b}", "iii-u", st,
@@ -634,9 +953,12 @@ def build_runs(F, degrade, a_pass):
             add(step7, f"ii-S/{st}/s{s}", "ii-S", st, [f"python scripts/n3_mcf_sg.py --bundle {gb} --workers {{W}}"],
                 "deterministic", [_dp(f"mcfRS_{cg['ckpt_label']}_u{ug}", s, st)], "CPU (box or local after step 8)")
             if a_pass:
+                aligned = _dp(f"mcfRoal_{c['ckpt_label']}_u{u}", s, st)
                 add(step9, f"diag-c/{st}/s{s}", "MCF diagnostic (c)", st,
-                    [f"python scripts/n3_mcf_diag.py c --run_dir {rdir} --workers {{W}}"], "deterministic (oracle-aligned)",
-                    [_dp(f"mcfRoal_{c['ckpt_label']}_u{u}", s, st)], "local, step 9")
+                    [f"python scripts/n3_mcf_diag.py c --run_dir {rdir} --workers {{W}}"] +
+                    [f"python scripts/n3_score.py match --bundles {aligned} --matcher {matcher} --draws all "
+                     "--step9 --workers {W}" for matcher in ("primary", "mcf05", "mcf08")],
+                    "deterministic (oracle-aligned)", [aligned], "local, step 9")
         for s in A.get("seeds") or []:
             c = (A.get("checkpoints") or {}).get(str(s))
             if not c:
@@ -665,10 +987,26 @@ def build_runs(F, degrade, a_pass):
                     f"torch.manual_seed({700000 + 10000 * (sd or 0) + 1000 * sp} + i) (700000 + 10000 s + 1000 split + i)",
                     [_dp("ivS" if is_s else "ivP", sd, st)], "box, step 7" if not is_s else "CPU (box or local)")
         if a_pass:
+            haar = f"results/n3/private/mcf/haar_floor_{st}.json"
+            floor_bundles = " ".join(_dp("iii-u", seed, st) for seed in SEEDS)
+            add(step9, f"haar-floor/{st}", "MCF diagnostic (b) Haar floor", st,
+                [f"python scripts/n3_score.py match --bundles {floor_bundles} --matcher {matcher} --draws all "
+                 "--step9 --workers {W}" for matcher in ("primary", "mcf05", "mcf08")] +
+                [f"python scripts/n3_score.py haar-floor --bundles {floor_bundles} --out {haar} --step9"],
+                "exact RANDOM expectation pooled across iii-u's three bases", [haar], "local, step 9")
             add(step9, f"diag-b/{st}", "MCF diagnostic (b)", st,
                 [f"python scripts/n3_mcf_diag.py b --set {st} --workers {{W}} --after_sampling "
                  f"--haar_floor results/n3/private/mcf/haar_floor_{st}.json"],
                 "deterministic (oracle ceiling from truth)", [f"results/n3/private/mcf/diag_b_{st}.json"], "local, step 9")
+            r_bundles = " ".join(_dp(f"mcfR_{c['ckpt_label']}_u{g(R['s_uR'])}", int(seed), st)
+                                 for seed, c in sorted((R.get("checkpoints") or {}).items()))
+            for matcher in ("primary", "mcf05", "mcf08"):
+                add(step9, f"diag-d/{st}/{matcher}", "MCF diagnostic (d)", st,
+                    [f"python scripts/n3_score.py match --bundles {r_bundles} --matcher {matcher} --draws all "
+                     "--step9 --workers {W}",
+                     f"python scripts/n3_mcf_diag.py d --ceiling results/n3/private/mcf/diag_b_{st}.json "
+                     f"--bundles {r_bundles} --matcher {matcher}"],
+                    "bootstrap seed 0", [f"results/n3/private/mcf/diag_d_{st}_{matcher}.json"], "local, step 9")
     return step7, step9
 
 
@@ -680,7 +1018,8 @@ def report_configs(F, degrade, form, gate_c_failed):
     sets = ["testB"] + ([] if 5 in degrade else ["devtest"])
     for st in ["testB", "devtest"]:
         arms = {"OURS": ([_dp("ours", s, st) for s in SEEDS], "lj", "rasym"),
-                "OURS-N2": ([_dp("ours_n2", s, st) for s in SEEDS], "lj", "rasym")}
+                "OURS-N2": ([_dp("ours_n2", s, st) for s in SEEDS], "lj", "rasym"),
+                "iii-s": ([_dp("iii-s", -1, st)], "ff", "rasym")}
         if st in sets:
             arms.update({
                 "floor": ([_dp("iii-u", b, st) for b in SEEDS], "random", "rasym"),
@@ -728,34 +1067,37 @@ def report_configs(F, degrade, form, gate_c_failed):
             elif sel == "random":
                 for m in ("mcf05", "mcf08", "mcf10"):
                     c.append(f"{S9} match --bundles {bl} --matcher {m} --draws all --step9 --workers {{W}}")
-        if st in sets:                                 # the H2 pair in BASIN form (both forms run, §3.3)
-            for name, arm, seeds, sel, draws in (("OURS", "basin-ours", SEEDS, "ff", "all"),
-                                                 ("OURS-N2", "basin-ours_n2", SEEDS, "ff", "all"),
-                                                 ("iii-s", "iii-s", [-1], "ff", "picks"),
-                                                 ("i-E", "i-E-ours", ie_seeds, "ff", "picks")):
-                if not seeds:
-                    continue
-                bl = " ".join(_dp(arm, s, st) for s in seeds)
-                c.append(f"{S9} match --bundles {bl} --matcher primary --reference {ref_ff} --draws {draws}"
-                         + (f" --selector {sel}" if draws == "picks" else "") + " --step9 --workers {W}")
-                c.append(f"{S9} basin --bundles {bl} --reference {ref_ff} --selector {sel} --step9")
-                h2b[name] = bj(arm, ref_ff, sel)
+        # Never-reduced H2 support, including stored DEV rows under degrade 5.
+        for name, arm, seeds, sel, draws in (("OURS", "basin-ours", SEEDS, "ff", "all"),
+                                           ("OURS-N2", "basin-ours_n2", SEEDS, "ff", "all"),
+                                           ("iii-s", "iii-s", [-1], "ff", "picks"),
+                                           ("i-E", "i-E-ours", ie_seeds if st in sets else [], "ff", "picks")):
+            if not seeds:
+                continue
+            bl = " ".join(_dp(arm, s, st) for s in seeds)
+            c.append(f"{S9} match --bundles {bl} --matcher primary --reference {ref_ff} --draws {draws}"
+                     + (f" --selector {sel}" if draws == "picks" else "") + " --step9 --workers {W}")
+            c.append(f"{S9} basin --bundles {bl} --reference {ref_ff} --selector {sel} --step9")
+            h2b[name] = bj(arm, ref_ff, sel)
+        if st in sets:
             for name, arm, seeds, key in (("p1-OURS", "p1-ours", p1_seeds, "p1-ours"),
-                                          ("p1-iii-p", "iii-p", p1_seeds, "p1-iii-p")):
+                                        ("p1-iii-p", "iii-p", p1_seeds, "p1-iii-p")):
                 sel = ((F.get("P1") or {}).get(key) or {}).get("selector")
                 bl = " ".join(_dp(arm, s, st) for s in seeds)
                 c.append(f"{S9} match --bundles {bl} --matcher primary --reference {ref_p1} --draws all --step9 "
                          "--workers {W}")
                 c.append(f"{S9} basin --bundles {bl} --reference {ref_p1} --selector {sel} --step9")
                 p1b[name] = bj(arm, ref_p1, sel)
-            c.append(f"{S9} match --bundles {ref_ff} --matcher primary --step9 --workers {{W}}")
-            c.append(f"python scripts/n3_classical.py anchor --set {st}")
+        c.append(f"{S9} match --bundles {ref_ff} --matcher primary --step9 --workers {{W}}")
+        c.append(f"python scripts/n3_classical.py anchor --set {st}")
         cfg = {"set": st, "matcher": "primary",
-               "arms": {k: {"bundles": b, "selector": s} for k, (b, s, _kd) in arms.items()},
+               "arms": {k: {"bundles": b, "selector": s, "kind": kd,
+                            "seed_ids": [int(re.search(r"_s(-?\d+)_", path).group(1)) for path in b]}
+                        for k, (b, s, kd) in arms.items()},
                "ours": "OURS", "ours_n2": "OURS-N2", "H1": ["MCF-R", "MCF-R+G"], "H2": "iii-s", "H3": "iv-P",
                "ii_s": "ii-S", "i_e": "i-E", "h2_form": form, "h2_basin": h2b, "steric_basin": p1b,
                "steric_basin_ours": "p1-OURS",
-               "ff_labels": rp(os.path.join(CLS_DIR, f"ff_labels_{st}.json")) if st in sets else None,
+               "ff_labels": rp(os.path.join(CLS_DIR, f"ff_labels_{st}.json")),
                "labels": [rp(os.path.join(C.PRIVATE, f"labels_{st}.json"))],
                "secondary": ["mcf05", "mcf08"], "rms_matcher": "mcf10", "gate_ca_failed": gate_c_failed,
                "n_boot": 10000, "out": f"results/n3/report_{st}.out.json"}
@@ -764,11 +1106,49 @@ def report_configs(F, degrade, form, gate_c_failed):
     return out, cmds
 
 
+def step7_inputs(P, I, frozen):
+    """Checksummed private files required to resume step 7 on a fresh box."""
+    rows = {}
+
+    def add(role, path, sha=None):
+        if not isinstance(path, str) or not os.path.isfile(rel(path)):
+            P.err(role, f"step-7 carryover file absent: {path}")
+            return
+        actual = C.sha256(rel(path))
+        if sha != actual:
+            P.err(role, f"step-7 carryover checksum differs: {path}")
+        rows.setdefault(rp(path), {"role": role, "path": rp(path), "sha256": actual})
+
+    for arm in ("MCF-R", "MCF-R+G", "MCF-A"):
+        for seed, checkpoint in (frozen.get(arm, {}).get("checkpoints") or {}).items():
+            add(f"{arm}/s{seed}/checkpoint", checkpoint["ckpt"], checkpoint["ckpt_sha256"])
+            add(f"{arm}/s{seed}/config", checkpoint["config"], checkpoint["config_sha256"])
+    iv = frozen.get("iv-P") or {}
+    for seed, path in (iv.get("checkpoints") or {}).items():
+        add(f"iv-P/s{seed}/checkpoint", path, (iv.get("checkpoint_sha256") or {}).get(seed))
+    if "ivP_frozen" in I.sha:
+        add("ivP_frozen", I.paths["ivP_frozen"], I.sha["ivP_frozen"])
+    for arm in ("OURS", "OURS-N2"):
+        for seed, checkpoint in (frozen.get(arm, {}).get("checkpoints") or {}).items():
+            add(f"{arm}/s{seed}/checkpoint", checkpoint["ckpt"], checkpoint["sha256"])
+        for seed, bundle in (frozen.get(arm, {}).get("devtest_bundles") or {}).items():
+            add(f"{arm}/s{seed}/devtest", bundle["bundle"], bundle["sha256"])
+    return [rows[path] for path in sorted(rows)]
+
+
 # ------------------------------------------------------------------------------------------------ assemble
 def assemble(paths, allow_absent=False, diag_a_unresolved=False):
     P = Problems()
     I = Inputs(paths, P)
-    deg, degrade = degrade_record(P, I)
+
+    def checked(role, call, fallback=None):
+        try:
+            return call()
+        except (KeyError, TypeError, ValueError, AttributeError, OverflowError, IndexError) as error:
+            P.err(role, f"invalid record data: {error}")
+            return fallback
+
+    deg, degrade = checked("degrade", lambda: degrade_record(P, I), (None, set()))
     F = {}
     F.update(ours_frozen(P))
     F["iii-u"] = single_cell(P, I, "iii-u", r"^iii-u_s{s}_valsel\.pt$", MENU_CLASSICAL, "lj", allow_absent=allow_absent)
@@ -780,8 +1160,8 @@ def assemble(paths, allow_absent=False, diag_a_unresolved=False):
                                        allow_absent=allow_absent),
                "reference": "p1ref (press(true R0)); hit = StructureMatcher() fit(pressed draw, pressed truth)",
                "seeds": [0] if 6 in degrade else list(SEEDS)}
-    R = mcf_r(P, I, "mcfR", allow_absent)
-    G = mcf_r(P, I, "mcfRG", allow_absent, same_cells_as=R.get("_stage_a_keys"))
+    R = checked("mcfR", lambda: mcf_r(P, I, "mcfR", allow_absent), {})
+    G = checked("mcfRG", lambda: mcf_r(P, I, "mcfRG", allow_absent, same_cells_as=R.get("_stage_a_keys")), {})
     for s, c in (G.get("checkpoints") or {}).items():
         r = (R.get("checkpoints") or {}).get(s) or {}
         G.setdefault("separate_sampling", {})[s] = (c.get("ckpt_sha256"), G.get("s_uR")) != (r.get("ckpt_sha256"),
@@ -796,26 +1176,33 @@ def assemble(paths, allow_absent=False, diag_a_unresolved=False):
                 P.err("iiS", f"ii-S candidates {got} are not the +G frozen draws {lab}")
     else:
         I.get("iiS")
-    F["MCF-A"] = mcf_a(P, I, degrade, allow_absent)
-    iv = iv_p(P, I, allow_absent)
+    F["MCF-A"] = checked("mcfA", lambda: mcf_a(P, I, degrade, allow_absent), {})
+    iv = checked("ivP", lambda: iv_p(P, I, allow_absent))
     F["iv-P"] = iv
     F["iv-S"] = single_cell(P, I, "ivS", r"^ivS_.+_ep\d+_s{s}_valsel\.pt$", MENU, "resid", allow_absent=allow_absent)
     if F["iv-S"] and iv:
         eps = [int(re.search(r"_ep(\d+)_s", b).group(1)) for b in F["iv-S"]["bundles"]]
         if [str(e) for e in eps] != [str((iv.get("epoch_per_seed") or {}).get(str(s))) for s in SEEDS]:
             P.err("ivS", f"iv-S candidates at epochs {eps} are not iv-P's frozen checkpoints")
-    form = anchor(P, I)
-    a = diag_a(P, I, F, degrade, diag_a_unresolved)
+    form = checked("anchor", lambda: anchor(P, I))
+    a = checked("diag_a", lambda: diag_a(P, I, F, degrade, diag_a_unresolved),
+                {"verdict": "FAILED", "per_checkpoint": {}})
     gate_ca_failed, gate = None, None
     gc = I.get("gate_c")
     if gc is not None:                                # §3.2 Gate C: C-a (i), C-b, C-c pass before MCF training;
         ca = gc.get("C-a") or {}                      # C-a (ii) failing only adds the H1 harness clause
+        if not isinstance(ca, dict) or not isinstance(gc.get("C-b"), dict) or not isinstance(gc.get("C-c"), dict):
+            P.err("gate_c", "Gate C parts must be objects")
+            ca = {}
+            gc = {"C-a": {}, "C-b": {}, "C-c": {}}
         for part, ok in (("C-a (i)", ca.get("i_pass")), ("C-b", (gc.get("C-b") or {}).get("pass")),
                          ("C-c", (gc.get("C-c") or {}).get("pass"))):
             if ok is not True:
                 P.err("gate_c", f"{part} has not passed (no MCF arm trains before it does)")
         if "ii_pass_test" in ca or "ii_pass_val" in ca:
             gate_ca_failed = not (ca.get("ii_pass_test") or ca.get("ii_pass_val"))
+        if type(ca.get("ii_pass_test")) is not bool or type(ca.get("ii_pass_val")) is not bool:
+            P.err("gate_c", "C-a (ii) requires both TEST and VAL reproduction decisions")
         gate = {"C-a": {k: ca.get(k) for k in ("i_pass", "ii_pass_test", "ii_pass_val", "pass",
                                                "disclose_only_val_agrees")},
                 "C-b": (gc.get("C-b") or {}).get("pass"), "C-c": (gc.get("C-c") or {}).get("pass"),
@@ -823,6 +1210,7 @@ def assemble(paths, allow_absent=False, diag_a_unresolved=False):
                 "consequence": "every H1 sentence carries the §3.2 Gate C-a harness clause" if gate_ca_failed else None}
     step7, step9 = build_runs(F, degrade, a["verdict"] == "PASS")
     rcfg, scmd = report_configs(F, degrade, (form or {}).get("form"), gate_ca_failed)
+    carryover = step7_inputs(P, I, F)
     for k in list(F):
         if isinstance(F[k], dict):
             F[k] = {kk: v for kk, v in F[k].items() if not kk.startswith("_")}
@@ -836,6 +1224,7 @@ def assemble(paths, allow_absent=False, diag_a_unresolved=False):
            "inputs": {role: {"path": rp(I.paths[role]), "sha256": I.sha[role]} for role in sorted(I.sha)},
            "degrade": deg, "h2_form": form, "gate_c": gate, "frozen": F, "mcf_diagnostic_a": a,
            "valsel_cell_scores": records,
+           "schema_version": 1, "complete": not P.rows, "step7_inputs": carryover,
            "runs": {"placeholders": PLACEHOLDERS,
                     "rule": "§7 step 7: exactly these runs, with these seeds, on TEST-B / DEV-TEST; a run not listed "
                             "is disclosed and that arm's run is invalid. Step 9: local scoring after step 8.",
@@ -875,7 +1264,7 @@ def main():
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--dry-run", action="store_true", help="list present / missing / invalid records; write nothing")
     ap.add_argument("--allow-absent-bundles", action="store_true",
-                    help="record scored bundles that are not on this machine as unverified instead of refusing")
+                    help="deprecated compatibility flag; missing artifacts still prevent a step-6 freeze")
     ap.add_argument("--diag-a-unresolved", action="store_true",
                     help="record missing diagnostic-(a) files as FAILED (§3.2: unresolved at step 6)")
     ap.add_argument("--force", action="store_true", help="replace an existing output file")

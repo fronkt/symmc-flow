@@ -1,3 +1,30 @@
+# ACS Omega continuation — 2026-10-11
+
+Decision on record: ao-2026-09173w rejected 2026-09-24, resubmission permitted through 2027-01-22.
+Resume the frozen N3 v3 protocol plus A1/A2 from `tasks/n3_next_steps.md`; G0–G2 and the input-side TEST-B work are complete.
+
+Scope for this continuation: finish the unreviewed round-2 implementation, validate its protocol and blinding boundaries locally, and publish the completed phase. No benchmark claims change without results. Preserve existing manuscript/workshop edits. Any paid timing run follows a concrete cost and upload proposal; the full benchmark requires the measured projection specified in the handoff.
+
+- [x] Review/fix VALSEL selection and BASIN scoring against the frozen protocol.
+- [x] Finish per-set cache loading and prove held-out caches cannot load on the step-5 box.
+- [x] Review/fix upload manifests, environment setup, timing/cost gate, and verified cleanup.
+- [x] Write an executable runbook for steps 4–9, with exact prerequisites and review gates.
+- [x] Run meaningful local checks and independent protocol review; resolve blockers.
+- [ ] Record evidence and remaining paid-run prerequisites; commit explicit paths and push this phase.
+
+### Plan check-in
+
+Continuing at round 2, rather than repeating completed dataset parsing or G2 studies. Selection uses VALSEL only; TEST-B/DEV-TEST arm outputs remain blinded until step 9. Verify each tool with synthetic/TRAIN/VAL inputs and cache identity checks; preserve the frozen protocol except for explicitly dated implementation amendments if needed.
+
+### Review
+
+The implementation and verification are complete: 137 tests passed, 3 heavy checks skipped; actual
+input-cache checks and checksummed TRAIN/VAL-only archive extraction passed. Independent review
+blockers are resolved. Publication is pending; evidence is retained in
+`tasks/n3_round2_review_2026-10-11.md`. No paid run or CSD upload has occurred.
+
+---
+
 # Digital Discovery revision roadmap — execution log (2026-06-21)
 
 Target: **Digital Discovery (RSC)**. Items from the full 5-reviewer panel

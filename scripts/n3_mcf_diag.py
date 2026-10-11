@@ -342,6 +342,61 @@ def _winit_b():
     torch.set_num_threads(1)
 
 
+def ceiling_identity(set_name):
+    """Pin truth, adapters and matcher libraries for numeric ceiling consumption across environments."""
+    import n3_score as SC
+    identity = SC.scoring_identity(set_name)
+    return {k: identity[k] for k in ("set", "n", "content_sha256", "code_sha256", "protocol_sha256")} | {
+        "matcher_libraries": {k: identity["libraries"][k] for k in ("pymatgen", "scipy", "numpy")},
+        "diagnostic_code_sha256": {name: nc.sha256(os.path.join(REPO, "scripts", name)) for name in
+                                    ("n3_mcf_diag.py", "n3_mcf_lib.py", "n3_mcf_export.py")}}
+
+
+def checked_haar(path, set_name, selection):
+    """Verify the floor and its source artifacts without fitting any new draw."""
+    import n3_score as SC
+    try:
+        meta = json.load(open(path + ".meta.json"))
+    except (OSError, ValueError) as e:
+        raise SystemExit("diagnostic (b): Haar floor provenance is missing or invalid") from e
+    expected = SC.scoring_identity(set_name)
+    old = meta.get("scoring_identity") or {}
+    keys = ("set", "n", "content_sha256", "code_sha256", "protocol_sha256")
+    if (meta.get("sha256") != nc.sha256(path) or any(old.get(k) != expected[k] for k in keys)
+            or any((old.get("libraries") or {}).get(k) != expected["libraries"][k]
+                   for k in ("pymatgen", "scipy", "numpy"))
+            or (meta.get("selection") or {}).get("sha256") != (selection or {}).get("sha256")
+            or meta.get("seeds") != [0, 1, 2] or meta.get("draws_per_seed") != 16):
+        raise SystemExit("diagnostic (b): stale or invalid Haar floor provenance")
+    for group in ("bundles", "match_rows"):
+        if not meta.get(group):
+            raise SystemExit("diagnostic (b): Haar source inventory is incomplete")
+        for p, sha in meta[group].items():
+            if not os.path.isfile(SC.rel(p)) or nc.sha256(SC.rel(p)) != sha:
+                raise SystemExit("diagnostic (b): a Haar source artifact changed")
+    return json.load(open(path))
+
+
+def checked_ceiling(path, set_name, selection):
+    try:
+        meta = json.load(open(path + ".meta.json"))
+    except (OSError, ValueError) as e:
+        raise SystemExit("diagnostic (d): ceiling provenance is missing or invalid") from e
+    if (meta.get("sha256") != nc.sha256(path) or meta.get("identity") != ceiling_identity(set_name)
+            or meta.get("selection_sha256") != (selection or {}).get("sha256")):
+        raise SystemExit("diagnostic (d): stale ceiling provenance")
+    for p, sha in meta.get("artifacts", {}).items():
+        p = p if os.path.isabs(p) else os.path.join(REPO, p)
+        if not os.path.isfile(p) or nc.sha256(p) != sha:
+            raise SystemExit("diagnostic (d): a ceiling source artifact changed")
+    if not meta.get("artifacts"):
+        raise SystemExit("diagnostic (d): ceiling source inventory is incomplete")
+    if meta.get("haar_floor"):
+        p = meta["haar_floor"]
+        checked_haar(p if os.path.isabs(p) else os.path.join(REPO, p), set_name, selection)
+    return json.load(open(path))
+
+
 def cmd_b(args):
     import n3_mcf_export as X
     import n3_harness as H
@@ -350,6 +405,10 @@ def cmd_b(args):
                          "(--after_sampling once that set's MCF runs exist)")
     entries, side = X.load_export(args.set) if args.set in X.TARGET else ML.export_set(args.set)
     set_name = args.set if args.set in X.TARGET else side.get("n3_set")
+    import n3_score as SC
+    selection = SC.guard(set_name, set_name in ("testB", "devtest"),
+                         getattr(args, "selection", SC.SELECTION),
+                         getattr(args, "selection_sha256", None))
     items = nc.load_set(set_name) if args.set in X.TARGET else [nc.load_set(set_name)[i] for i in side["val_indices"]]
     assert [a["refcode"] for a in items] == side["refcodes"]
     n = len(entries) if args.limit is None else min(args.limit, len(entries))
@@ -357,10 +416,21 @@ def cmd_b(args):
     tag = args.label or os.path.basename(os.path.normpath(args.set))
     odir = ML.PRIV if args.set in X.TARGET else ML.SMOKE_DIR        # a smoke subset never lands beside real runs
     jl = os.path.join(odir, f"diag_b_{tag}.jsonl")
-    ML.check_params(jl, {"grid_deg": args.grid, "walk_deg": args.walk, "pickle_sha256": side["sha256"]})
+    artifact_paths = [X.paths(set_name)[key] for key in ("pickle", "sidecar")] if args.set in X.TARGET else [
+        os.path.join(args.set, name) for name in ("test_molcrystal_normalized.pkl.gz", "test_sidecar.json")]
+    artifacts = {os.path.relpath(p, REPO).replace("\\", "/"): nc.sha256(p) for p in artifact_paths}
+    haar = checked_haar(args.haar_floor, set_name, selection) if args.haar_floor else {}
+    if args.haar_floor:
+        artifacts.update({os.path.relpath(p, REPO).replace("\\", "/"): nc.sha256(p)
+                          for p in (args.haar_floor, args.haar_floor + ".meta.json")})
+    provenance = {"identity": ceiling_identity(set_name), "artifacts": artifacts,
+                  "selection_sha256": (selection or {}).get("sha256"),
+                  "haar_floor": os.path.relpath(args.haar_floor, REPO).replace("\\", "/") if args.haar_floor else None,
+                  "writer_libraries": SC.scoring_identity(set_name)["libraries"]}
+    ML.check_params(jl, {"grid_deg": args.grid, "walk_deg": args.walk, "pickle_sha256": side["sha256"],
+                        "provenance": provenance})
     H.repair_jsonl(jl)
     done = {(r["i"], r["matcher"]) for r in H.read_jsonl(jl)}
-    haar = json.load(open(args.haar_floor)) if args.haar_floor else {}
     tasks = []
     for i in sel:
         z = side["items"][i]["z_MCF"]
@@ -409,6 +479,7 @@ def cmd_b(args):
            "note": "c_i does NOT bound LJ-picked@1", "sec": round(time.time() - t0, 1)}
     path = os.path.join(odir, f"diag_b_{tag}.json")
     ML.atomic_json(out, path, indent=1)
+    ML.atomic_json({"sha256": nc.sha256(path), **provenance}, path + ".meta.json", indent=1)
     print(json.dumps(summ), "->", os.path.relpath(path, REPO).replace("\\", "/"))
 
 
@@ -500,13 +571,23 @@ def cmd_c(args):
 # ============================================================================================ (d)
 def cmd_d(args):
     import n3_score as SC
-    ceil = json.load(open(args.ceiling))
     bundles = [nc.load_bundle(p) for p in args.bundles]
+    set_name = SC.validate_bundles(bundles, allow_prefix=True)
+    selection = SC.guard(set_name, set_name in ("testB", "devtest"),
+                         getattr(args, "selection", SC.SELECTION),
+                         getattr(args, "selection_sha256", None))
+    if set_name in ("testB", "devtest") and args.n_boot != 10000:
+        raise SystemExit("diagnostic (d): held-out bootstrap count is frozen at 10000")
+    ceil = checked_ceiling(args.ceiling, set_name, selection)
     refs = bundles[0]["refcodes"]
+    if set(ceil["per_crystal"]) != set(refs):
+        raise SystemExit("diagnostic (d): ceiling refcodes differ from the draw bundles")
     zl = {rc: v["z_MCF"] for rc, v in ceil["per_crystal"].items()}
     hits = np.zeros(len(refs))
     for p, b in zip(args.bundles, bundles):
         assert b["refcodes"] == refs
+        if SC.rows_current(p, args.matcher, selection=selection, bundle=b) is None:
+            raise SystemExit(f"{p}: current match provenance is missing (run n3_score.py match --draws all)")
         rows = SC.load_match(p, args.matcher)
         S = int(b["valid"].shape[1])
         for i in range(len(refs)):
@@ -563,6 +644,8 @@ def main():
     b.add_argument("--workers", type=int, default=2)
     b.add_argument("--after_sampling", action="store_true",
                    help="allow sel / testB / valsel (only after that set was sampled, §1.1)")
+    b.add_argument("--selection", default=os.path.join(REPO, "results", "n3", "n3_selection.json"))
+    b.add_argument("--selection-sha256", default=None)
     c = sub.add_parser("c")
     c.add_argument("--run_dir", required=True)
     c.add_argument("--bundle", default=None)
@@ -574,6 +657,8 @@ def main():
     d.add_argument("--matcher", default="primary")
     d.add_argument("--n_boot", type=int, default=10000)
     d.add_argument("--out", default=None)
+    d.add_argument("--selection", default=os.path.join(REPO, "results", "n3", "n3_selection.json"))
+    d.add_argument("--selection-sha256", default=None, help="committed freeze SHA for a step-9 CPU box without git")
     args = ap.parse_args()
     warnings.filterwarnings("ignore")
     {"a": cmd_a, "b": cmd_b, "c": cmd_c, "d": cmd_d}[args.cmd](args)

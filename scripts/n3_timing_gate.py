@@ -37,6 +37,8 @@ Outputs: results/n3/private/timing/ (gitignored; the rates and projection hold n
 gate live in n3_mcf/_timing, n3_mcf/_smoke and results/n3/private/timing and are deleted with the box.
 """
 import argparse
+import ast
+import hashlib
 import json
 import math
 import os
@@ -46,6 +48,7 @@ import subprocess
 import sys
 import threading
 import time
+from types import SimpleNamespace
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "scripts"))
@@ -130,10 +133,11 @@ def measurements(args):
                                   "cmds": [(REPO, [py("symmc"), "scripts/n3_classical.py", "fftime", "--set", "val",
                                                    "--device", "cuda", "--batch", "64", "--ff-settings", st,
                                                    "--ff-dtype", dt])]}
+    truth_idx = "<the same 20 VAL timing indices>" if args.dry else ",".join(map(str, val20()))
     for dt in ("float32", "float64"):
         M[f"ff_min_truth_{dt}"] = {"env": "symmc", "gpu": True, "kind": "ff_min", "dtype": dt, "cmds": [(REPO, [
             py("symmc"), "scripts/n3_classical.py", "ffmin", "--set", "val", "--truth", "--max-evals", "1000",
-            "--limit", "20", "--device", "cuda", "--ff-settings", "batch", "--ff-dtype", dt])]}
+            "--only", truth_idx, "--device", "cuda", "--ff-settings", "batch", "--ff-dtype", dt])]}
     M["cpu"] = {"env": "symmc", "gpu": False, "kind": "cpu", "cmds": [(REPO, [
         py("symmc"), "scripts/n3_timing_gate.py", "cpu", "--workers", str(W)])]}
     M["lj_screen"] = {"env": "symmc", "gpu": False, "kind": "screen", "cmds": [
@@ -150,15 +154,16 @@ def measurements(args):
 class GPUSampler(threading.Thread):
     """nvidia-smi every 2 s: max memory and mean utilisation of GPU 0 during a measurement."""
 
-    def __init__(self):
+    def __init__(self, gpu="0"):
         super().__init__(daemon=True)
         self.rows, self.stop = [], threading.Event()
+        self.gpu = str(gpu)
 
     def run(self):
         while not self.stop.is_set():
             try:
                 o = subprocess.run(["nvidia-smi", "--query-gpu=utilization.gpu,memory.used", "--format=csv,noheader,nounits",
-                                    "-i", "0"], capture_output=True, text=True, timeout=10).stdout.strip()
+                                    "-i", self.gpu], capture_output=True, text=True, timeout=10).stdout.strip()
                 u, m = (float(x) for x in o.split(","))
                 self.rows.append((u, m))
             except Exception:  # noqa: BLE001
@@ -192,7 +197,9 @@ def run_concurrent(items, log, env):
         procs.append((subprocess.Popen(argv, cwd=cwd, env=env, stdout=fh, stderr=subprocess.STDOUT), fh))
     rc = 0
     for p, fh in procs:
-        rc = max(rc, p.wait())
+        status = p.wait()
+        if status != 0:
+            rc = status if rc == 0 else rc
         fh.close()
     return rc, time.time() - t0
 
@@ -209,13 +216,81 @@ def tail_json(log):
     return {}
 
 
+def measurement_settings(args):
+    return {"workers": args.workers, "gpu": str(args.gpu), "concurrency": args.concurrency,
+            "ivp_cpb": list(args.ivp_cpb)}
+
+
+def measurement_code_identity():
+    """Current harness, model implementation and Hydra configuration hashes (no arm outputs)."""
+    code = {}
+    sdir = os.path.join(REPO, "scripts")
+    local = {name[:-3] for name in os.listdir(sdir) if name.endswith(".py")}
+    todo = ["n3_timing_gate", "n3_common", "n3_ours", "n3_old_symmc", "n3_classical", "n3_ffstar",
+            "n3_mcf_run", "n3_mcf_lib", "g2_asym_baselines", "g2_learned_flow", "g2_rank",
+            "n3_set_cache", "n3_harness", "n3_chirality"]
+    seen = set()
+    while todo:
+        name = todo.pop()
+        if name in seen:
+            continue
+        seen.add(name)
+        p = os.path.join(sdir, name + ".py")
+        if not os.path.isfile(p):
+            raise ValueError(f"missing timing dependency {name}")
+        source = open(p, "rb").read()
+        code[f"scripts/{name}.py"] = hashlib.sha256(source).hexdigest()
+        # Include function-local imports as well: timed commands invoke these dependencies indirectly.
+        for node in ast.walk(ast.parse(source, filename=p)):
+            names = [a.name.split(".")[0] for a in node.names] if isinstance(node, ast.Import) else \
+                [node.module.split(".")[0]] if isinstance(node, ast.ImportFrom) and node.module and node.level == 0 else []
+            todo += [n for n in names if n in local and n not in seen]
+    for subdir in ("symmc_flow", "external/mcf/molcrystalflow"):
+        for root, _, files in os.walk(os.path.join(REPO, subdir)):
+            for name in sorted(files):
+                if name.endswith((".py", ".yaml", ".yml")):
+                    p = os.path.join(root, name)
+                    key = os.path.relpath(p, REPO).replace("\\", "/")
+                    code[key] = hashlib.sha256(open(p, "rb").read()).hexdigest()
+    return code
+
+
+def measurement_fingerprint(spec, args):
+    """A successful measurement is reusable only for the same code/host/configuration."""
+    value = {"host": platform.node(), "spec": spec, "settings": measurement_settings(args),
+             "code": measurement_code_identity()}
+    return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def validate_measurement_record(record):
+    """Recompute identity before publishing rates; a saved nonempty hash is insufficient."""
+    settings, spec = record.get("measurement_settings"), record.get("measurement_spec")
+    if record.get("host") != platform.node() or not isinstance(settings, dict) or not isinstance(spec, dict):
+        raise ValueError("requires current-host measurements with reconstructible configuration fingerprints")
+    if set(settings) != {"workers", "gpu", "concurrency", "ivp_cpb"} or \
+            any(type(settings.get(k)) is not int or settings[k] < 1 for k in ("workers", "concurrency")) or \
+            not isinstance(settings.get("gpu"), str) or not settings["gpu"] or \
+            not isinstance(settings.get("ivp_cpb"), list) or not settings["ivp_cpb"] or \
+            any(type(n) is not int or n < 1 for n in settings["ivp_cpb"]):
+        raise ValueError("invalid recorded measurement settings")
+    if record.get("kind") != spec.get("kind") or record.get("env") != spec.get("env") or \
+            record.get("workers") != settings["workers"]:
+        raise ValueError("recorded measurement identity differs from its settings/specification")
+    if record.get("fingerprint") != measurement_fingerprint(spec, SimpleNamespace(**settings)):
+        raise ValueError("measurement differs from current code/host/config; repeat on fresh scratch")
+
+
 def measure(name, spec, args):
     os.makedirs(os.path.join(OUT, "logs"), exist_ok=True)
     log = os.path.join(OUT, "logs", f"{name}.log")
+    # Never parse an old attempt's success line after a failed retry.
+    open(log, "w").close()
     env = dict(os.environ, CUDA_VISIBLE_DEVICES=str(args.gpu), WANDB_MODE="offline", N3_ROOT=REPO)
     res = {"name": name, "kind": spec["kind"], "env": spec["env"], "host": platform.node(), "cpus": os.cpu_count(),
-           "workers": args.workers, "start": time.strftime("%Y-%m-%d %H:%M:%S")}
-    samp = GPUSampler() if spec["gpu"] else None
+           "workers": args.workers, "fingerprint": measurement_fingerprint(spec, args),
+           "measurement_settings": measurement_settings(args), "measurement_spec": spec,
+           "start": time.strftime("%Y-%m-%d %H:%M:%S")}
+    samp = GPUSampler(args.gpu) if spec["gpu"] else None
     if samp:
         samp.start()
     try:
@@ -309,6 +384,10 @@ def measure(name, spec, args):
                            note="3 checkpoints x 16 draws x 40 steps + e_lj + torque_end per crystal")
             elif k == "cpu":
                 res.update(json.load(open(os.path.join(OUT, "cpu_rows.json"))))
+        if k in ("mcf_train", "ivp_train") and (not math.isfinite(res["epoch_s"]) or res["epoch_s"] <= 0):
+            raise RuntimeError("nonpositive/nonfinite warmed training rate; repeat the timing gate")
+        if k in ("ff_time", "ff_min", "screen", "cpu") and len(res.get("rows", [])) != 20:
+            raise RuntimeError("timing gate requires all 20 VAL crystals")
         res["ok"] = True
     except Exception as e:  # noqa: BLE001
         res.update(ok=False, error=str(e)[:500])
@@ -339,21 +418,33 @@ def cmd_plan(args):
 def cmd_run(args):
     args.dry = False
     if os.environ.get("N3_SET_CACHE_ONLY") != "1":
-        print("warning: N3_SET_CACHE_ONLY is not 1 (source .n3_box/env.sh on the box)", flush=True)
+        raise SystemExit("source .n3_box/env.sh: timing run requires N3_SET_CACHE_ONLY=1")
+    if args.workers < 1 or args.concurrency < 1 or any(n < 1 for n in args.ivp_cpb):
+        raise SystemExit("workers, training concurrency and iv-P batch sizes must be positive")
     os.makedirs(OUT, exist_ok=True)
     M = measurements(args)
     names = args.only or list(M)
+    if any(name not in M for name in names):
+        raise SystemExit(f"unknown measurement names: {sorted(set(names) - set(M))}")
     for name in names:
         p = os.path.join(OUT, f"{name}.json")
-        if os.path.exists(p) and json.load(open(p)).get("ok") and not args.redo:
-            print(f"{name}: done (kept)")
-            continue
+        if os.path.exists(p):
+            previous = json.load(open(p))
+            if previous.get("ok") and not args.redo:
+                if previous.get("fingerprint") != measurement_fingerprint(M[name], args):
+                    raise SystemExit(f"{name}: cached measurement differs from this code/host/config; repeat on fresh scratch")
+                print(f"{name}: done (same configuration, kept)")
+                continue
+            # Unit harnesses resume cached shards/checkpoints; re-timing these would time cached work.
+            raise SystemExit(f"{name}: existing attempt cannot be timed in place; inspect and clear its explicit scratch "
+                             "outputs on the box before a fresh attempt")
         after = M[name].get("after")
         if after and not (os.path.exists(os.path.join(OUT, f"{after}.json"))
                           and json.load(open(os.path.join(OUT, f"{after}.json"))).get("ok")):
-            print(f"{name}: needs {after} first; skipped")
-            continue
-        measure(name, M[name], args)
+            raise SystemExit(f"{name}: needs a successful {after} first")
+        result = measure(name, M[name], args)
+        if not result.get("ok"):
+            raise SystemExit(f"{name}: timing failed; no subsequent measurement started")
 
 
 # ================================================================================================ CPU part
@@ -363,6 +454,8 @@ def val20():
     items = C.load_set("val")
     idx = ([j for j, a in enumerate(items) if a["K"] == 2][:7] + [j for j, a in enumerate(items) if a["K"] == 4][:7]
            + [j for j, a in enumerate(items) if a["K"] >= 8][:6])
+    if len(idx) != 20 or len(set(idx)) != 20:
+        raise ValueError("VAL timing gate needs exactly 7 K=2, 7 K=4 and 6 K>=8 crystals")
     return idx
 
 
@@ -413,6 +506,9 @@ def _cpu_task(t):
 
 
 def cmd_cpu(args):
+    if args.workers < 1 or args.draws < 1 or not (1 <= args.press <= args.draws) \
+            or not (1 <= args.fits <= args.draws) or not (0 <= args.n_crystals <= 20):
+        raise SystemExit("CPU timing counts must be positive, <= draws, and n-crystals must be 0..20")
     from multiprocessing import Pool
     idx = val20()[:args.n_crystals] if args.n_crystals else val20()
     tasks = [(j, args.draws, args.press, args.fits) for j in idx]
@@ -458,7 +554,9 @@ def cmd_stats(args):
 # ================================================================================================ rates
 def fit_power(xs, ys):
     """y = a * x^p by least squares in log-log (p clipped to [0, 4]); const if the x's do not vary."""
-    pts = [(math.log(x), math.log(y)) for x, y in zip(xs, ys) if x > 0 and y > 0]
+    if not xs or len(xs) != len(ys) or any(not math.isfinite(v) or v <= 0 for v in list(xs) + list(ys)):
+        raise ValueError("rate fitting requires equal nonempty arrays of finite positive measurements")
+    pts = [(math.log(x), math.log(y)) for x, y in zip(xs, ys)]
     if len(pts) < 2 or max(p[0] for p in pts) - min(p[0] for p in pts) < 1e-6:
         return {"type": "const", "v": sum(ys) / len(ys)}
     mx, my = sum(p[0] for p in pts) / len(pts), sum(p[1] for p in pts) / len(pts)
@@ -484,8 +582,17 @@ def cmd_rates(args):
                 not f.startswith(("projection", "rates_")):
             r = json.load(open(os.path.join(OUT, f)))
             if r.get("ok"):
+                try:
+                    validate_measurement_record(r)
+                except ValueError as e:
+                    raise SystemExit(f"rates refused {f}: {e}") from e
+                if r["name"] in J:
+                    raise SystemExit(f"rates refused duplicate measurement {r['name']}")
                 J[r["name"]] = r
-    rates = {"gpu": {}, "cpu": {}, "sources": {}, "measured": sorted(J), "host": platform.node(),
+    rates = {"gpu": {}, "cpu": {}, "sources": {}, "measured": sorted(J), "assumed": False,
+             "host": platform.node(),
+             "measurement_fingerprints": {name: r["fingerprint"] for name, r in J.items()},
+             "code_identity": measurement_code_identity(),
              "made": time.strftime("%Y-%m-%d %H:%M:%S")}
     g, c, src = rates["gpu"], rates["cpu"], rates["sources"]
     for arm in ("R", "A"):
@@ -497,6 +604,8 @@ def cmd_rates(args):
     iR10, iR50, iA50 = J.get("mcf_infer_R_n10"), J.get("mcf_infer_R_n50"), J.get("mcf_infer_A_n50")
     if iR10 and iR50:
         c1 = (iR50["call_s"] - iR10["call_s"]) / 40
+        if not math.isfinite(c1) or c1 <= 0:
+            raise SystemExit("MCF-R inference timing is not increasing with crystal count; repeat the timing gate")
         c0 = max(0.0, iR10["call_s"] - 10 * c1)
         g["mcf_infer"] = {"R": {"c0": c0, "c1": c1}}
         if iA50:
@@ -516,9 +625,13 @@ def cmd_rates(args):
             if r:
                 rows = r["rows"]
                 g.setdefault("ff", {})[f"{st}_{dt}"] = {
-                    "batched": fit_power([x["atoms"] for x in rows], [x["sec_per_struct_batched_predict"] for x in rows]),
-                    "single": fit_power([x["atoms"] for x in rows], [x["sec_single_predict"] for x in rows]),
-                    "warm_s_mean": sum(x["warm_sec"] for x in rows) / len(rows)}
+                    "batched": fit_power([x["atoms"] for x in rows], [x["sec_per_struct_batched"] for x in rows]),
+                    "single": fit_power([x["atoms"] for x in rows], [x["sec_single"] for x in rows]),
+                    "warm_s_mean": sum(x["warm_sec"] for x in rows) / len(rows),
+                    "startup_s": (sum(x["warm_sec"] for x in rows) / len(rows) if st == "default"
+                                  else max(x["warm_sec"] for x in rows)),
+                    "startup_scope": "crystal" if st == "default" else "job",
+                    "rate_basis": "end-to-end call wall; startup/recompile charged separately"}
     for dt in ("float32", "float64"):
         r = J.get(f"ff_min_truth_{dt}")
         if r:
@@ -563,7 +676,8 @@ def cmd_reported(args):
                                   "trim": 9.0 * 3600 / (IVP_RUNS * IVP_EPOCHS)},
             "ivp_sample_gpu_s_per_crystal": {e: {"1": 2.1, "8": 2.1} for e in ("pack", "trim")},
             "ff": {"batch_float32": {"batched": {"type": "const", "v": 0.003},
-                                     "single": {"type": "const", "v": 0.05}, "warm_s_mean": 20.0}},
+                                     "single": {"type": "const", "v": 0.05}, "warm_s_mean": 20.0,
+                                     "startup_s": 20.0, "startup_scope": "job"}},
             "ff_truth_evals_mean": {"float32": 7.0}},
         "cpu": {
             "energy_s": two(0.020, 0.60), "press_s": {"type": "const", "v": 1.0},
@@ -571,6 +685,7 @@ def cmd_reported(args):
             "rms_mcf05_s": {"type": "const", "v": 0.35}, "rms_mcf08_s": {"type": "const", "v": 0.35},
             "rms_mcf10_s": {"type": "const", "v": 0.35}, "screen_s": two(6.5, 90.0),
             "ours_sample_s": {"type": "const", "v": 110.0}},
+        "assumed": True,
         "sources": {
             "energy_s": f"reported: MCF harness +G 3.2 CPU-h per VALSEL cell (~578k evaluations, mostly z_MCF = 2) "
                         f"-> 0.020 s at the median z_MCF = 2 cell ({small} atoms); classical: energy() up to 46 min per "
@@ -593,9 +708,78 @@ def cmd_reported(args):
 
 
 # ================================================================================================ projection
+def validate_projection_inputs(R, ST, cfg):
+    """Incomplete/invalid inputs cannot yield a plausible-looking budget or degrade decision."""
+    expected = {"val": 100, "sel": 300, "valsel": 400, "testB": 1000, "devtest": 200}
+    for name, count in expected.items():
+        st = ST.get(name)
+        if not isinstance(st, dict) or st.get("n") != count:
+            raise ValueError(f"{name}: expected frozen set size {count}")
+        for key in ("atoms", "K", "z_MCF"):
+            values = st.get(key)
+            if not isinstance(values, list) or len(values) != count \
+                    or any(type(v) is not int or v <= 0 for v in values):
+                raise ValueError(f"{name}: complete positive integer {key} array required")
+    for key in ("atoms", "K", "z_MCF"):
+        if ST["valsel"][key] != ST["val"][key] + ST["sel"][key]:
+            raise ValueError("VALSEL statistics must be VAL followed by SEL")
+    degrade = sorted(cfg["degrade"])
+    if degrade != list(range(1, len(degrade) + 1)) or len(degrade) > 7:
+        raise ValueError("degrade items must be a cumulative prefix 1..k")
+
+    def positive(value, name, zero=False):
+        if type(value) not in (int, float) or not math.isfinite(value) or value < 0 or (not zero and value == 0):
+            raise ValueError(f"{name}: finite {'nonnegative' if zero else 'positive'} value required")
+
+    def model(m, name):
+        if not isinstance(m, dict) or m.get("type") not in ("const", "power", "linear"):
+            raise ValueError(f"{name}: unsupported/missing timing model")
+        if m["type"] == "const":
+            positive(m.get("v"), name)
+        elif m["type"] == "power":
+            positive(m.get("a"), name)
+            positive(m.get("p"), name, zero=True)
+        else:
+            positive(m.get("a"), name, zero=True)
+            positive(m.get("b"), name)
+
+    try:
+        g, c = R["gpu"], R["cpu"]
+        for arm in ("R", "A"):
+            positive(g["mcf_train_epoch_s"][arm]["p6_" + cfg["p6"]], f"MCF-{arm} training")
+            positive(g["mcf_infer"][arm]["c0"], f"MCF-{arm} inference overhead", zero=True)
+            positive(g["mcf_infer"][arm]["c1"], f"MCF-{arm} inference slope")
+        positive(g["ivp_train_epoch_s"][cfg["ivp_encoder"]], "iv-P training")
+        positive(g["ivp_sample_gpu_s_per_crystal"][cfg["ivp_encoder"]][str(cfg["ivp_cpb"])], "iv-P sampling")
+        ff = g["ff"][cfg["ff"]]
+        for key in ("single", "batched"):
+            model(ff[key], "FF* " + key)
+        positive(ff["startup_s"], "FF* startup", zero=True)
+        if ff["startup_scope"] != ("crystal" if cfg["ff"].startswith("default_") else "job"):
+            raise ValueError("FF* startup scope does not match its server restart policy")
+        for key in ("energy_s", "press_s", "fit_primary_s", "rms_mcf05_s", "rms_mcf08_s", "rms_mcf10_s",
+                    "screen_s", "ours_sample_s"):
+            model(c[key], key)
+    except KeyError as e:
+        raise ValueError(f"missing timing measurement/configuration: {e}") from e
+    positive(cfg["ff_eval_frac"], "FF* cap fraction")
+    if cfg["ff_eval_frac"] > 1:
+        raise ValueError("FF* cap fraction cannot exceed 1")
+    positive(cfg["truth_evals"], "truth evaluations", zero=True)
+    if cfg["truth_evals"] > 1000:
+        raise ValueError("truth evaluation cap is 1000")
+    for key in ("cores", "local_cores", "cpubox_cores", "usd_per_hour", "overhead", "cpubox_usd_per_hour"):
+        positive(cfg[key], key)
+    if type(cfg["gpu_job_cores"]) is not int or cfg["gpu_job_cores"] < 1 or cfg["cores"] <= cfg["gpu_job_cores"]:
+        raise ValueError("box must have CPU cores remaining after the GPU drivers/loaders")
+    if cfg["overhead"] < 1:
+        raise ValueError("idle/setup overhead cannot reduce the measured budget")
+
+
 def build_jobs(R, ST, cfg):
     """Every job of steps 4-9 with its count formula -> [dict(name, cat, step, where, h, note)].
     where: gpu (box GPU-h), cpu (box CPU-h), local (step-9 CPU-h, laptop or CPU box). cfg.d = degrade items taken."""
+    validate_projection_inputs(R, ST, cfg)
     d = cfg["degrade"]
     g, c = R["gpu"], R["cpu"]
     S = S_DRAWS
@@ -685,20 +869,31 @@ def build_jobs(R, ST, cfg):
     add("MCF LJ + A floor + iii-u + ii-S + iv-P/iv-S LJ (TEST-B/DEV-TEST)", "testdev_sampling", 7, "cpu",
         sum((3 + 2 * nA + 3 + 6) * S * tot(e, st) + 3 * S * tot(e, st, sel=lambda x, K, z: K) for st in test_sets))
     add("+G gauge scan TEST-B/DEV-TEST", "lj_screens", 7, "cpu", sum(3 * S * tot(e, st, sel=gz) for st in test_sets))
-    add("iii-s screen TEST-B/DEV-TEST", "lj_screens", 7, "cpu", sum(tot(c["screen_s"], st) for st in test_sets))
+    add("iii-s screen TEST-B/DEV-TEST", "lj_screens", 7, "cpu", sum(tot(c["screen_s"], st) for st in both))
     add("iii-p press TEST-B/DEV-TEST", "press", 7, "cpu", sum(3 * S * tot(pr, st) for st in test_sets))
     add("steric BASIN press TEST-B/DEV-TEST", "press", 7, "cpu", sum((p1_seeds * S + 1) * tot(pr, st) for st in test_sets))
     add("iii-s FF* minimisations (64 starts x <=100 evaluations)", "ffstar", 7, "gpu",
-        sum(tot(ff["batched"], st, per=64 * 100 * frac) for st in test_sets))
+        sum(tot(ff["batched"], st, per=64 * 100 * frac) for st in both))
     add("FF* truths TEST-B + DEV-TEST (labels, BASIN reference)", "ffstar", 7, "gpu",
         sum(tot(ff["single"], st, per=tev) for st in both))
     if ie_seeds:
         add(f"i-E ({ie_seeds} seed(s) x 16 draws x <=100)", "ffstar", 7, "gpu",
             sum(tot(ff["batched"], st, per=ie_seeds * S * 100 * frac) for st in test_sets))
-    else:
-        add("H2 BASIN of the OURS LJ picks (i-E dropped)", "ffstar", 7, "gpu",
-            sum(tot(ff["single"], st, per=3 * 100 * frac) for st in both))
+    # Missing i-E seeds need direct minimisation of OURS LJ picks: H2 keeps all three seeds.
+    basin_seeds = [(st, 3 - ie_seeds if st in test_sets else 3) for st in both]
+    if any(n for _, n in basin_seeds):
+        add("H2 BASIN of OURS LJ picks without i-E reuse", "ffstar", 7, "gpu",
+            sum(tot(ff["single"], st, per=n * 100 * frac) for st, n in basin_seeds))
     add("OURS-N2 LJ picks, H2 BASIN", "ffstar", 7, "gpu", sum(tot(ff["single"], st, per=3 * 100 * frac) for st in both))
+    # batch keeps its predict unit for a job; default restarts/recompiles for each crystal (A2 §20).
+    startup = ff["startup_s"]
+    by_crystal = ff["startup_scope"] == "crystal"
+    starts5 = V["n"] + VAL["n"] if by_crystal else 2
+    starts7 = (sum(ie_seeds * st["n"] for st in test_sets)
+               + sum(5 * st["n"] for st in both) + sum(n * st["n"] for st, n in basin_seeds)) \
+        if by_crystal else (ie_seeds * len(test_sets) + 5 * len(both) + sum(n for _, n in basin_seeds))
+    add("FF* server startup/recompile VALSEL", "ffstar", 5, "gpu", starts5 * startup)
+    add("FF* server startup/recompile TEST-B/DEV-TEST", "ffstar", 7, "gpu", starts7 * startup)
     # ---------------------------------------------------------------- step-9 scoring (laptop or CPU box)
     nb_new = 3 + 3 + 3 + nA + nA + 3 + 3 + 3 + 3 + 1 + ie_seeds + p1_seeds + 3
     add(f"TEST-B/DEV-TEST primary matching (OURS/N2 6 + new {nb_new} bundles x 16)", "matching", 9, "local",
@@ -757,6 +952,15 @@ def totals(J, cfg):
 
 def cmd_project(args):
     R = json.load(open(args.rates))
+    if R.get("assumed") is True:
+        measured = False
+    else:
+        if not isinstance(R.get("measured"), list) or not R["measured"]:
+            raise SystemExit("projection requires published measured rates or explicit assumed=True prior rates")
+        if R.get("code_identity") != measurement_code_identity():
+            raise SystemExit("projection refused: rate publication differs from current code/config; "
+                             "repeat the timing gate on fresh scratch")
+        measured = True
     ST = json.load(open(args.stats))
     if args.testB and args.testB != ST["testB"]["n"]:
         raise SystemExit("--testB differs from the frozen TEST-B size in set_stats.json")
@@ -774,6 +978,8 @@ def cmd_project(args):
           f"FF* {args.ff}, FF* evaluations at {args.ff_eval_frac:.0%} of the caps)")
     if R.get("sources"):
         print("rate sources:", json.dumps(R["sources"]))
+    print("projection basis: " + ("measured timing gate" if measured else "PRIOR/ASSUMPTIONS; not a spend approval"))
+    print("step-9 CPU figures use the timing machine's rates; re-time on another CPU machine before booking it")
     print(f"\n{'job':74s} {'step':>4s} {'where':>5s} {'GPU-h':>8s} {'CPU-h':>8s} {'box-h':>7s} {'$':>8s}")
     by = {}
     for j in J:
@@ -827,7 +1033,11 @@ def cmd_project(args):
     if args.out:
         json.dump({"cfg": {k: (sorted(v) if isinstance(v, set) else v) for k, v in cfg.items() if k != "degrade"},
                    "jobs": J, "totals": T0, "degrade": [{"item": k, "text": DEGRADE[k], **v} for k, v in rows],
-                   "rates": args.rates}, open(args.out, "w"), indent=1, default=str)
+                   "rates": args.rates, "rates_sha256": hashlib.sha256(open(args.rates, "rb").read()).hexdigest(),
+                   "stats_sha256": hashlib.sha256(open(args.stats, "rb").read()).hexdigest(),
+                   "measured": measured, "assumed": not measured, "approval_eligible": measured, "approved": False,
+                   "step9_machine_caveat": "re-time CPU matching if the production machine differs"},
+                  open(args.out, "w"), indent=1, default=str)
         print("->", args.out)
 
 

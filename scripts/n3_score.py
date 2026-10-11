@@ -33,6 +33,8 @@ select    Stage A / Stage B selection engine (§2.3, §3.2, §3.4) on VALSEL mat
 report    Table 1 / Table 2 inputs and the confirmatory statistics (§2.4, §4, §6 abstract inputs) -> JSON.
 picks     truth-free export of each seed's (and the ensemble's) selector pick {refcode, seed, j} -> JSON, e.g.
           the LJ picks the FF* unit minimises for H2 BASIN (§3.3); allowed on every set (no truth is read).
+haar-floor reads complete current iii-u match rows for primary/mcf05/mcf08 and writes the seed-mean
+          draw@1 for every refcode (MCF diagnostic-b input); matching is never performed here.
 oracle    rasym-adapter oracle: expand(a, R0) x 16 per crystal must score 100% under every matcher.
 gate-f6   scorer oracle of §3.2 Gate F6: draws built from an MCF export pickle's own poses must score 100%
           picked@1, draw@1 and any@16 under every matcher (input-side; allowed on every set). The predictions
@@ -105,6 +107,7 @@ Report config (JSON):
 import argparse
 import gzip
 import hashlib
+import importlib.metadata
 import json
 import math
 import os
@@ -145,6 +148,145 @@ def rel(p):
     return p if os.path.isabs(p) else os.path.join(C.REPO, p)
 
 
+def selection_data(path):
+    """The scientific freeze, separate from the git/publication check."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            d = json.load(f)
+        if type(d.get("schema_version")) is not int or d["schema_version"] != 1 or d.get("complete") is not True:
+            raise ValueError("selection is not a complete schema-version-1 freeze")
+        form = d["h2_form"]
+        anchoring = float(form["anchoring"])
+        if (not math.isfinite(anchoring) or not 0 <= anchoring <= 1
+                or form["form"] != ("EXACT" if anchoring >= .5 else "BASIN")
+                or not isinstance(d["report_configs"]["testB"]["arms"], dict)):
+            raise ValueError("invalid H2 form or report templates")
+        protocol = os.path.join(C.REPO, "tasks", "n3_protocol.md")
+        if d.get("protocol_sha256") != C.sha256(protocol):
+            raise ValueError("protocol differs from the step-6 freeze")
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        raise SystemExit(f"{path}: not a valid step-6 selection ({e})") from e
+    return d
+
+
+def _scientific_config(cfg):
+    def normal(x):
+        if isinstance(x, dict):
+            return {k: normal(v) for k, v in x.items()}
+        if isinstance(x, list):
+            return [normal(v) for v in x]
+        if isinstance(x, str):
+            if os.path.isabs(x):
+                p = os.path.relpath(x, C.REPO)
+                if not p.startswith(".."):
+                    return p.replace("\\", "/")
+            return x.replace("\\", "/")
+        return x
+    return normal({k: v for k, v in cfg.items() if k != "out"})
+
+
+def frozen_report(cfg, selection):
+    d = selection_data(selection)
+    template = d["report_configs"].get(cfg["set"])
+    if template is None or _scientific_config(cfg) != _scientific_config(template):
+        raise SystemExit("report scientific configuration differs from the committed step-6 template")
+    if cfg.get("h2_form") != d["h2_form"]["form"]:
+        raise SystemExit("report H2 FORM differs from the committed VALSEL anchoring decision")
+    return d
+
+
+def arm_identity(arm):
+    """Checkpoint epochs may differ across training seeds of the same frozen arm/knob cell."""
+    if not isinstance(arm, str):
+        return arm
+    m = re.fullmatch(r"(mcfR|mcfRG|mcfRS|mcfRoal|mcfA)_.+(_u[^_]+(?:_f[^_]+)?)", arm)
+    if m:
+        return m[1] + m[2]
+    m = re.fullmatch(r"((?:ivP|ivS)_lr[^_]+)_ep\d+", arm)
+    return m[1] if m else arm
+
+
+def validate_bundles(bundles, allow_prefix=False, seed_ids=None):
+    """One arm and kind, unique seeds, valid dimensions, and the frozen row order."""
+    if not bundles:
+        raise SystemExit("no bundles")
+    b0 = bundles[0]
+    set_name = b0.get("set")
+    if set_name not in C.SETS:
+        raise SystemExit(f"unknown bundle set {set_name!r}")
+    seeds = [b.get("seed") for b in bundles]
+    if any(type(s) is not int for s in seeds) or len(set(seeds)) != len(seeds):
+        raise SystemExit("bundle seeds must be unique integers")
+    if seed_ids is not None and seeds != list(seed_ids):
+        raise SystemExit(f"bundle seed IDs {seeds} differ from the frozen choice {seed_ids}")
+    refs = b0.get("refcodes")
+    frozen = [a["refcode"] for a in C.load_set(set_name)]
+    prefix = allow_prefix and set_name in ("val", "train")
+    if (not isinstance(refs, list) or not refs or len(set(refs)) != len(refs)
+            or refs != (frozen[:len(refs)] if prefix else frozen)):
+        raise SystemExit(f"bundles are not in the frozen {set_name} order (prefix smoke is VAL/TRAIN only)")
+    draws = None
+    for b in bundles:
+        if (not isinstance(b.get("arm"), str) or not b["arm"] or arm_identity(b["arm"]) != arm_identity(b0.get("arm"))
+                or b.get("kind") != b0.get("kind") or b.get("set") != set_name or b.get("refcodes") != refs):
+            raise SystemExit("bundles must belong to one arm, kind, set and frozen order")
+        v = b.get("valid")
+        if (not torch.is_tensor(v) or v.dtype != torch.bool or v.ndim != 2
+                or v.shape[0] != len(refs) or v.shape[1] < 1):
+            raise SystemExit("invalid bundle validity dimensions")
+        if draws is not None and draws != v.shape[1]:
+            raise SystemExit("seed bundles have different draw counts")
+        draws = v.shape[1]
+        if not isinstance(b.get("sel"), dict) or any(not torch.is_tensor(x) or x.shape != v.shape
+                                                       for x in b["sel"].values()):
+            raise SystemExit("bundle selector dimensions differ from validity")
+        if b["kind"] == "rasym":
+            if not torch.is_tensor(b.get("R")) or b["R"].shape != (*v.shape, 3, 3):
+                raise SystemExit("invalid rasym rotation dimensions")
+        elif b["kind"] == "cells":
+            if not isinstance(b.get("cells"), list) or len(b["cells"]) != len(refs) or any(
+                    len(row) != draws for row in b["cells"]):
+                raise SystemExit("invalid cell bundle dimensions")
+        else:
+            raise SystemExit("unknown bundle kind")
+    return set_name
+
+
+_IDENTITIES = {}
+
+
+def scoring_identity(set_name):
+    """Truth and implementation identity; content is hashed once for stable input objects."""
+    from n3_set_cache import content_sha256
+    items = C.load_set(set_name)
+    scripts = ("n3_score.py", "n3_common.py", "n3_set_cache.py", "n3_harness.py", "g2_asym_baselines.py")
+    code = {s: C.sha256(os.path.join(C.REPO, "scripts", s)) for s in scripts}
+    # Both truth and rasym adapters call these rigid-body coordinate/Structure builders.
+    # They use Torch and pymatgen directly; no training or other geometry helper is called.
+    code["symmc_flow/molcrystal.py"] = C.sha256(os.path.join(C.REPO, "symmc_flow", "molcrystal.py"))
+    protocol = C.sha256(os.path.join(C.REPO, "tasks", "n3_protocol.md"))
+    key = (set_name, tuple(id(a) for a in items), tuple(code.items()), protocol)
+    if key not in _IDENTITIES:
+        libs = {}
+        for name in ("pymatgen", "scipy", "numpy", "torch"):
+            try:
+                libs[name] = importlib.metadata.version(name)
+            except importlib.metadata.PackageNotFoundError:
+                libs[name] = "not installed"
+        identity = {"set": set_name, "n": len(items), "content_sha256": content_sha256(items),
+                    "code_sha256": code, "protocol_sha256": protocol, "libraries": libs}
+        # Retain input references: Python must not reuse their IDs for a later, different data set.
+        _IDENTITIES[key] = (items, identity)
+    return _IDENTITIES[key][1]
+
+
+def same_selection(a, b):
+    """The freeze has the same content when transferred between git and SHA-only CPU workers."""
+    if a is None or b is None:
+        return a is b
+    return isinstance(a, dict) and isinstance(b, dict) and a.get("sha256") is not None and a["sha256"] == b.get("sha256")
+
+
 # ============================================================================== blinding guard
 def _git(*a):
     try:
@@ -159,6 +301,7 @@ def selection_record(selection, expect_sha=None):
     committed value). Returns {sha256, commit, checked}."""
     if not os.path.exists(selection):
         raise SystemExit(f"--step9 needs the committed step-6 file {selection}")
+    selection_data(selection)
     sha = C.sha256(selection)
     if expect_sha is not None and sha != expect_sha:
         raise SystemExit(f"{selection}: SHA-256 {sha} != --selection-sha256 {expect_sha}")
@@ -441,11 +584,14 @@ def ref_info(ref_path):
     crystal a non-match (status 'ref_invalid', no fit)."""
     path = rel(ref_path)
     b = C.load_bundle(path)
+    validate_bundles([b], allow_prefix=True)
     arm = b["arm"]
     order = REF_ORDER.get(arm) or (b["meta"].get("ref_order") if arm.startswith("oracle") else None)
     if order not in ("ref_cand", "cand_ref"):
         raise SystemExit(f"{ref_path}: arm '{arm}' is not a reference arm ({sorted(REF_ORDER)} or an oracle bundle "
                          "with meta['ref_order'])")
+    if b["valid"].shape[1] != 1:
+        raise SystemExit(f"{ref_path}: references must contain exactly one draw per crystal")
     return {"path": path, "rel": os.path.relpath(path, C.REPO).replace("\\", "/"),
             "stem": os.path.splitext(os.path.basename(path))[0], "sha256": C.sha256(path), "arm": arm,
             "order": order, "bundle": b, "row": {r: k for k, r in enumerate(b["refcodes"])}}
@@ -472,16 +618,21 @@ def _meta_check(bundle_path, matcher, extra):
         old = json.load(open(mp))
         if old["bundle_sha256"] != sha:
             raise SystemExit(f"{bundle_path} changed since {mp} was written: delete the stale match file first")
-        for k in ("reference_sha256", "reference_order"):
-            if old.get(k) != extra.get(k):
-                raise SystemExit(f"{mp}: {k} {old.get(k)} != {extra.get(k)} (another reference): delete it first")
+        for k in ("reference_sha256", "reference_order", "scoring_identity", "selection", "step9"):
+            equal = same_selection(old.get(k), extra.get(k)) if k == "selection" else old.get(k) == extra.get(k)
+            if not equal:
+                label = "another reference" if k.startswith("reference") else "stale scoring provenance"
+                raise SystemExit(f"{mp}: {label} ({k} differs): remove the stale match files and re-run")
     else:
+        rows = match_path(bundle_path, matcher)
+        if os.path.exists(rows) and os.path.getsize(rows):
+            raise SystemExit(f"{rows}: existing rows lack scoring metadata; archive/remove them before re-running")
         os.makedirs(os.path.dirname(mp), exist_ok=True)
         json.dump({"bundle": os.path.relpath(bundle_path, C.REPO).replace("\\", "/"), "bundle_sha256": sha,
                    "matcher": matcher, **extra}, open(mp, "w"), indent=1)
 
 
-def rows_current(bundle_path, key, ref=None, sha=None):
+def rows_current(bundle_path, key, ref=None, sha=None, selection=None, bundle=None):
     """The match rows of (bundle, key) were made from this bundle (and this reference): else SystemExit."""
     mp = match_path(bundle_path, key)[:-len(".jsonl")] + ".meta.json"
     if not os.path.exists(mp):
@@ -491,6 +642,16 @@ def rows_current(bundle_path, key, ref=None, sha=None):
         raise SystemExit(f"{bundle_path} changed since it was matched ({mp})")
     if ref is not None and m.get("reference_sha256") != ref["sha256"]:
         raise SystemExit(f"{mp} was matched against another reference than {ref['rel']}")
+    if ref is not None and m.get("reference_order") != ref["order"]:
+        raise SystemExit(f"{mp}: reference matching order differs")
+    b = bundle if bundle is not None else C.load_bundle(bundle_path)
+    if m.get("matcher") != key or m.get("scoring_identity") != scoring_identity(b["set"]):
+        raise SystemExit(f"{mp}: stale scoring provenance (truth, scorer, adapter or libraries changed)")
+    if b["set"] in ("testB", "devtest") and not _is_oracle_bundle(bundle_path, b):
+        if not m.get("step9") or not (m.get("selection") or {}).get("sha256"):
+            raise SystemExit(f"{mp}: held-out rows lack step-9 selection provenance")
+        if selection is not None and not same_selection(m.get("selection"), selection):
+            raise SystemExit(f"{mp}: match rows use another step-6 selection")
     return m
 
 
@@ -540,6 +701,7 @@ def run_match(bundle_paths, matcher, draws="all", selector=None, crystals=None, 
     if allow_blind and reference is not None and not _is_oracle_bundle(rel(reference), C.load_bundle(rel(reference))):
         raise SystemExit("allow_blind with a reference needs a truth-derived oracle reference bundle")
     sel_rec = None if allow_blind else guard(set_name, step9, selection, selection_sha)
+    validate_bundles(bundles, allow_prefix=True)
     if draws == "picks" and (selector is None or selector == "random"):
         raise SystemExit("--draws picks needs a deterministic --selector (RANDOM is an expectation: use all)")
     ref, extra = None, {}
@@ -560,7 +722,8 @@ def run_match(bundle_paths, matcher, draws="all", selector=None, crystals=None, 
     t_start = time.time()
     n_arm = n_ref = 0
     for k, (bp, b) in enumerate(zip(bundle_paths, bundles)):
-        _meta_check(bp, key, {"selection": sel_rec, "step9": step9, "slow_s": slow, **extra})
+        _meta_check(bp, key, {"selection": sel_rec, "step9": step9, "slow_s": slow,
+                             "scoring_identity": scoring_identity(set_name), **extra})
         H.repair_jsonl(match_path(bp, key))
         done = load_match(bp, key)
         fh = open(match_path(bp, key), "a")
@@ -746,6 +909,7 @@ def _load_arm(paths, matcher=None, ref=None):
     bundle: the rows matched against it). Rows made from an older bundle or another reference stop the run."""
     paths = [rel(p) for p in paths]
     bundles = [C.load_bundle(p) for p in paths]
+    validate_bundles(bundles, allow_prefix=True)
     for b in bundles:
         if b["set"] not in ("val", "valsel", "train"):
             raise SystemExit(f"select runs on VALSEL only (got a '{b['set']}' bundle)")
@@ -756,8 +920,8 @@ def _load_arm(paths, matcher=None, ref=None):
         if (k, key) not in memo:
             if k not in shas:
                 shas[k] = C.sha256(paths[k])
-            rows_current(paths[k], key, ref, shas[k])
-            memo[(k, key)] = load_match(paths[k], key)
+            current = rows_current(paths[k], key, ref, shas[k], bundle=bundles[k])
+            memo[(k, key)] = load_match(paths[k], key) if current is not None else {}
         return memo[(k, key)]
     return paths, bundles, load
 
@@ -1062,7 +1226,7 @@ def _q(x):
                                                                  ("q75", .75), ("q90", .9))}
 
 
-def _basin_jsons(spec, refcodes, ref_arms, what):
+def _basin_jsons(spec, refcodes, ref_arms, what, expected=None, selection=None):
     """{name: h [n, m]} from `basin` outputs (config {name: path}); all against ONE reference of an allowed arm.
     Returns (arrays, reference summary incl. the rule-(iii) and unconverged-reference lists)."""
     arr, refs = {}, {}
@@ -1073,7 +1237,34 @@ def _basin_jsons(spec, refcodes, ref_arms, what):
         ra = d.get("reference_arm") or ""
         if ra not in ref_arms and not ("oracle" in ref_arms and ra.startswith("oracle")):
             raise SystemExit(f"{what} {name}: reference arm {d.get('reference_arm')} is not one of {ref_arms}")
-        arr[name] = np.asarray(d["h"], float)
+        values = np.asarray(d["h"], float)
+        if (values.ndim != 2 or values.shape[0] != len(refcodes) or values.shape[1] < 1
+                or not np.isfinite(values).all() or ((values < 0) | (values > 1)).any()):
+            raise SystemExit(f"{what} {name}: invalid outcome shape or values")
+        if d.get("matcher") != "primary" or d.get("form") != "BASIN":
+            raise SystemExit(f"{what} {name}: BASIN requires the primary matcher")
+        if expected is not None:
+            if name not in expected:
+                raise SystemExit(f"{what} {name}: no frozen BASIN specification")
+            for key, value in expected[name].items():
+                got = d.get(key)
+                if key == "bundle_paths":
+                    got = list(d.get("bundles", {}))
+                if _scientific_config({key: got}) != _scientific_config({key: value}):
+                    raise SystemExit(f"{what} {name}: {key} differs from the frozen BASIN choice")
+        if selection is not None and not same_selection(d.get("selection"), selection):
+            raise SystemExit(f"{what} {name}: BASIN uses another step-6 selection")
+        paths = list(d.get("bundles", {}))
+        if not paths or not isinstance(d.get("reference"), str):
+            raise SystemExit(f"{what} {name}: missing BASIN source provenance")
+        current = basin_outcomes(paths, d["reference"], d["selector"], d["matcher"],
+                                 d.get("mode_tiebreak"), selection=selection)
+        for key in ("arm", "set", "selector", "matcher", "form", "reference_sha256", "reference_arm",
+                    "reference_order", "bundles", "seeds", "n", "refcodes", "h", "h_ensemble",
+                    "ref_invalid_refcodes", "ref_unconverged_refcodes", "scoring_identity", "match_provenance"):
+            if d.get(key) != current.get(key):
+                raise SystemExit(f"{what} {name}: stale or altered BASIN {key}; regenerate from current rows")
+        arr[name] = np.asarray(current["h"], float)
         refs[d["reference_sha256"]] = {"reference": d["reference"], "sha256": d["reference_sha256"],
                                        "arm": d["reference_arm"], "order": d.get("reference_order"),
                                        "match_rule": d.get("match_rule"),
@@ -1088,6 +1279,7 @@ def cmd_report(args):
     cfg = json.load(open(args.config))
     set_name = cfg["set"]
     sel_rec = guard(set_name, args.step9, args.selection, getattr(args, "selection_sha256", None))         if set_name in BLIND else None
+    selected = frozen_report(cfg, args.selection) if set_name in ("testB", "devtest") else None
     matcher = cfg.get("matcher", "primary")
     n_boot = int(cfg.get("n_boot", 10000))
     items = C.load_set(set_name)
@@ -1097,9 +1289,16 @@ def cmd_report(args):
     for name, spec in cfg["arms"].items():
         paths = [rel(p) for p in spec["bundles"]]
         bundles = [C.load_bundle(p) for p in paths]
-        assert all(b["set"] == set_name and b["refcodes"] == refcodes for b in bundles), name
+        validate_bundles(bundles, seed_ids=spec.get("seed_ids"))
+        if any(b["set"] != set_name or b["refcodes"] != refcodes or
+               (spec.get("kind") is not None and b["kind"] != spec["kind"]) for b in bundles):
+            raise SystemExit(f"{name}: bundle set/order/kind differs from report")
+        if selected is not None and any(os.path.normcase(os.path.abspath(p)) != os.path.normcase(
+                C.bundle_path(b["arm"], b["seed"], set_name)) for p, b in zip(paths, bundles)):
+            raise SystemExit(f"{name}: bundle arm/seed identity differs from its frozen path")
         bundles_of[name] = (paths, bundles)
-        results = [load_match(p, matcher) for p in paths]
+        results = [load_match(p, matcher) if rows_current(p, matcher, selection=sel_rec, bundle=b) else {}
+                   for p, b in zip(paths, bundles)]
         try:
             o = arm_outcomes(bundles, results, items, spec["selector"], spec.get("mode_tiebreak"))
         except Missing as e:
@@ -1126,7 +1325,8 @@ def cmd_report(args):
                           "ff_evals_per_crystal": bundles[0]["meta"].get("n_ff_per_crystal")}
         sec_blocks = {}
         for sm in cfg.get("secondary", ["mcf05", "mcf08"]) + [cfg.get("rms_matcher", "mcf10")]:
-            rs = [load_match(p, sm) for p in paths]
+            rs = [load_match(p, sm) if rows_current(p, sm, selection=sel_rec, bundle=b) else {}
+                  for p, b in zip(paths, bundles)]
             try:
                 so = arm_outcomes(bundles, rs, items, spec["selector"], spec.get("mode_tiebreak"),
                                   need_draws=spec["selector"] == "random")
@@ -1158,7 +1358,26 @@ def cmd_report(args):
     if dry:
         rep["dry_run"] = "DRY RUN on a non-confirmatory set: a code-path check, never a result"
     ref_ok_arms = ("fftruth", "oracle") if dry else ("fftruth",)
-    basin_arr, basin_ref = _basin_jsons(cfg.get("h2_basin"), refcodes, ref_ok_arms, "h2_basin")
+    h2_expected = p1_expected = None
+    if selected is not None:
+        arm_map = {ours: "basin-ours", ours_n2: "basin-ours_n2", spec["H2"]: "iii-s",
+                   cfg.get("i_e", "i-E"): "i-E-ours"}
+        h2_expected = {}
+        for name in cfg.get("h2_basin", {}):
+            seeds = cfg["arms"][name]["seed_ids"]
+            arm = arm_map[name]
+            h2_expected[name] = {"arm": arm, "set": set_name, "selector": "ff", "seeds": seeds,
+                                 "reference": C.bundle_path("fftruth", -1, set_name),
+                                 "bundle_paths": [C.bundle_path(arm, s, set_name) for s in seeds]}
+        p1_expected = {}
+        p1_seeds = [0] if 6 in (selected.get("degrade") or {}).get("items", []) else [0, 1, 2]
+        for name, arm, key in (("p1-OURS", "p1-ours", "p1-ours"), ("p1-iii-p", "iii-p", "p1-iii-p")):
+            if name in cfg.get("steric_basin", {}):
+                p1_expected[name] = {"arm": arm, "set": set_name, "seeds": p1_seeds,
+                                     "reference": C.bundle_path("p1ref", -1, set_name),
+                                     "selector": selected["frozen"]["P1"][key]["selector"],
+                                     "bundle_paths": [C.bundle_path(arm, s, set_name) for s in p1_seeds]}
+    basin_arr, basin_ref = _basin_jsons(cfg.get("h2_basin"), refcodes, ref_ok_arms, "h2_basin", h2_expected, sel_rec)
     for name, arr in basin_arr.items():                  # the H2 contrast pair in BASIN form (§3.3), both forms run
         table1.setdefault(name, {}).update(h2_basin_picked1_pct=_pp(arr.mean()),
                                            h2_basin_picked1_per_seed_pct=[_pp(x) for x in arr.mean(0)])
@@ -1180,7 +1399,7 @@ def cmd_report(args):
         rep["i_e_vs_h2"] = {"form": rep["h2_form"], "arm": ie, "comparator": spec["H2"],
                             **contrast(h2_arr[ie], h2_arr[spec["H2"]], n_boot, test=False)}
     p1_arr, p1_ref = _basin_jsons(cfg.get("steric_basin"), refcodes, ("p1ref", "oracle") if dry else ("p1ref",),
-                                  "steric_basin")
+                                  "steric_basin", p1_expected, sel_rec)
     if p1_arr:                                            # §3.3 steric BASIN P1 (continuity with G2; descriptive)
         names = list(p1_arr)
         first = cfg.get("steric_basin_ours", names[0])
@@ -1486,6 +1705,7 @@ def cmd_picks(args):
     sets = {b["set"] for b in bundles}
     assert len(sets) == 1 and all(b["refcodes"] == bundles[0]["refcodes"] for b in bundles), "one set, one order"
     set_name = sets.pop()
+    validate_bundles(bundles, allow_prefix=True)
     items = C.load_set(set_name)
     per_seed, ens = [], []
     for i, ref in enumerate(bundles[0]["refcodes"]):
@@ -1507,8 +1727,46 @@ def cmd_picks(args):
           + (f", {len(ens)} ensemble picks" if ens else ""))
 
 
+def cmd_haar_floor(args):
+    paths = [rel(p) for p in args.bundles]
+    bundles = [C.load_bundle(p) for p in paths]
+    set_name = bundles[0]["set"]
+    sel_rec = guard(set_name, args.step9, args.selection, args.selection_sha256)
+    validate_bundles(bundles, seed_ids=[0, 1, 2])
+    if any(b["arm"] != "iii-u" or b["kind"] != "rasym" or b["valid"].shape[1] != 16 for b in bundles):
+        raise SystemExit("haar-floor requires the three iii-u seeds with 16 draws each")
+    refs = bundles[0]["refcodes"]
+    out_rows = {r: {} for r in refs}
+    provenance = {}
+    for matcher in ("primary", "mcf05", "mcf08"):
+        all_rows = []
+        for path, b in zip(paths, bundles):
+            if rows_current(path, matcher, selection=sel_rec, bundle=b) is None:
+                raise SystemExit(f"haar-floor: missing current {matcher} match rows for {path}")
+            all_rows.append(load_match(path, matcher))
+            mp = match_path(path, matcher)
+            provenance[os.path.relpath(mp, C.REPO).replace("\\", "/")] = C.sha256(mp)
+        for i, r in enumerate(refs):
+            try:
+                out_rows[r][matcher] = float(np.mean([_ok(res, i, j) for res in all_rows for j in range(16)]))
+            except Missing as e:
+                raise SystemExit(f"haar-floor: incomplete {matcher} rows at {e.args[0]}") from e
+    out = rel(args.out)
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out + ".tmp", "w") as f:
+        json.dump(out_rows, f, indent=1)
+    os.replace(out + ".tmp", out)
+    with open(out + ".meta.json", "w") as f:
+        json.dump({"set": set_name, "seeds": [0, 1, 2], "draws_per_seed": 16, "selection": sel_rec,
+                   "sha256": C.sha256(out), "scoring_identity": scoring_identity(set_name),
+                   "bundles": {os.path.relpath(p, C.REPO).replace("\\", "/"): C.sha256(p) for p in paths},
+                   "match_rows": provenance}, f, indent=1)
+    print(f"wrote {out}: {len(refs)} crystals, seed-mean iii-u draw@1 (primary/mcf05/mcf08)")
+    return out_rows
+
+
 # ============================================================================== BASIN outcomes (reference bundle)
-def basin_outcomes(bundle_paths, reference, selector, matcher="primary", mode_tiebreak=None):
+def basin_outcomes(bundle_paths, reference, selector, matcher="primary", mode_tiebreak=None, selection=None):
     """Per-crystal, per-seed picked@1 of one arm against a reference bundle (§3.3): H2 FORM = BASIN (reference
     'fftruth'; candidates basin-ours / basin-ours_n2 (one draw per seed), iii-s draw 0 (selector 'ff'), i-E
     (selector 'ff')) or the steric BASIN P1 (reference 'p1ref'; candidates p1-ours / iii-p draws; selector from
@@ -1518,6 +1776,7 @@ def basin_outcomes(bundle_paths, reference, selector, matcher="primary", mode_ti
     ref = ref_info(reference)
     paths = [rel(p) for p in bundle_paths]
     bundles = [C.load_bundle(p) for p in paths]
+    validate_bundles(bundles, allow_prefix=True)
     set_name = bundles[0]["set"]
     assert all(b["set"] == set_name and b["refcodes"] == bundles[0]["refcodes"] for b in bundles), "one set, one order"
     if ref["bundle"]["set"] != set_name:
@@ -1527,11 +1786,15 @@ def basin_outcomes(bundle_paths, reference, selector, matcher="primary", mode_ti
         raise SystemExit(f"reference {ref['rel']} lacks some of the candidates' crystals")
     key = mkey(matcher, ref)
     results = []
-    for p in paths:
-        if rows_current(p, key, ref) is None:
+    provenance = {}
+    for p, b in zip(paths, bundles):
+        if rows_current(p, key, ref, selection=selection, bundle=b) is None:
             raise SystemExit(f"no rows for {p} against {ref['rel']}: run `match --reference {ref['rel']} "
                              f"--bundles ... --matcher {matcher}` first")
         results.append(load_match(p, key))
+        mp = match_path(p, key)
+        provenance[os.path.relpath(p, C.REPO).replace("\\", "/")] = {
+            "rows_sha256": C.sha256(mp), "meta_sha256": C.sha256(mp[:-len(".jsonl")] + ".meta.json")}
     items = C.load_set(set_name)
     try:
         o = arm_outcomes(bundles, results, items, selector, mode_tiebreak, need_draws=True)
@@ -1572,13 +1835,15 @@ def basin_outcomes(bundle_paths, reference, selector, matcher="primary", mode_ti
            "ref_unconverged_refcodes": unconv,
            "rule_iii": "reference without a minimum: every arm is a non-match (d_i = 0); the crystal is not anchored",
            "arm_miss_refcodes_per_seed": o["miss_refcodes_per_seed"], "row_status_counts": status}
+    out.update(scoring_identity=scoring_identity(set_name), match_provenance=provenance)
     return out
 
 
 def cmd_basin(args):
     b0 = C.load_bundle(rel(args.bundles[0]))
     sel_rec = guard(b0["set"], args.step9, args.selection, args.selection_sha256)
-    d = basin_outcomes(args.bundles, args.reference, args.selector, args.matcher, args.mode_tiebreak)
+    d = basin_outcomes(args.bundles, args.reference, args.selector, args.matcher, args.mode_tiebreak,
+                       selection=sel_rec)
     d["selection"] = sel_rec
     ref_stem = os.path.splitext(os.path.basename(args.reference))[0]
     out = rel(args.out) if args.out else os.path.join(BASIN_DIR, f"{d['arm']}_{d['set']}__{ref_stem}_{args.selector}.json")
@@ -1893,6 +2158,12 @@ def main():
     k.add_argument("--selector", required=True)
     k.add_argument("--mode-tiebreak", default=None)
     k.add_argument("--out", default=None, help="default results/n3/private/picks/<arm>_<set>_<selector>.json")
+    hf = sub.add_parser("haar-floor")
+    hf.add_argument("--bundles", nargs="+", required=True)
+    hf.add_argument("--out", required=True)
+    hf.add_argument("--step9", action="store_true")
+    hf.add_argument("--selection", default=SELECTION)
+    hf.add_argument("--selection-sha256", default=None)
     for name in ("oracle", "gate-f6"):
         o = sub.add_parser(name)
         o.add_argument("--set", required=True, choices=["val", "devtest", "sel", "testB", "valsel", "train"])
@@ -1932,6 +2203,8 @@ def main():
         cmd_report(args)
     elif args.cmd == "picks":
         cmd_picks(args)
+    elif args.cmd == "haar-floor":
+        cmd_haar_floor(args)
     elif args.cmd == "basin":
         cmd_basin(args)
     elif args.cmd == "oracle":

@@ -174,13 +174,19 @@ def test_blinding_guard(monkeypatch):
     # an existing but uncommitted (gitignored) selection file does not open step 9
     fake = os.path.join(REPO, "results", "n3", "private", "pytest_selection.json")
     os.makedirs(os.path.dirname(fake), exist_ok=True)
-    json.dump({"x": 1}, open(fake, "w"))
+    json.dump({"schema_version": 1, "complete": True,
+               "protocol_sha256": SC.C.sha256(os.path.join(REPO, "tasks", "n3_protocol.md")),
+               "h2_form": {"form": "EXACT", "anchoring": .6}, "report_configs": {"testB": {"arms": {}}}},
+              open(fake, "w"))
     try:
         with pytest.raises(SystemExit, match="not committed"):
             SC.guard("testB", True, fake)
-        # a committed, unchanged, pushed file passes (the A1-frozen SEL list stands in for it; the protocol file
-        # itself gains dated amendments in the working tree, so it is not a stable stand-in)
-        rec = SC.selection_record(os.path.join(REPO, "tasks", "n3_sets", "sel_refcodes.txt"))
+        # Simulate the git status of this synthetic valid selection; an arbitrary tracked text file is
+        # no longer accepted as a step-6 scientific freeze.
+        from types import SimpleNamespace
+        monkeypatch.setattr(SC, "_git", lambda *a: SimpleNamespace(returncode=0,
+                            stdout="true\n" if a[0] == "rev-parse" else "abc123\n"))
+        rec = SC.selection_record(fake)
         assert rec["commit"] and rec["checked"].startswith("git")
         # without git: only a matching --selection-sha256 opens step 9
         monkeypatch.setattr(SC, "_git", lambda *a: None)
@@ -260,16 +266,14 @@ def test_reference_matching_rule_iii_order_and_select(tmp_path, monkeypatch):
         SC.ref_info(cand)
 
 
-def test_report_basin_jsons_refuse_mixed_or_wrong_references(tmp_path):
+def test_report_basin_jsons_refuse_invalid_or_wrong_references(tmp_path):
     refs = ["X0", "X1"]
-    mk = lambda name, arm, sha: (json.dump({"refcodes": refs, "h": [[1.0], [0.0]], "reference": f"{arm}.pt",
+    mk = lambda name, arm, sha: (json.dump({"refcodes": refs, "h": [[2.0], [float("nan")]], "reference": f"{arm}.pt",
                                             "reference_sha256": sha, "reference_arm": arm}, open(tmp_path / name, "w"))
                                  or str(tmp_path / name))
-    a, b = mk("a.json", "fftruth", "1" * 64), mk("b.json", "fftruth", "2" * 64)
-    arr, ref = SC._basin_jsons({"OURS": a}, refs, ("fftruth",), "h2_basin")
-    assert arr["OURS"].shape == (2, 1) and ref["arm"] == "fftruth"
-    with pytest.raises(SystemExit, match="different references"):
-        SC._basin_jsons({"OURS": a, "iii-s": b}, refs, ("fftruth",), "h2_basin")
+    a = mk("a.json", "fftruth", "1" * 64)
+    with pytest.raises(SystemExit, match="outcome shape or values"):
+        SC._basin_jsons({"OURS": a}, refs, ("fftruth",), "h2_basin")
     with pytest.raises(SystemExit, match="reference arm"):
         SC._basin_jsons({"OURS": mk("c.json", "p1ref", "3" * 64)}, refs, ("fftruth",), "h2_basin")
     with pytest.raises(SystemExit, match="frozen order"):

@@ -1,4 +1,25 @@
-# N3 / G3: where we stopped, and exactly how to continue (handoff, 2026-09-28)
+# N3 / G3: current handoff
+
+## Continuation 2026-10-11
+
+Round-2 implementation is complete locally: selection completeness/provenance, exact and BASIN
+scoring, portable cache isolation, TRAIN/VAL-only timing transfer, verified archives/pullback/cleanup,
+environment wheel preflight and measured cost projection. See [n3_runbook.md](n3_runbook.md) for the
+execution commands. Dated protocol amendment **A2a** records the FF cu130/driver >=13.0 packaging
+correction and integrity requirements; A3 remains reserved for measured timing/scientific settings.
+
+No paid box was provisioned and no CSD data was uploaded. No new real N3 arm output was sampled or
+scored on SEL/TEST-B/DEV-TEST. The next work is **section 7 step 4**, after explicit timing-only spend
+and TRAIN/VAL-upload approval. Then present the measured full budget, freeze/push A3 and get approval
+before step 5. The step-5 manifest correctly remains incomplete until its measured FF config exists.
+The original manuscript is not rewritten around unmeasured benchmark claims.
+
+Local validation and publication evidence are recorded in [n3_round2_review_2026-10-11.md](n3_round2_review_2026-10-11.md).
+The resubmission deadline remains **2027-01-22**.
+
+---
+
+# Historical handoff, 2026-09-28
 
 The spec is `tasks/n3_protocol.md`: v3, frozen at commit 8f7e494, with amendments A1 and A2 in §9.
 This file is NOT frozen; it is the working state.

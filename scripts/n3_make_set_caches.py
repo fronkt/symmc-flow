@@ -8,7 +8,7 @@ the box before step 7. This script writes one file per set holding exactly that 
     <dir>/<set>.pt     torch.save({"format", "set", "n", "refcodes", "items", "content_sha256", "source"})
     <dir>/<set>.json   sidecar: file SHA-256 and size, n, content_sha256, refcodes_sha256, source file identity
                        (path, SHA-256, size, mtime_ns) -- what the patched load_set checks before trusting a cache
-<dir> = results/n3/private/set_caches (gitignored; override with N3_SET_CACHES). Sets: train val sel valsel testB
+<dir> = data/n3_sets (gitignored; override with N3_SET_CACHES). Sets: train val sel valsel testB
 devtest. content_sha256 is a canonical digest of the item tensors (dtype, shape, bytes) and python values, so it
 is independent of torch.save's container bytes.
 
@@ -33,7 +33,6 @@ full cache is opened. CSD-derived content is never printed: only counts, hashes 
 """
 import argparse
 import builtins
-import hashlib
 import importlib.util
 import json
 import os
@@ -48,11 +47,11 @@ import n3_common as C
 
 import numpy as np
 import torch
+from n3_set_cache import FORMAT, content_sha256, list_sha256, read_cache
 
-FORMAT = "n3-set-cache/1"
 CACHE_SETS = ("train", "val", "sel", "valsel", "testB", "devtest")
 BASE_SETS = ("train", "val", "devtest", "sel", "testB")
-DEFAULT_DIR = os.path.join(C.PRIVATE, "set_caches")
+DEFAULT_DIR = C.SET_CACHE_DIR
 
 
 def cache_dir():
@@ -60,41 +59,6 @@ def cache_dir():
 
 
 # ------------------------------------------------------------------------------------------ digests
-def _feed(h, x):
-    """Canonical, type-tagged digest of nested python / torch / numpy values."""
-    if isinstance(x, torch.Tensor):
-        t = x.detach().cpu().contiguous()
-        h.update(b"T" + str(t.dtype).encode() + repr(tuple(t.shape)).encode())
-        h.update(t.reshape(-1).view(torch.uint8).numpy().tobytes() if t.numel() else b"")
-    elif isinstance(x, np.ndarray):
-        a = np.ascontiguousarray(x)
-        h.update(b"N" + str(a.dtype).encode() + repr(a.shape).encode() + a.tobytes())
-    elif isinstance(x, dict):
-        h.update(b"D" + str(len(x)).encode())
-        for k in sorted(x, key=repr):
-            _feed(h, k)
-            _feed(h, x[k])
-    elif isinstance(x, (list, tuple)):
-        h.update((b"L" if isinstance(x, list) else b"U") + str(len(x)).encode())
-        for v in x:
-            _feed(h, v)
-    elif isinstance(x, (str, int, float, bool, type(None), np.generic)):
-        h.update(b"S" + type(x).__name__.encode() + repr(x).encode())
-    else:
-        raise TypeError(f"no canonical digest for {type(x).__name__}")
-    h.update(b";")
-
-
-def content_sha256(items):
-    h = hashlib.sha256()
-    _feed(h, items)
-    return h.hexdigest()
-
-
-def list_sha256(xs):
-    return hashlib.sha256("\n".join(xs).encode()).hexdigest()
-
-
 def deep_equal(a, b, path="item"):
     """None if a == b exactly (tensors bitwise, same dtype and shape; same types and keys), else the first
     difference as a path string (no values)."""
@@ -272,24 +236,24 @@ def cmd_build(args):
 def check_one(d, s, deep=True):
     """Verify one cache against its sidecar (works on the box: needs no full cache). Returns a dict."""
     pt, js = os.path.join(d, f"{s}.pt"), os.path.join(d, f"{s}.json")
-    r = {"set": s, "present": os.path.exists(pt)}
+    r = {"set": s, "present": os.path.exists(pt), "pass": False}
     if not r["present"]:
         return r
-    side = json.load(open(js))
-    r["file_sha_ok"] = C.sha256(pt) == side["sha256"]
-    if deep:
-        blob = torch.load(pt, weights_only=False)
-        refs = [a["refcode"] for a in blob["items"]]
-        r["n"] = len(refs)
-        r["header_ok"] = blob["format"] == FORMAT and blob["set"] == s and blob["n"] == len(refs) == side["n"]
-        r["refcodes_ok"] = refs == blob["refcodes"] and list_sha256(refs) == side["refcodes_sha256"]
-        r["digest_ok"] = content_sha256(blob["items"]) == side["content_sha256"] == blob["content_sha256"]
-        lists = {k: os.path.join(C.SETS_DIR, f"{k}_refcodes.txt") for k in ("sel", "testB")}
-        if s in ("sel", "testB") and os.path.exists(lists[s]):
-            r["frozen_order_ok"] = refs == C.frozen_refcodes(s)
-        if s == "valsel" and os.path.exists(lists["sel"]):
-            r["frozen_order_ok"] = len(refs) == 400 and refs[100:] == C.frozen_refcodes("sel")
-    r["pass"] = all(v for k, v in r.items() if k.endswith("_ok"))
+    try:
+        frozen = {k: C.sha256(os.path.join(C.SETS_DIR, f"{k}_refcodes.txt")) for k in ("sel", "testB")
+                  if k == s or (s == "valsel" and k == "sel")}
+        refs = C.frozen_refcodes(s) if s in ("sel", "testB") else None
+        items, side = read_cache(pt, s, C.SET_SIZES[s], refs, frozen)
+        if s == "valsel":
+            val, _ = read_cache(os.path.join(d, "val.pt"), "val", C.SET_SIZES["val"], frozen_hashes={})
+            sel, _ = read_cache(os.path.join(d, "sel.pt"), "sel", C.SET_SIZES["sel"], C.frozen_refcodes("sel"),
+                                {"sel": frozen["sel"]})
+            if content_sha256(items) != content_sha256(val + sel):
+                raise RuntimeError("VALSEL cache differs from VAL followed by SEL")
+        r.update(n=len(items), file_sha_ok=True, header_ok=True, refcodes_ok=True, digest_ok=True,
+                 frozen_order_ok=True, **{"pass": True})
+    except (OSError, ValueError, RuntimeError, KeyError, TypeError) as e:
+        r["error"] = str(e)
     return r
 
 
@@ -299,7 +263,7 @@ def cmd_check(args):
     for r in res:
         print(json.dumps(r))
     present = [r for r in res if r["present"]]
-    ok = bool(present) and all(r["pass"] for r in present)
+    ok = bool(res) and all(r["present"] and r["pass"] for r in res)
     print("PASS" if ok else "FAIL", f"({len(present)} caches present in {d})")
     if not ok:
         raise SystemExit(1)
@@ -363,7 +327,7 @@ def cmd_simulate(args):
     for s in CACHE_SETS:
         if not os.path.exists(os.path.join(src_dir, f"{s}.pt")):
             raise SystemExit(f"build the caches first (missing {s}.pt in {src_dir})")
-    ref = {s: C.load_set(s) for s in CACHE_SETS}            # the CURRENT (unpatched) load_set
+    ref = source_items()                                  # uncached full-source reference
     env0 = {k: os.environ.get(k) for k in ("N3_SET_CACHES", "N3_SET_CACHE_ONLY")}
     tmp = tempfile.mkdtemp(prefix="n3_setcache_sim_", dir=args.tmp or None)
     report = {"patched": os.path.abspath(args.patched), "patched_sha256": C.sha256(args.patched)}

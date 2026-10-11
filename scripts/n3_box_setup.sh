@@ -1,21 +1,25 @@
 #!/usr/bin/env bash
 # N3 box environments (tasks/n3_protocol.md §7; runbook tasks/n3_runbook.md). Linux, ONE GPU, NVIDIA driver with
-# CUDA >= 12.8 (the cu128 wheels below). Run from the unpacked root (n3_box_manifest.py unpack).
+# CUDA >= 13.0 (FF cu130; MCF/SymMC cu128). Run from the unpacked root (n3_box_manifest.py unpack).
 #
+#   python scripts/n3_box_manifest.py wheels # laptop BEFORE rental; check pinned CUDA wheel availability
+#   bash scripts/n3_box_setup.sh wheels       # same read-only network preflight, no GPU needed
 #   bash scripts/n3_box_setup.sh check        # OS, GPU count, driver CUDA version, disk, RAM, cores
-#   bash scripts/n3_box_setup.sh all          # check + conda + the three envs + env file + smoke
-#   bash scripts/n3_box_setup.sh mcf|ff|symmc # one env (re-running recreates it)
+#   bash scripts/n3_box_setup.sh all          # check + wheels + conda + the three envs + env file + smoke
+#   bash scripts/n3_box_setup.sh mcf|ff|symmc # one env (refuses replacement of an existing env)
 #   bash scripts/n3_box_setup.sh smoke        # version prints + CUDA import smoke per env
 #   bash scripts/n3_box_setup.sh data         # after an upload: manifest verify, set caches, MCF pickle load, UMA
-#   N3_DRY_RUN=1 bash scripts/n3_box_setup.sh all   # print every command, run nothing
+#   N3_DRY_RUN=1 bash scripts/n3_box_setup.sh all   # print commands; create no directories
 #
 # Environments (pins: scripts/n3_box_constraints_<env>.txt = the versions the N3 units ran locally; torch comes
 # from the CUDA index and is pinned here):
 #   mcf    python 3.12, torch 2.7.1+cu128, torch-scatter / torch-cluster wheels for torch 2.7.0+cu128, PyG,
+#          torch-scatter 2.1.2+pt27cu128 and torch-cluster 1.6.3+pt27cu128 (protocol A2a binary pins),
 #          pytorch-lightning, hydra-core, rdkit, pymatgen, spglib, openbabel (conda-forge), wandb, GPUtil, p_tqdm,
 #          setuptools; the MolCrystalFlow fork external/mcf installed editable (no deps).
 #          Runs n3_mcf_*.py (training, inference + RESID, Gate C, diagnostics, +G / ii-S post-processing).
-#   ff     python 3.12, torch 2.13.0+cu128, fairchem-core 2.23.0 (UMA s-1p1 server of n3_ffstar.py; N3_FF_PYTHON).
+#   ff     python 3.12, torch 2.13.0+cu130, fairchem-core 2.23.0 (UMA s-1p1 server of n3_ffstar.py; N3_FF_PYTHON).
+#          fairchem-core 2.23.0 requires torch~=2.13.0; the official cu128 index has no such Linux wheel.
 #   symmc  python 3.12, torch 2.11.0+cu128 (N3_SYMMC_TORCH / N3_SYMMC_INDEX override), pymatgen, ase, rdkit,
 #          spglib, gemmi, networkx, scipy: n3_ours, n3_old_symmc (iv-P), n3_classical, n3_score, set caches.
 # Writes $ROOT/.n3_box/env.sh (source it before every command) and $ROOT/.n3_box/versions_<env>.json.
@@ -26,18 +30,26 @@ ROOT=${N3_BOX_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}
 STATE=$ROOT/.n3_box
 DRY=${N3_DRY_RUN:-0}
 CU_INDEX=https://download.pytorch.org/whl/cu128
+FF_INDEX=https://download.pytorch.org/whl/cu130
 PYG_LINKS=https://data.pyg.org/whl/torch-2.7.0+cu128.html
 MCF_TORCH="torch==2.7.1 torchvision==0.22.1"
 FF_TORCH="torch==2.13.0"
 FF_CORE="fairchem-core==2.23.0"
 SYMMC_TORCH=${N3_SYMMC_TORCH:-torch==2.11.0}
 SYMMC_INDEX=${N3_SYMMC_INDEX:-$CU_INDEX}
-MIN_DRIVER_CUDA=12.8
+MIN_DRIVER_CUDA=13.0
 MIN_DISK_GB=${N3_MIN_DISK_GB:-60}
 
 run() { echo "+ $*"; if [ "$DRY" != 1 ]; then "$@"; fi; }
 die() { echo "FAIL: $*" >&2; exit 1; }
-mkdir -p "$STATE"
+mode=${1:-all}
+[ "$DRY" = 1 ] || [ "$mode" = wheels ] || mkdir -p "$STATE"
+
+cmd_wheels() {
+  [ "$SYMMC_TORCH" = "torch==2.11.0" ] && [ "$SYMMC_INDEX" = "$CU_INDEX" ] \
+    || die "wheel preflight requires frozen SymMC torch 2.11.0+cu128; review overrides before provisioning"
+  run python3 "$ROOT/scripts/n3_box_manifest.py" wheels
+}
 
 find_conda() {
   for c in "${N3_CONDA:-}" "$(command -v conda 2>/dev/null || true)" /opt/conda/bin/conda \
@@ -62,7 +74,7 @@ cmd_check() {
   [ "$n" -ge 1 ] || die "no GPU"
   [ "$n" -eq 1 ] || echo "WARNING: $n GPUs; every job is pinned to CUDA_VISIBLE_DEVICES=0 (inference.py shards on >1)"
   awk -v a="$cu" -v b="$MIN_DRIVER_CUDA" 'BEGIN{split(a,x,".");split(b,y,".");exit !((x[1]>y[1])||(x[1]==y[1]&&x[2]>=y[2]))}' \
-    || die "driver CUDA $cu < $MIN_DRIVER_CUDA: the cu128 wheels need a newer driver (rent with cuda_max_good>=12.8)"
+    || die "driver CUDA $cu < $MIN_DRIVER_CUDA: FF cu130 needs a newer driver (rent with cuda_max_good>=13.0)"
   disk=$(df -BG --output=avail "$ROOT" | tail -1 | tr -dc 0-9)
   echo "free disk at $ROOT: ${disk} GB"
   [ "$disk" -ge "$MIN_DISK_GB" ] || die "less than ${MIN_DISK_GB} GB free"
@@ -84,7 +96,8 @@ envpy() { echo "$CONDA_BASE/envs/$1/bin/python"; }
 
 make_env() {  # name, python spec, extra conda packages...
   local name=$1; shift
-  if [ -d "$CONDA_BASE/envs/$name" ]; then run "$CONDA" env remove -y -n "$name"; fi
+  # Keep existing environments; replacement must be an explicit operator action.
+  [ ! -d "$CONDA_BASE/envs/$name" ] || die "environment $name already exists; inspect it before replacement"
   run "$CONDA" create -y -n "$name" -c conda-forge --override-channels "$@"
 }
 
@@ -97,7 +110,8 @@ cmd_mcf() {
   make_env mcf python=3.12 openbabel=3.1.1
   pipi mcf --upgrade pip
   pipi mcf $MCF_TORCH --index-url "$CU_INDEX"
-  pipi mcf --only-binary=:all: torch-scatter torch-cluster -f "$PYG_LINKS"
+  pipi mcf --only-binary=:all: --no-index --no-deps "torch-scatter==2.1.2+pt27cu128" \
+    "torch-cluster==1.6.3+pt27cu128" -f "$PYG_LINKS"
   pipi mcf -c "$ROOT/scripts/n3_box_constraints_mcf.txt" torch-geometric "pytorch-lightning>=2.5.0" hydra-core \
     omegaconf wandb rdkit ase pymatgen spglib numpy scipy pandas networkx h5py p_tqdm tqdm rich GPUtil matplotlib \
     plotly seaborn psutil pyyaml setuptools packaging
@@ -107,7 +121,7 @@ cmd_mcf() {
 cmd_ff() {
   make_env ff python=3.12
   pipi ff --upgrade pip
-  pipi ff $FF_TORCH --index-url "$CU_INDEX"
+  pipi ff $FF_TORCH --index-url "$FF_INDEX"
   pipi ff -c "$ROOT/scripts/n3_box_constraints_ff.txt" "$FF_CORE"
 }
 
@@ -123,20 +137,36 @@ write_envfile() {
   local f=$STATE/env.sh
   echo "+ write $f"
   [ "$DRY" = 1 ] && return 0
+  mkdir -p "$STATE/tmp" "$STATE/cache/huggingface" "$STATE/cache/wandb" "$STATE/config/wandb"
+  local qr qm qf qs qc
+  printf -v qr '%q' "$ROOT"
+  printf -v qm '%q' "$(envpy mcf)"
+  printf -v qf '%q' "$(envpy ff)"
+  printf -v qs '%q' "$(envpy symmc)"
+  printf -v qc '%q' "${N3_SET_CACHES:-$ROOT/data/n3_sets}"
   cat > "$f" <<EOF
 # N3 box environment: source before every command (tasks/n3_runbook.md)
-export N3_BOX_ROOT=$ROOT
-export N3_ROOT=$ROOT
+export N3_BOX_ROOT=$qr
+export N3_ROOT=$qr
 export N3_SET_CACHE_ONLY=1              # load_set reads per-set caches only; full dev / pool caches never loaded
 export N3_MANIFEST_DIR=\$HOME/n3_manifests
+export N3_SET_CACHES=$qc
+export TMPDIR=\$N3_BOX_ROOT/.n3_box/tmp
+export HF_HOME=\$N3_BOX_ROOT/.n3_box/cache/huggingface
+export TORCH_HOME=\$N3_BOX_ROOT/.n3_box/cache/torch
+export TORCH_EXTENSIONS_DIR=\$N3_BOX_ROOT/.n3_box/cache/torch_extensions
+export TORCHINDUCTOR_CACHE_DIR=\$N3_BOX_ROOT/.n3_box/cache/torchinductor
+export WANDB_CACHE_DIR=\$N3_BOX_ROOT/.n3_box/cache/wandb
+export WANDB_CONFIG_DIR=\$N3_BOX_ROOT/.n3_box/config/wandb
+export WANDB_DIR=\$N3_BOX_ROOT/.n3_box/wandb
 export CUDA_VISIBLE_DEVICES=0           # one GPU for every job (inference.py's Trainer would shard on more)
 export WANDB_MODE=offline WANDB_SILENT=true
 export HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1   # no Hugging Face download or token on the box (§3.3)
-export PY_MCF=$(envpy mcf)
-export PY_FF=$(envpy ff)
-export PY_SYMMC=$(envpy symmc)
+export PY_MCF=$qm
+export PY_FF=$qf
+export PY_SYMMC=$qs
 export N3_FF_PYTHON=\$PY_FF              # n3_classical spawns the UMA server with it
-cd $ROOT
+cd $qr
 EOF
   echo "wrote $f"
 }
@@ -168,6 +198,16 @@ if torch.cuda.is_available():
 json.dump(v, open(out, "w"), indent=1)
 print(json.dumps(v))
 assert v["cuda_available"], f"{env}: torch sees no GPU"
+assert v.get("cuda_matmul_ok"), f"{env}: CUDA matmul is non-finite"
+want = {"mcf": "2.7.1", "ff": "2.13.0", "symmc": "2.11.0"}[env]
+assert v["torch"].split("+")[0] == want, f"{env}: torch version changed from the tested build"
+want_cuda = "13.0" if env == "ff" else "12.8"
+assert v["torch_cuda"] == want_cuda, f"{env}: CUDA wheel differs from protocol A2a"
+if env == "mcf":
+    assert v["torch_scatter"] == "2.1.2+pt27cu128", "MCF torch-scatter differs from protocol A2a"
+    assert v["torch_cluster"] == "1.6.3+pt27cu128", "MCF torch-cluster differs from protocol A2a"
+if env == "ff":
+    assert v["fairchem.core"] == "2.23.0", "FF* fairchem-core differs from protocol A2"
 PY
 }
 
@@ -198,6 +238,7 @@ sys.path[:0] = [root, os.path.join(root, "scripts")]
 import symmc_flow, g2_asym_baselines, g2_learned_flow, n3_common  # noqa: F401
 from pymatgen.analysis.structure_matcher import StructureMatcher  # noqa: F401
 print("symmc smoke: repo modules import; n3_common set-cache loader:", hasattr(n3_common, "set_cache_only"))
+assert hasattr(n3_common, "set_cache_only") and hasattr(n3_common, "set_cache_dir"), "per-set loader is missing"
 PY
   echo "smoke: OK (versions in $STATE/versions_*.json)"
 }
@@ -205,23 +246,49 @@ PY
 cmd_data() {  # after an upload + unpack; reads hashes, the set caches' headers and four VAL crystals only
   # shellcheck disable=SC1091
   [ "$DRY" = 1 ] || source "$STATE/env.sh"
-  local m
+  local m step
+  local found=0
   for m in "$ROOT"/.n3_box/manifests/*.manifest.json; do
     [ -e "$m" ] || continue
+    found=1
     run python3 "$ROOT/scripts/n3_box_manifest.py" verify --root "$ROOT" --label "$(basename "$m" .manifest.json)"
   done
-  run "$(envpy symmc)" "$ROOT/scripts/n3_make_set_caches.py" check
+  [ "$found" = 1 ] || die "data verification requires an upload manifest"
+  if [ "$DRY" = 1 ]; then
+    echo "+ validate exact caches permitted by the latest verified upload manifest; check every permitted set"
+  else
+    step=$(python3 - "$ROOT/.n3_box/manifests" <<'PY'
+import json, pathlib, sys
+print(max(json.load(open(p))["step"] for p in pathlib.Path(sys.argv[1]).glob("step*.manifest.json")))
+PY
+)
+    local sets=()
+    case "$step" in
+      4) sets=(train val) ;;
+      5) sets=(train val sel valsel) ;;
+      7) sets=(train val sel valsel testB devtest) ;;
+      *) die "unexpected uploaded protocol step $step" ;;
+    esac
+    run "$(envpy symmc)" - "$N3_SET_CACHES" "${sets[@]}" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+allowed = set(sys.argv[2:])
+assert p.is_dir() and {f.stem for f in p.glob("*.pt")} == allowed, "cache directory differs from the permitted exact set inventory"
+assert all((p / (s + ".json")).is_file() for s in allowed), "cache integrity sidecar missing"
+PY
+    run "$(envpy symmc)" "$ROOT/scripts/n3_make_set_caches.py" check --sets "${sets[@]}"
+  fi
   run "$(envpy mcf)" "$ROOT/scripts/n3_mcf_smoke.py" --set val --n 4
   run "$(envpy ff)" "$ROOT/scripts/n3_ffstar.py" info
   echo "data: OK"
 }
 
-mode=${1:-all}
 case "$mode" in
   check) cmd_check ;;
-  mcf|ff|symmc) ensure_conda; "cmd_$mode"; write_envfile ;;
+  wheels) cmd_wheels ;;
+  mcf|ff|symmc) cmd_check; cmd_wheels; ensure_conda; "cmd_$mode"; write_envfile ;;
   smoke) cmd_smoke ;;
   data) ensure_conda; cmd_data ;;
-  all) cmd_check; ensure_conda; cmd_mcf; cmd_ff; cmd_symmc; write_envfile; cmd_smoke ;;
-  *) die "unknown mode $mode (check|all|mcf|ff|symmc|smoke|data)" ;;
+  all) cmd_check; cmd_wheels; ensure_conda; cmd_mcf; cmd_ff; cmd_symmc; write_envfile; cmd_smoke ;;
+  *) die "unknown mode $mode (check|wheels|all|mcf|ff|symmc|smoke|data)" ;;
 esac

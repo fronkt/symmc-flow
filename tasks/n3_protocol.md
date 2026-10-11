@@ -1322,3 +1322,38 @@ the fairchem-core version, and the `n3_power.py` table at n = 1000.
     - The 16-start-only column is reported beside it: DEV-TEST Q 82 vs 83; VAL 39 vs 40; P unchanged.
     - The 600 s limit applies per (crystal, column) job. A timeout is counted and not re-run. An error or
       crash is re-run once in a fresh process, and an identical recurrence is a deterministic non-match.
+
+### A2a - deployment packaging and integrity, 2026-10-11
+
+**State when made.** No new N3 arm output exists on SEL, TEST-B or DEV-TEST. This phase used
+synthetic unit tests and input-only cache/archive checks; it performed no cloud upload, rental,
+training or new benchmark matching. Stored N1/N2 development draws remain disclosed in section 1.4.
+
+1. **GPU environments.** Keep the A2 package versions: MCF Torch 2.7.1, SymMC Torch 2.11.0,
+   and FF fairchem-core 2.23.0 with Torch 2.13.0. The draft put all three on cu128, but the official
+   Torch index has no Linux Python-3.12 Torch-2.13.0 cu128 wheel. FF uses the available **cu130**
+   build; MCF/SymMC retain cu128. The dedicated box therefore requires a **CUDA >=13.0 driver**.
+   PyG's MCF wheels are pinned to torch-scatter **2.1.2+pt27cu128** and torch-cluster
+   **1.6.3+pt27cu128**. The read-only distribution preflight runs before rental; installed-version,
+   CUDA and un-shimmed import checks still run on the box. These are packaging requirements,
+   not evidence that the GPU implementation or performance/equivalence gates have passed.
+2. **Staged transfer.** The timing archive contains only TRAIN/VAL data. The step-5 archive adds
+   SEL/VALSEL and the measured fixed FF configuration; TEST-B/DEV-TEST inputs arrive only after
+   the complete step-6 selection is committed and pushed. Per-set caches cannot fall back to
+   full-source caches on the box. Every scoring deployment also carries this frozen protocol.
+3. **Integrity.** Selection checks complete recorded tables/winners and hashes the actual selected
+   checkpoints/configs. Reports use the frozen form, selectors, arm identities and seeds; match
+   caches bind truth content, reference, implementation, matcher libraries and selection. The
+   diagnostic ceiling also carries checked source/Haar provenance. Timing rate publication refuses
+   measurements whose saved configuration/code/host identity is stale. No scientific menu, seed,
+   endpoint, hypothesis or outcome-to-claim rule is changed by this hardening.
+4. **Still deferred to A3.** Actual FF settings/dtype, P6 and packed-encoder equivalence, CPU/GPU
+   scheduling, measured timing/cost approval and any permitted degrade choices remain unset.
+   If item 5 is needed, explicitly record retained DEV H2 support before VALSEL scoring: iii-s,
+   FF truths and all three OURS/OURS-N2 BASIN candidates. This preserves the stored DEV rows and
+   the never-reduced H2 requirements while dropping optional new-arm DEV rows.
+
+Distribution evidence checked 2026-10-11: [Torch cu130 index](https://download.pytorch.org/whl/cu130/torch/),
+[Torch cu128 index](https://download.pytorch.org/whl/cu128/torch/),
+[PyG Torch-2.7 cu128 wheels](https://data.pyg.org/whl/torch-2.7.0+cu128.html), and
+[fairchem-core 2.23.0 metadata](https://pypi.org/pypi/fairchem-core/2.23.0/json).
