@@ -8,6 +8,8 @@ seven degrade items leave $190-194. Four decisions are open: budget / faster-FF 
 the P6 tolerance, and the RESID rule. Read [n3_step4_record_2026-10-11.md](n3_step4_record_2026-10-11.md).
 A3 is not written. Fixes from this run: `3099448`, `cae84bf`.
 
+**Anvil (Frank, 10-11): use CHE260157.** TRAIN/VAL uploaded and envs built on Anvil; GPU job **21289469** (timing gate + `merged` FF candidate) is queued. When it ends, follow the 'Anvil re-run' section of the step-4 record.
+
 ## Continuation 2026-10-11
 
 Round-2 implementation is complete locally: selection completeness/provenance, exact and BASIN

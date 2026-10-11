@@ -125,3 +125,33 @@ Full output: `results/n3/private/timing/projection_A_gpubox_only.json`.
 
 A3 (FF settings/dtype via `n3_classical.py ffconfig`, P6, iv-P encoder, degrade items) is **not** written or
 frozen; it depends on decision 1.
+
+## Anvil re-run (in progress, 2026-10-11 20:40Z)
+
+**Frank's decision (2026-10-11):** run N3 on the ACCESS allocation **CHE260157** (Anvil, 150 GPU-h; Frank is PI).
+No more Vast spend. Frank left auto mode before the CSD transfer.
+
+- **New FF candidate `merged`** (`6749cbe`): MOLE merge, no torch.compile, no activation checkpointing, graph
+  generation v2. The server restarts per crystal, and all iii-s starts of one crystal share one composition.
+  It is timed beside `batch` and `default` and FD-checked in float64. The CPU selftest passes.
+- **Archive re-packed** with the current code. It holds the same TRAIN/VAL inputs: 189 files, SHA-256
+  `2d13322d…`. Its boundary scan is clean: 0 forbidden paths or hashes, 0 TEST-B/DEV-TEST refcode hits.
+- **Uploaded** by scp under manual approval at 20:22-20:26Z to `$SCRATCH/n3_upload`, which like
+  `$SCRATCH/n3_box` and `$SCRATCH/n3_manifests` is `drwx------`. The checksum verified on Anvil.
+- **Unpacked and built on the login node** (`N3_NO_GPU_CHECK=1`). The environments live in `$PROJECT/n3_conda`
+  with pinned torch 2.7.1+cu128 / 2.13.0+cu130 / 2.11.0+cu128. System `python3` is 3.6, so every box command
+  uses the Miniforge python.
+- **GPU job 21289469** (`gpu` partition, 1× A100, 32 cores, 120 GB, 5 h limit) runs check → smoke → data → P6,
+  iv-P and FD checks for batch, default and merged → the timing gate → rates, all in one job and therefore on
+  one host. Driver probe: 21287865 (gpu-debug). Queue at submission: 389 jobs pending on `gpu`; the probe's ETA
+  was Oct 13.
+- **Platform deviation for A3.** Anvil is a persistent shared filesystem, not a destroyable box.
+  - Hygiene becomes an explicit `n3_box_cleanup.sh` over `$SCRATCH/n3_box` and `$SCRATCH/n3_upload`, with
+    `N3_FIND_ROOTS` set to `$HOME`, `$SCRATCH` and `$PROJECT`.
+  - The cleanup script always adds `/dev/shm`, which is shared on login nodes. Run it in a compute job, or
+    expect permission errors there.
+- **Next, when the job ends:**
+  1. Pull back on Anvil (`n3_box_manifest.py pullback --label step4anvil`) and transfer with scp plus sha256.
+  2. Unpack on the laptop into `results/n3/private/returns/step4_anvil/`.
+  3. Project with `--usd-per-hour 1`, so that "$" reads as GPU-h against the 150 GPU-h cap, for each FF candidate.
+  4. Bring the A3 choices to Frank.
