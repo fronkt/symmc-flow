@@ -1,5 +1,13 @@
 # N3 / G3: current handoff
 
+## Step 4 done, 2026-10-11 (evening): WAITING ON FRANK
+
+The timing gate ran (23/23 measurements, $3.11 of the approved $5). Every box is destroyed and the cleanup
+verified PASS. The measured full plan is **$313-318**, about 10× the prior; FF* alone is 529 GPU-h. Even all
+seven degrade items leave $190-194. Four decisions are open: budget / faster-FF re-time / stop, the FD step,
+the P6 tolerance, and the RESID rule. Read [n3_step4_record_2026-10-11.md](n3_step4_record_2026-10-11.md).
+A3 is not written. Fixes from this run: `3099448`, `cae84bf`.
+
 ## Continuation 2026-10-11
 
 Round-2 implementation is complete locally: selection completeness/provenance, exact and BASIN
