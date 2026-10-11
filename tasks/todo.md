@@ -10,7 +10,7 @@ Scope for this continuation: finish the unreviewed round-2 implementation, valid
 - [x] Review/fix upload manifests, environment setup, timing/cost gate, and verified cleanup.
 - [x] Write an executable runbook for steps 4–9, with exact prerequisites and review gates.
 - [x] Run meaningful local checks and independent protocol review; resolve blockers.
-- [ ] Record evidence and remaining paid-run prerequisites; commit explicit paths and push this phase.
+- [x] Record evidence and remaining paid-run prerequisites; commit explicit paths and push this phase.
 
 ### Plan check-in
 
@@ -20,8 +20,9 @@ Continuing at round 2, rather than repeating completed dataset parsing or G2 stu
 
 The implementation and verification are complete: 137 tests passed, 3 heavy checks skipped; actual
 input-cache checks and checksummed TRAIN/VAL-only archive extraction passed. Independent review
-blockers are resolved. Publication is pending; evidence is retained in
-`tasks/n3_round2_review_2026-10-11.md`. No paid run or CSD upload has occurred.
+blockers are resolved. Code commit `783a1ab` was pushed to `origin/paper-draft` and its remote SHA
+verified. Evidence is retained in `tasks/n3_round2_review_2026-10-11.md`. The next step is the
+timing-only spend/TRAIN-VAL upload approval; no paid run or CSD upload has occurred.
 
 ---
 

@@ -88,4 +88,7 @@ manuscript and ACS response rewrite.
 
 ## Publication
 
-Prepared for a scoped code commit/push; unrelated manuscript/workshop edits remain unstaged.
+Code commit `783a1ab2020a4fd2601d043196e49f64a8381ba8` was pushed to `origin/paper-draft`.
+`git ls-remote origin refs/heads/paper-draft` returned that exact SHA after the push.
+Only the 24 explicit implementation/test/handoff paths were staged; unrelated manuscript/workshop
+edits remain unstaged, and all CSD caches/archives/receipts/proposals remain gitignored.
