@@ -59,6 +59,15 @@ find_conda() {
   return 1
 }
 
+driver_cuda() {  # nvidia-smi banner, else libcuda's cuDriverGetVersion (driver 615 nvidia-smi on Anvil prints no banner)
+  local cu
+  cu=$(nvidia-smi | sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p' | head -1)
+  [ -n "$cu" ] || cu=$(python3 -c 'import ctypes; v = ctypes.c_int()
+assert ctypes.CDLL("libcuda.so.1").cuDriverGetVersion(ctypes.byref(v)) == 0
+print("%d.%d" % (v.value // 1000, v.value % 1000 // 10))' 2>/dev/null)
+  echo "$cu"
+}
+
 cmd_check() {
   if [ "$DRY" = 1 ]; then
     echo "+ check: Linux; nvidia-smi; GPU count (1 expected); driver CUDA >= $MIN_DRIVER_CUDA; >= ${MIN_DISK_GB} GB free; python3"
@@ -72,9 +81,10 @@ cmd_check() {
   command -v nvidia-smi >/dev/null || die "no nvidia-smi"
   n=$(nvidia-smi --query-gpu=name --format=csv,noheader | wc -l)
   nvidia-smi --query-gpu=index,name,memory.total,driver_version --format=csv,noheader
-  cu=$(nvidia-smi | sed -n 's/.*CUDA Version: \([0-9.]*\).*/\1/p' | head -1)
+  cu=$(driver_cuda)
   echo "GPUs: $n   driver CUDA: $cu   cores: $(nproc)   RAM: $(free -g | awk '/Mem:/{print $2}') GB"
   [ "$n" -ge 1 ] || die "no GPU"
+  [ -n "$cu" ] || die "driver CUDA version unreadable: no nvidia-smi banner and libcuda.so.1 cuDriverGetVersion failed"
   [ "$n" -eq 1 ] || echo "WARNING: $n GPUs; every job is pinned to CUDA_VISIBLE_DEVICES=0 (inference.py shards on >1)"
   awk -v a="$cu" -v b="$MIN_DRIVER_CUDA" 'BEGIN{split(a,x,".");split(b,y,".");exit !((x[1]>y[1])||(x[1]==y[1]&&x[2]>=y[2]))}' \
     || die "driver CUDA $cu < $MIN_DRIVER_CUDA: FF cu130 needs a newer driver (rent with cuda_max_good>=13.0)"

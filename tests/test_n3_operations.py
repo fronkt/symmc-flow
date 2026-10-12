@@ -437,6 +437,35 @@ def test_setup_dry_plan_uses_ff_cu130_preflight_and_driver_requirement(tmp_path)
     assert not root.exists()
 
 
+@pytest.mark.parametrize("banner, libcuda, ok, said", [
+    ("CUDA Version: 13.0", "", True, "driver CUDA: 13.0"),          # Vast boxes: banner present
+    ("", "13.2", True, "driver CUDA: 13.2"),                         # Anvil driver 615: no banner, libcuda answers
+    ("", "12.8", False, "driver CUDA 12.8 < 13.0"),
+    ("", "", False, "driver CUDA version unreadable"),
+])
+def test_setup_check_reads_driver_cuda_without_the_nvidia_smi_banner(tmp_path, banner, libcuda, ok, said):
+    import platform
+    import shutil
+    bash = shutil.which("bash")
+    if not bash or platform.system() != "Linux":
+        pytest.skip("check mode runs only on Linux")
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "nvidia-smi").write_text('#!/bin/sh\ncase "$1" in\n'
+                                     '  --query-gpu=name) echo "NVIDIA A100-SXM4-40GB" ;;\n'
+                                     '  --query-gpu=*) echo "0, NVIDIA A100-SXM4-40GB, 40960 MiB, 615.71.09" ;;\n'
+                                     f'  *) echo "| NVIDIA-SMI 615.71.09   Driver Version: 615.71.09   {banner} |" ;;\n'
+                                     'esac\n')
+    (fake / "python3").write_text(f'#!/bin/sh\n[ -n "{libcuda}" ] && echo "{libcuda}"\n')
+    for f in fake.iterdir():
+        f.chmod(0o755)
+    result = subprocess.run([bash, str(REPO / "scripts/n3_box_setup.sh"), "check"], capture_output=True, text=True,
+                            env=dict(os.environ, PATH=f"{fake}:{os.environ['PATH']}", N3_BOX_ROOT=str(tmp_path),
+                                     N3_MIN_DISK_GB="0"))
+    assert (result.returncode == 0) == ok, result.stdout + result.stderr
+    assert said in result.stdout + result.stderr
+
+
 def project_args(tmp_path, rates, stats, cfg):
     rate_path, stats_path = tmp_path / "rates.json", tmp_path / "set_stats.json"
     rate_path.write_text(json.dumps(rates))

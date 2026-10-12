@@ -145,6 +145,22 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   iv-P and FD checks for batch, default and merged → the timing gate → rates, all in one job and therefore on
   one host. Driver probe: 21287865 (gpu-debug). Queue at submission: 389 jobs pending on `gpu`; the probe's ETA
   was Oct 13.
+- **Job 21289469 FAILED at `check`, after 4 s** (2026-10-12 10:05Z, node g007; 0.0 GPU-h charged).
+  - The node has driver 615.71.09. Its `nvidia-smi` prints no "CUDA Version" banner, so the check read an
+    empty version and refused it. The probe had already shown that, since its banner grep printed nothing.
+    A 615 driver is far past the CUDA 13.0 minimum (R580).
+  - The repo fix falls back to libcuda's `cuDriverGetVersion` and fails with an explicit message when both
+    sources are empty. Four Linux tests cover it; they passed on the Anvil login node.
+  - The archived box root keeps the old script. `data`-mode manifest verify hashes every archived file, so a
+    patched copy would fail it.
+  - For this run, `anvil_step4.sbatch` (sha256 `b1918de8…9197`):
+    1. prints the banner;
+    2. reads the driver CUDA version and libcuda path itself (≥ 13.0 required);
+    3. sets `TRITON_LIBCUDA_PATH` if `ldconfig` lacks libcuda;
+    4. runs the archived `check` with `N3_NO_GPU_CHECK=1` (disk, python, compiler).
+    `smoke` still asserts a finite CUDA matmul in every env.
+  - **Resubmitted as job 21318021** (2026-10-12 ~18:50Z). Queue: 315 pending / 36 running on `gpu`. The last
+    two jobs waited 9.5 h and 13.5 h.
 - **Platform deviation for A3.** Anvil is a persistent shared filesystem, not a destroyable box.
   - Hygiene becomes an explicit `n3_box_cleanup.sh` over `$SCRATCH/n3_box` and `$SCRATCH/n3_upload`, with
     `N3_FIND_ROOTS` set to `$HOME`, `$SCRATCH` and `$PROJECT`.
