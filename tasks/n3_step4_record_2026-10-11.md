@@ -185,7 +185,7 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - **Resubmitted as job 21340353** (2026-10-14 ~00:52Z).
   - The exact job scripts are kept locally, gitignored (they name the cluster account), in
     `results/n3/private/anvil_jobs/`: both sbatch versions, the inner body, the env build and the import test.
-- **Job 21340353 RUNNING** on g000 since 2026-10-14 05:05:55Z (backfill).
+- **Job 21340353 TIMEOUT** on g000, 2026-10-14 05:05:55Z to 10:06:21Z (backfill; 5.0 GPU-h charged).
   - In the image, every stage passed: check, smoke, data, and the P6 / iv-P / FD check runs (all rc 0).
   - The FD summaries still read `pass: false` at the frozen h = 1e-4: max relative error 1.289e-4, the same
     O(h²) row as box B.
@@ -195,6 +195,17 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - `ff_default_float64` was projected to end about 09:23Z, which leaves too little of the 5 h limit for
     `merged`, `ff_min`, `cpu`, `lj_screen` and `ours_sample`.
   - `scontrol` refused to extend the time limit (user permission).
+  - **Outcome: 16 of 23 measurements have successful records.** `ff_default_float64` ended 09:20Z after
+    5,408 s (box B: 1,883 s; warm-up 103-153 s per crystal, GPU utilisation 2 %).
+  - `ff_merged_float32` was then cut off at 19 of 20 crystals. It had about 70-80 s warm-up per crystal and
+    no record was written.
+  - Not started: `ff_merged_float64`, `ff_min_truth_float32/64`, `cpu`, `lj_screen`, `ours_sample`.
+  - **Reset dry run repeated on the final state (20:40Z):** it would move only the `merged` float32 shard
+    (17,360 B) and its log. It keeps the four FF records, and the three script hashes are unchanged.
+  - At 20:30Z, follow-up 21344282 was PENDING (Priority). All 4 GPUs on g000 are held by other users' jobs,
+    and Slurm's estimated start is 2026-10-15 06:06Z.
+  - Estimated length of the remainder: about 50 min for `merged` float32, about 1-2 h for float64, and under
+    40 min for the short ones (8 min on box B). That fits in the 4 h limit.
 - **Follow-up job 21344282** (`anvil_step4b.sbatch`, `-w g000`, `--dependency=afterany:21340353`, 4 h, same image):
   - **Same node, because rates refuse other hosts** and the fingerprint includes the node name. The finished
     measurements are reused, since `run` keeps any record whose fingerprint still matches.
