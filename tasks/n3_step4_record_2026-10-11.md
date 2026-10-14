@@ -161,6 +161,30 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     `smoke` still asserts a finite CUDA matmul in every env.
   - **Resubmitted as job 21318021** (2026-10-12 ~18:50Z). Queue: 315 pending / 36 running on `gpu`. The last
     two jobs waited 9.5 h and 13.5 h.
+- **Job 21318021 FAILED at `smoke`, after 1 min 12 s** (started 2026-10-13 00:56Z on g005 by backfill; 0.0
+  GPU-h charged).
+  - The libcuda check worked: driver CUDA **13.4** (the banner reads "CUDA UMD Version: 13.4").
+  - `smoke` then failed in the mcf env. The A2a-pinned PyG binaries, torch-scatter 2.1.2+pt27cu128 and
+    torch-cluster 1.6.3+pt27cu128, need **GLIBC_2.32**, and Anvil runs Rocky 8.10 with glibc 2.28.
+  - A scan of every `.so` in the three envs found only those 26 PyG files needing glibc above 2.28.
+  - **Fix: the job runs in an Ubuntu 22.04.5 Apptainer image** (`docker://buildpack-deps:jammy`, glibc 2.35,
+    gcc 11.4). Path: `$PROJECT/n3_images/jammy.sif`, SIF sha256 `386af7e8…7c7b`.
+  - The package pins do not change, and neither do the envs or the archived box root. Only the OS userland
+    under the conda envs changes, and Vast box B was also an Ubuntu 22.04 image.
+  - Login-node tests in the image:
+    - all smoke import lists load, with exact A2a versions and a CPU `radius_graph`/scatter;
+    - the same test outside the image fails with the GLIBC_2.32 error;
+    - the archived `check` passes in the image;
+    - `--cleanenv` drops the host Spack `LD_LIBRARY_PATH`.
+  - Scripts:
+    - `anvil_step4.sbatch` (sha256 `bcbd3924…c1e4`) runs `apptainer exec --nv --cleanenv -B /anvil`.
+    - `anvil_step4_inner.sh` (`ad0eaaf0…5758`) is the unchanged body, with a container-only PATH.
+  - **Every later N3 Anvil job must run in the same image**, because host identity and the loader must match.
+  - Repo: `check` now refuses glibc < 2.32 even on a login node, so an env build on such a host fails
+    before any GPU job is queued.
+  - **Resubmitted as job 21340353** (2026-10-14 ~00:52Z).
+  - The exact job scripts are kept locally, gitignored (they name the cluster account), in
+    `results/n3/private/anvil_jobs/`: both sbatch versions, the inner body, the env build and the import test.
 - **Platform deviation for A3.** Anvil is a persistent shared filesystem, not a destroyable box.
   - Hygiene becomes an explicit `n3_box_cleanup.sh` over `$SCRATCH/n3_box` and `$SCRATCH/n3_upload`, with
     `N3_FIND_ROOTS` set to `$HOME`, `$SCRATCH` and `$PROJECT`.

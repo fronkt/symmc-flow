@@ -437,13 +437,14 @@ def test_setup_dry_plan_uses_ff_cu130_preflight_and_driver_requirement(tmp_path)
     assert not root.exists()
 
 
-@pytest.mark.parametrize("banner, libcuda, ok, said", [
-    ("CUDA Version: 13.0", "", True, "driver CUDA: 13.0"),          # Vast boxes: banner present
-    ("", "13.2", True, "driver CUDA: 13.2"),                         # Anvil driver 615: no banner, libcuda answers
-    ("", "12.8", False, "driver CUDA 12.8 < 13.0"),
-    ("", "", False, "driver CUDA version unreadable"),
+@pytest.mark.parametrize("banner, libcuda, glibc, ok, said", [
+    ("CUDA Version: 13.0", "", "2.35", True, "driver CUDA: 13.0"),          # Vast boxes: banner present
+    ("CUDA UMD Version: 13.4", "13.4", "2.35", True, "driver CUDA: 13.4"),  # Anvil driver 615: libcuda answers
+    ("", "12.8", "2.35", False, "driver CUDA 12.8 < 13.0"),
+    ("", "", "2.35", False, "driver CUDA version unreadable"),
+    ("CUDA Version: 13.0", "", "2.28", False, "glibc 2.28 < 2.32"),         # Anvil Rocky 8 host (job 21318021)
 ])
-def test_setup_check_reads_driver_cuda_without_the_nvidia_smi_banner(tmp_path, banner, libcuda, ok, said):
+def test_setup_check_reads_driver_cuda_without_the_nvidia_smi_banner(tmp_path, banner, libcuda, glibc, ok, said):
     import platform
     import shutil
     bash = shutil.which("bash")
@@ -457,6 +458,7 @@ def test_setup_check_reads_driver_cuda_without_the_nvidia_smi_banner(tmp_path, b
                                      f'  *) echo "| NVIDIA-SMI 615.71.09   Driver Version: 615.71.09   {banner} |" ;;\n'
                                      'esac\n')
     (fake / "python3").write_text(f'#!/bin/sh\n[ -n "{libcuda}" ] && echo "{libcuda}"\n')
+    (fake / "getconf").write_text(f'#!/bin/sh\necho "glibc {glibc}"\n')
     for f in fake.iterdir():
         f.chmod(0o755)
     result = subprocess.run([bash, str(REPO / "scripts/n3_box_setup.sh"), "check"], capture_output=True, text=True,

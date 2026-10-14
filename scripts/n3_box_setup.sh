@@ -74,7 +74,11 @@ cmd_check() {
     return 0
   fi
   [ "$(uname -s)" = Linux ] || die "not Linux"
-  local n cu disk mem
+  local n cu disk mem glibc
+  glibc=$(getconf GNU_LIBC_VERSION 2>/dev/null | awk '{print $2}')
+  echo "glibc: ${glibc:-unknown}"
+  awk -v a="${glibc:-0}" 'BEGIN{split(a,x,".");exit !((x[1]>2)||(x[1]==2&&x[2]>=32))}' \
+    || die "glibc ${glibc:-unknown} < 2.32: the A2a MCF wheels (torch-scatter/cluster +pt27cu128) need GLIBC_2.32; run in a newer OS image (Anvil: Apptainer)"
   if [ "${N3_NO_GPU_CHECK:-0}" = 1 ]; then  # HPC login node: build the envs here; smoke/data run in the GPU job
     echo "N3_NO_GPU_CHECK=1: GPU / driver checks deferred to smoke (run it on the GPU node)"
   else
