@@ -12,8 +12,12 @@ A3 is not written. Fixes from this run: `3099448`, `cae84bf`.
 - 21289469: driver 615's `nvidia-smi` has no CUDA banner.
 - 21318021: the PyG wheels need glibc 2.32 and Anvil has 2.28.
 
-Every N3 job now runs in an Ubuntu 22.04 Apptainer image. **Job 21340353** (timing gate + `merged` FF candidate) is
-queued, as of 10-14. When it ends, follow the 'Anvil re-run' section of the step-4 record.
+Every N3 job now runs in an Ubuntu 22.04 Apptainer image.
+- **Job 21340353** (timing gate + `merged` FF candidate) is running on g000 and will hit its 5 h limit about
+  10:05Z on 10-14.
+- **Follow-up job 21344282** is pinned to g000. It finishes the unfinished measurements fresh and publishes the rates.
+
+When both end, follow the 'Anvil re-run' section of the step-4 record.
 
 ## Continuation 2026-10-11
 

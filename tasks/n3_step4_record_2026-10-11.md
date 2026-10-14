@@ -185,6 +185,30 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - **Resubmitted as job 21340353** (2026-10-14 ~00:52Z).
   - The exact job scripts are kept locally, gitignored (they name the cluster account), in
     `results/n3/private/anvil_jobs/`: both sbatch versions, the inner body, the env build and the import test.
+- **Job 21340353 RUNNING** on g000 since 2026-10-14 05:05:55Z (backfill).
+  - In the image, every stage passed: check, smoke, data, and the P6 / iv-P / FD check runs (all rc 0).
+  - The FD summaries still read `pass: false` at the frozen h = 1e-4: max relative error 1.289e-4, the same
+    O(h²) row as box B.
+  - By 08:14Z, 15 of the 23 measurements were done.
+  - **`ff_default_float32` took 4,647 s** (box B: 1,277 s). The per-crystal recompile is CPU-bound, with
+    about 100-150 s warm-up per crystal; GPU utilisation was 2 %.
+  - `ff_default_float64` was projected to end about 09:23Z, which leaves too little of the 5 h limit for
+    `merged`, `ff_min`, `cpu`, `lj_screen` and `ours_sample`.
+  - `scontrol` refused to extend the time limit (user permission).
+- **Follow-up job 21344282** (`anvil_step4b.sbatch`, `-w g000`, `--dependency=afterany:21340353`, 4 h, same image):
+  - **Same node, because rates refuse other hosts** and the fingerprint includes the node name. The finished
+    measurements are reused, since `run` keeps any record whose fingerprint still matches.
+  - **Reset first.** The harnesses resume their shards, so a killed measurement would otherwise be re-timed
+    on cached work. `anvil_step4b_reset.py` renames every resumable output of a measurement that has no
+    successful record to `*.partial_<job>`, and writes a receipt to `results/n3/private/timing_resume_<job>.json`.
+    It stops if any failed record exists.
+  - **Order.** It then times the unfinished measurements with `merged` first and `default` last, re-runs
+    `run` to confirm every record is kept, and publishes `rates`.
+  - The dry run on the live box root listed only the in-progress default-float64 shard and its log.
+  - Script hashes:
+    - sbatch `54e728c7…081a`
+    - inner `b0f7f940…fd18`
+    - reset `0b69b066…f1`
 - **Platform deviation for A3.** Anvil is a persistent shared filesystem, not a destroyable box.
   - Hygiene becomes an explicit `n3_box_cleanup.sh` over `$SCRATCH/n3_box` and `$SCRATCH/n3_upload`, with
     `N3_FIND_ROOTS` set to `$HOME`, `$SCRATCH` and `$PROJECT`.
