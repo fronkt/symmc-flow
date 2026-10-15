@@ -13,13 +13,14 @@ A3 is not written. Fixes from this run: `3099448`, `cae84bf`.
 - 21318021: the PyG wheels need glibc 2.32 and Anvil has 2.28.
 
 Every N3 job now runs in an Ubuntu 22.04 Apptainer image.
-- **Job 21340353** (timing gate + `merged` FF candidate) hit its 5 h limit at 10:06Z on 10-14, with 16 of
-  23 measurements recorded. 5.0 GPU-h were charged.
-- **Follow-up job 21344282** is pinned to g000 and is PENDING (Priority), with Slurm's estimated start
-  10-15 06:06Z. It sets aside the cut-off `merged` float32 shard, times the 7 unfinished measurements, and
-  publishes the rates.
-
-When both end, follow the 'Anvil re-run' section of the step-4 record.
+- **Step 4 on Anvil is DONE (10-15).** Job 21340353 recorded 17 of 24 measurements before its limit.
+  Follow-up 21344282 recorded the other 7 on the same node and published the rates. 6.9 GPU-h were
+  charged, and 143.1 remain.
+- **The measured plan does not fit the allocation.** The cheapest FF* candidate, `batch_float32`, needs
+  515-535 GPU-h, and 321-335 even with all seven degrade items. `merged` and `default` are 8-20× worse here.
+- Open: an MCF-A rate-model defect (slope clamped to 0), worth 3 GPU-h. The pullback (1.92 GB) is on Anvil;
+  transferring it needs manual mode.
+- **WAITING ON FRANK:** the budget route, then the A3 choices. Read the 'Anvil re-run' section of the step-4 record.
 
 ## Continuation 2026-10-11
 

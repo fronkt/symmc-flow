@@ -189,13 +189,15 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - In the image, every stage passed: check, smoke, data, and the P6 / iv-P / FD check runs (all rc 0).
   - The FD summaries still read `pass: false` at the frozen h = 1e-4: max relative error 1.289e-4, the same
     O(h²) row as box B.
-  - By 08:14Z, 15 of the 23 measurements were done.
+  - By 08:14Z, 16 of the 24 measurements were done. (This line first said "15 of 23", a miscount: Anvil
+    times 24, because `merged` adds two FF measurements.)
   - **`ff_default_float32` took 4,647 s** (box B: 1,277 s). The per-crystal recompile is CPU-bound, with
     about 100-150 s warm-up per crystal; GPU utilisation was 2 %.
   - `ff_default_float64` was projected to end about 09:23Z, which leaves too little of the 5 h limit for
     `merged`, `ff_min`, `cpu`, `lj_screen` and `ours_sample`.
   - `scontrol` refused to extend the time limit (user permission).
-  - **Outcome: 16 of 23 measurements have successful records.** `ff_default_float64` ended 09:20Z after
+  - **Outcome: 17 of 24 measurements have successful records** (first recorded on 10-14 as "16 of 23", a
+    miscount). `ff_default_float64` ended 09:20Z after
     5,408 s (box B: 1,883 s; warm-up 103-153 s per crystal, GPU utilisation 2 %).
   - `ff_merged_float32` was then cut off at 19 of 20 crystals. It had about 70-80 s warm-up per crystal and
     no record was written.
@@ -225,8 +227,48 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     `N3_FIND_ROOTS` set to `$HOME`, `$SCRATCH` and `$PROJECT`.
   - The cleanup script always adds `/dev/shm`, which is shared on login nodes. Run it in a compute job, or
     expect permission errors there.
-- **Next, when the job ends:**
-  1. Pull back on Anvil (`n3_box_manifest.py pullback --label step4anvil`) and transfer with scp plus sha256.
-  2. Unpack on the laptop into `results/n3/private/returns/step4_anvil/`.
-  3. Project with `--usd-per-hour 1`, so that "$" reads as GPU-h against the 150 GPU-h cap, for each FF candidate.
-  4. Bring the A3 choices to Frank.
+- **Job 21344282 COMPLETED** on g000, 2026-10-14 23:21:11Z to 2026-10-15 01:12:04Z (backfill; it started
+  about 7 h before Slurm's estimate).
+  - The reset moved exactly the two files the dry run listed. `run` timed the 7 unfinished measurements
+    (rc 0); the repeat `run` reported all 24 as "done (same configuration, kept)". `rates` returned rc 0.
+  - `rates.json` sha256 is `4facd352…890c`.
+  - GPU charged for all of step 4 on Anvil: **6.9 of 150 GPU-h**; 143.1 remain.
+- **Pullback (2026-10-15 07:49Z, on Anvil):** 289 files, 1,920.6 MB, in `n3_pullback_step4anvil.tar` with
+  sha256 `6db1fa12…efcac`.
+  - The 11 in-root wandb links were listed, not packed (fix `cae84bf`), to
+    `pullback_step4anvil.skipped_symlinks.json`.
+  - **Transfer to the laptop has not been done.** It needs manual-approval mode (CSD-derived outputs).
+- **Projection (2026-10-15, laptop, before the pullback).**
+  - Only `rates.json` was copied, after checking it has no refcode-like tokens and no host paths. The sha256
+    matches. `project` accepted its `code_identity` against laptop HEAD.
+  - **Rate-model defect.** The published MCF-A inference slope is 0.0. On this host the MCF call is
+    overhead-bound: R gives c0 150.1 s and c1 0.4 s/crystal. The A call at n = 50 took 126.3 s, below R's
+    intercept, because random-init draws are non-finite and skip most of RESID (37 s vs 74 s). `rates`
+    clamps the slope to 0, and `project` then refuses it.
+  - For analysis only, a labelled copy sets A's slope to R's 0.4 s (`rates_Aslope_eq_R.json`). Setting it
+    to about 0 instead moves the total by 3 GPU-h.
+  - A real fix changes `n3_timing_gate.py`, which is inside `code_identity`. That invalidates these rates
+    unless A3 records the substitution.
+  - Settings: `--usd-per-hour 1 --cores 32` (one A100's share of a 128-core node) `--p6 on --ivp-encoder
+    pack --ivp-cpb 8 --tier2`. "$" therefore reads as box-hours, i.e. GPU-h charged with the CPU stages
+    run inside the GPU job.
+  - Outputs are in `results/n3/private/anvil_projection_2026-10-15/` (gitignored).
+
+  | FF* candidate | FF* GPU-h | total GPU-h | box-h (= GPU-h charged) | all 7 degrade items |
+  |---|---|---|---|---|
+  | **batch_float32** | **425.6** | **447.5** | **515-535** | **321-335** |
+  | batch_float64 | 1,090.6 | 1,112.5 | 1,279-1,299 | 776-789 |
+  | merged_float32 | 3,572.7 | 3,594.6 | 4,134-4,154 | 2,540-2,553 |
+  | merged_float64 | 5,134.1 | 5,156.0 | 5,929-5,949 | 3,612-3,626 |
+  | default_float32 | 6,876.0 | 6,897.8 | 7,933-7,953 | 4,851-4,865 |
+  | default_float64 | 9,467.0 | 9,488.9 | 10,912-10,932 | 6,621-6,635 |
+
+  - For batch_float32: step 5 is 42-53 box-h (36.2 GPU-h), and step 7 is 473-482. Step-9 matching adds
+    164 CPU-h on the laptop (27 h on 6 cores). With P6 off the total is 536-556.
+  - `merged` and `default` pay 70-120 s of per-crystal warm-up on this CPU, which FF* repeats for every
+    crystal. Only `batch` is viable here.
+  - **No candidate fits the 143.1 GPU-h left**, even with every degrade item. The cheapest is 2.2-2.3× over.
+    The box-B figure for the same configuration was 624-634 box-h ($313-318), with FF* at 528.9 GPU-h.
+- **Next:** Frank decides the budget route, then the A3 choices. When he switches to manual mode,
+  transfer the pullback, verify its sha256, and unpack it into `results/n3/private/returns/step4_anvil/`.
+  Then re-run `project` from the unpacked `rates.json` (same hash).
