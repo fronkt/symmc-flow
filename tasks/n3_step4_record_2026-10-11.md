@@ -269,6 +269,30 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     crystal. Only `batch` is viable here.
   - **No candidate fits the 143.1 GPU-h left**, even with every degrade item. The cheapest is 2.2-2.3× over.
     The box-B figure for the same configuration was 624-634 box-h ($313-318), with FF* at 528.9 GPU-h.
-- **Next:** Frank decides the budget route, then the A3 choices. When he switches to manual mode,
-  transfer the pullback, verify its sha256, and unpack it into `results/n3/private/returns/step4_anvil/`.
-  Then re-run `project` from the unpacked `rates.json` (same hash).
+- **Budget route: ACCESS credit exchange (Frank, 2026-10-15).** "check the unexchanged ACCESS credits and
+  Anvil GPU rate... exchange them", then "do it".
+  - Portal state before the exchange: 89,903 ACCESS credits unexchanged. Anvil GPU costs 67.308 credits per
+    GPU-h; Anvil CPU costs 1 credit per SU.
+  - **Submitted about 08:35Z, in manual mode:** 89,857 credits for **+1,335 Anvil GPU-h**. The GPU balance
+    goes 143 → 1,478, and 46 credits are left. It is **pending** resource-provider approval; the August
+    exchange was approved the next day.
+  - The first attempt, in auto mode, was blocked by the classifier and nothing was entered. Frank then
+    switched to manual mode.
+  - Justification submitted (Frank approved the draft unchanged): "These GPU hours fund a pre-registered
+    benchmark of generative models for molecular crystal structure prediction, for a manuscript I am
+    revising for resubmission. A timing run on Anvil A100s (6.9 GPU-hours) measured the full protocol at
+    515-535 GPU-hours. Most of that is machine-learned force-field relaxation; the rest is model training
+    and sampling on held-out test sets. The 143 GPU-hours remaining cover about a quarter of it. These
+    credits let me complete the protocol, including any reruns it requires."
+  - CHE260157 is titled for the STS electrocatalyst work. The text states the symmc-flow use, and Frank was
+    told the reviewer may see that mismatch.
+  - With 1,478 GPU-h, `batch_float32` (515-535) fits with no degrade items. So does `batch_float64`
+    (1,279-1,299), with little margin.
+- **Pullback returned (2026-10-15, manual mode).** The scp'd tar's sha256 matches the box (`6db1fa12…efcac`).
+  - `unpack --no-overwrite` into `results/n3/private/returns/step4_anvil/`: 289 files, 0 missing, 0 hash
+    mismatches, **PASS**.
+  - The unpacked `rates.json` has the same sha256 (`4facd352…890c`) as the copy the projection used.
+  - The unpack receipt went back to `$SCRATCH/n3_manifests/` on Anvil (hashes match), so a later
+    `n3_box_cleanup.sh` can verify it.
+  - Cleanup itself waits until Frank decides whether step 5 reuses the box root.
+- **Next:** bring Frank the A3 choices, with the FF dtype now affordable either way.

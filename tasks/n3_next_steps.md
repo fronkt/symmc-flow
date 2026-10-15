@@ -18,9 +18,11 @@ Every N3 job now runs in an Ubuntu 22.04 Apptainer image.
   charged, and 143.1 remain.
 - **The measured plan does not fit the allocation.** The cheapest FF* candidate, `batch_float32`, needs
   515-535 GPU-h, and 321-335 even with all seven degrade items. `merged` and `default` are 8-20× worse here.
-- Open: an MCF-A rate-model defect (slope clamped to 0), worth 3 GPU-h. The pullback (1.92 GB) is on Anvil;
-  transferring it needs manual mode.
-- **WAITING ON FRANK:** the budget route, then the A3 choices. Read the 'Anvil re-run' section of the step-4 record.
+- Open: an MCF-A rate-model defect (slope clamped to 0), worth 3 GPU-h. The pullback was transferred and
+  unpacked into `returns/step4_anvil/` (verify PASS, 10-15).
+- **Budget route (Frank, 10-15): ACCESS exchange.** 89,857 credits were exchanged for +1,335 Anvil GPU-h
+  (balance 1,478), pending provider approval. The plan then fits with no degrade items.
+- **WAITING ON FRANK:** the A3 choices. Read the 'Anvil re-run' section of the step-4 record.
 
 ## Continuation 2026-10-11
 
