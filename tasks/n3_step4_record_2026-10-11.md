@@ -318,3 +318,11 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   2. `n3_box_manifest.py pack --step 5`.
   3. The upload to Anvil needs manual-approval mode.
   4. Run the step-5 job: FD at h = 1e-5 → Gate C → training → VALSEL.
+- **2026-10-19, after the push (a25a444):**
+  - `pack --step 5`: deployable, 209 files, 1,307.9 MB. The scan found 0 TEST-B/DEV-TEST refcode hits; its
+    positive control found all 1,200.
+  - Archive sha256 `75d73aa00fb18347...`, at `results/n3/private/uploads/step5/`.
+  - **The upload waits for manual-approval mode.** Step 5 reuses the step-4 box root `$SCRATCH/n3_box`;
+    unpack overwrites it with the new code.
+  - Step 5 splits at the H2 form. 5a: FD h = 1e-5 → Gate C → training → VALSEL truths + anchor. Then pull the
+    anchor back and push the H2 form from the laptop. 5b: candidates, VALSEL sampling, scoring, diagnostic (a).
