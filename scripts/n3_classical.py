@@ -17,7 +17,7 @@ from resumable per-crystal JSONL shards (results/n3/private/classical/). Nothing
                   random_so3((1,), float64)); checks count, coverage and uniformity
   lbgate          gate for the batched screen evaluator: 20 VAL crystals x 100 grid orientations, 1e-4 rel.
   screen          all 4,608 grid orientations by unrelaxed steric LJ -> the 64 lowest (never fewer)
-  fdcheck         force-derived dE/d(delta) vs central finite differences (1e-4 rad) on 5 VAL crystals x
+  fdcheck         force-derived dE/d(delta) vs central finite differences (1e-5 rad, A3) on 5 VAL crystals x
                   {truth, one Haar pose}; pass iff every relative error <= 1e-4 (meaningful in float64)
   fftime          §7 timing gate: FF* calls single and batched (--batch) on 20 VAL crystals, K = 2 / 4 / >= 8
   ffmin           FF* minimisation from the true pose and/or Haar starts (timing / debugging only)
@@ -1086,14 +1086,16 @@ def _w_fd(t):
 
 
 def cmd_fdcheck(args):
-    """§3.3 FD check. Pass rule (proposed amendment): every relative error <= 1e-4 over 5 VAL crystals x
+    """§3.3 FD check. Pass rule (A2 item 21): every relative error <= 1e-4 over 5 VAL crystals x
     {truth, one Haar pose}; it tests the gradient code, so it is meaningful in float64 (float32 energy noise
-    ~1e-5 eV / 1e-4 rad ~ 0.1 eV/rad); float32 figures are reported beside it."""
+    ~1e-5 eV / 1e-4 rad ~ 0.1 eV/rad); float32 figures are reported beside it. Step h = 1e-5 rad (A3 item 2):
+    at 1e-4 the central difference's O(h^2) truncation alone exceeds 1e-4 on a clash pose. The shard name
+    carries h, so a check at another step never resumes this one."""
     _ff_resolve(args)
     items = C.load_set(args.set)
     idx = _pick_indices(len(items), args) if _partial(args) else list(range(5))
     tasks = [{"refcode": items[j]["refcode"], "a": items[j], "h": args.h, "seed": 31337 + j} for j in idx]
-    job = f"fdcheck_{args.set}_{_fftag(args)}"
+    job = f"fdcheck_{args.set}_{_fftag(args)}_h{args.h:g}"
     done = _run(tasks, _w_fd, os.path.join(OUT, job + ".jsonl"), args.workers,
                 init=_ff_init, initargs=(_ff_cfg(args, job),), cfg=_ffkey(args, h=args.h), smoke=_partial(args))
     rows = [done[items[j]["refcode"]] for j in idx]
@@ -1738,7 +1740,7 @@ def main():
     s = sub.add_parser("screen"); common(s)
     s.add_argument("--evaluator", default="auto", choices=["auto", "batched", "energy"])
     s.add_argument("--threads", type=int, default=1)
-    s = sub.add_parser("fdcheck"); common(s, ff=True); s.add_argument("--h", type=float, default=1e-4)
+    s = sub.add_parser("fdcheck"); common(s, ff=True); s.add_argument("--h", type=float, default=1e-5)
     s = sub.add_parser("fftime"); common(s, ff=True)
     s.add_argument("--batch", type=int, default=64); s.add_argument("--reps", type=int, default=3)
     s = sub.add_parser("ffmin"); common(s, ff=True)

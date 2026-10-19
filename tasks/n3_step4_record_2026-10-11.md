@@ -296,3 +296,25 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     `n3_box_cleanup.sh` can verify it.
   - Cleanup itself waits until Frank decides whether step 5 reuses the box root.
 - **Next:** bring Frank the A3 choices, with the FF dtype now affordable either way.
+
+## A3 (2026-10-19)
+
+- **Exchange approved.** `mybalance` on 2026-10-19: che260157-gpu has 1,485.0 GPU-h, 6.9 used, **1,478.1 left**.
+- **Frank approved every recommendation (2026-10-19):** `batch_float32`; h = 1e-5 for the FD check; P6(b)
+  relative, which A2 item 2 already defines; a non-finite RESID on a finite draw is recorded, not failed.
+  The text is in protocol A3.
+- **Code:**
+  - `n3_classical.py fdcheck` defaults to h = 1e-5, and the shard name now carries h.
+  - `n3_mcf_run.resid_checks` makes the RESID rule testable; 2 new tests.
+  - N3 suite: 146 passed, 10 skipped.
+- **ffconfig** has to run on an A100, because every FF* reply is checked against the resolved state it
+  records. It is submitted twice: 21525052 (gpu-debug) and 21525266 (gpu). Keep whichever starts first and
+  cancel the other.
+  - Scripts: `results/n3/private/anvil_jobs/anvil_ffconfig*.sh`.
+  - Both ran 10-19 (backfill, ~1.5 min each); the file is from 21525266, sha256 8e49a547...5702, copied to the laptop and gitignored.
+  - The step-5 pack needs the json locally. It is a toy-cell probe with no CSD content.
+- **Next:**
+  1. Commit and push A3 (Frank OK 10-19, incl. the 700 GPU-h cap and the RESID rule). The push freezes it.
+  2. `n3_box_manifest.py pack --step 5`.
+  3. The upload to Anvil needs manual-approval mode.
+  4. Run the step-5 job: FD at h = 1e-5 → Gate C → training → VALSEL.

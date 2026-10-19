@@ -1357,3 +1357,65 @@ Distribution evidence checked 2026-10-11: [Torch cu130 index](https://download.p
 [Torch cu128 index](https://download.pytorch.org/whl/cu128/torch/),
 [PyG Torch-2.7 cu128 wheels](https://data.pyg.org/whl/torch-2.7.0+cu128.html), and
 [fairchem-core 2.23.0 metadata](https://pypi.org/pypi/fairchem-core/2.23.0/json).
+
+### A3 - step-4 settings, approval and disclosures, 2026-10-19
+
+**State when made.** No N3 arm output exists on SEL, TEST-B or DEV-TEST, and no VALSEL truth has been
+minimised. The step-4 timing gate ran on TRAIN/VAL crystals only; nothing it produced was matched. Record:
+`tasks/n3_step4_record_2026-10-11.md`.
+
+1. **Compute platform and approval.** Frank (PI) approved the measured plan on 2026-10-19. It runs on the
+   ACCESS allocation CHE260157 on Purdue Anvil (A100 nodes, partition `gpu`, account `che260157-gpu`), not
+   on Vast. The Anvil projection (rates sha256 `4facd352...890c`, 32 cores per A100 share) is **515-535
+   GPU-h** for the configuration below, with no degrade item. The approved cap for steps 5-7 is
+   **700 GPU-h** of the 1,478 GPU-h balance on 2026-10-19. The §7 overrun rules apply to that cap.
+   Platform deviation: Anvil is a persistent shared filesystem, not a destroyable box. Step 8's "destroy
+   the box" becomes `n3_box_cleanup.sh` over `$SCRATCH/n3_box` and `$SCRATCH/n3_upload`, with the search
+   roots `$HOME`, `$SCRATCH` and `$PROJECT`, run inside a compute job (login-node `/dev/shm` is shared).
+   Every N3 job runs in the Apptainer image `$PROJECT/n3_images/jammy.sif` (Ubuntu 22.04, glibc 2.35),
+   because the A2a-pinned PyG wheels need GLIBC_2.32 and Anvil's Rocky 8 host has 2.28. Package pins are
+   unchanged.
+2. **FF\* configuration.** Settings `batch`, dtype **float32**, device cuda, max_atoms unset, fixed with
+   `n3_classical.py ffconfig` before any VALSEL truth (record `results/n3/private/classical/ffstar_config.json`,
+   sha256 `8e49a547...5702`, Anvil job 21525266 on an A100-SXM4-40GB; fairchem-core 2.23.0, torch
+   2.13.0+cu130, resolved state merge_mole off, compile off, tf32 off, activation checkpointing on).
+   Job 21525052 ran the same command two minutes earlier with the same settings and state; the later
+   file replaced it. It is identical for truths, iii-s, i-E and BASIN on every set. `default` and
+   `merged` were measured at 7,933-7,953 and 4,134-4,154 GPU-h (per-crystal warm-up on this CPU) and are
+   not affordable; float64 `batch` (1,279-1,299 GPU-h) would leave too little margin for the reruns §7
+   requires after a box death.
+3. **Finite-difference check: step h = 1e-5 rad** (A2 item 21 keeps its pass rule, every relative error
+   <= 1e-4 in float64). At h = 1e-4 the step-4 gate failed on one row on every FF setting with the same
+   max 1.2893e-4: VAL #0 at its Haar pose, a clash pose (E = -504 eV vs -811 eV at the truth,
+   |g| ~ 2.8e3 eV/rad). The other nine rows were <= 5.4e-6. On that row the error scales as h^2
+   (1e-3: 1.25e-2; 1e-4: 1.29e-4; 1e-5: 1.29e-6), which is the central difference's own truncation, not a
+   gradient defect. At h = 1e-5 all 10 rows pass on the laptop (CPU float64, max 1.29e-6). The check is
+   re-run on the step-5 GPU at h = 1e-5 before any VALSEL truth is minimised, and it must pass.
+4. **MCF: a finite draw whose RESID forward is non-finite.** It is not a check failure. Regenerating
+   it deterministically would reproduce it, so "discard and regenerate" (§3.2) cannot apply. The draw
+   stays a valid structure for every non-RESID selector and for any@16. Its RESID is NaN, so the RESID
+   selector ranks it last (the existing non-finite-last rule, `n3_score.argmin_pick`). Each run's
+   `check.json` counts these draws and lists their refcodes, and the SI reports the counts per arm and
+   set. Every other §3.2 assertion still fails the run.
+5. **P6 on.** On the Anvil A100 (TRAIN, float32, no shims) the prior was bit-identical in 9/9 cases. The
+   scatter pooling had a max relative error of 5.4e-7 (outputs and both input gradients; max absolute
+   6.9e-5 on outputs of magnitude ~127). This passes P6(b) as A2 item 2 defines it
+   (max|Δ|/max|reference| <= 1e-5). MCF-R and MCF-A train with both P6 keys set.
+6. **iv-P encoder: `pack`, 8 crystals per batch.** Padded/trimmed/packed equivalence was max |Δv_R|
+   8.9e-8 / 0.
+7. **Degrade record: no item taken.** The plan fits the cap, including the §8 tier-2 diagnostics, so
+   every §7 degrade item stays in the plan.
+8. **Rate substitution in the projection.** The published MCF-A inference slope was clamped to 0: on
+   random-init weights most draws are non-finite and skip RESID, so the A call at n = 50 ran below MCF-R's
+   intercept. The projection used a labelled analysis copy with MCF-A's slope set to MCF-R's 0.4
+   s/crystal. Setting it to 0 instead moves the total by 3 GPU-h. `n3_timing_gate.py` is unchanged, so
+   the published rates stay valid.
+9. **Step-4 disclosures** (details in the record): the box-A upload was made in auto mode on Frank's chat
+   approval; box A was abandoned and its measurements discarded; the image lacked a C compiler (fixed
+   `3099448`); random-init MCF-A weights failed the two RESID checks during timing only (accepted for
+   timing, `3099448`); in-root wandb symlinks are listed, not packed (`cae84bf`); zero-byte cleanup false
+   positives were removed (`cae84bf`); the Vast return was unpacked to a separate root. Anvil jobs
+   21289469 and 21318021 failed in preflight (CUDA banner, glibc). The gate itself ran as 21340353 and
+   21344282 (6.9 GPU-h).
+
+No scientific menu, seed, endpoint, hypothesis, never-reduced item or outcome-to-claim rule is changed.

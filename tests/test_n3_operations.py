@@ -628,3 +628,34 @@ def test_pullback_refuses_a_symlink_leaving_the_box_root(tmp_path, monkeypatch):
     os.symlink(tmp_path / "outside.txt", wb / "offline-run-1/logs/debug-core.log")
     with pytest.raises(SystemExit, match="leaves the box root"):
         BM.cmd_pullback(SimpleNamespace(root=str(root), out=str(tmp_path / "return"), label="t"))
+
+
+def resid_world():
+    import torch
+    nan = float("nan")
+    fin = torch.tensor([[True, True, False], [True, True, True]])        # [S=2, n=3]
+    r = torch.tensor([[0.1, nan, nan], [0.2, 0.3, 0.4]], dtype=torch.float64)
+    return torch, nan, fin, r
+
+
+def test_resid_nonfinite_on_a_finite_draw_is_recorded_not_failed():
+    import n3_mcf_run as MR
+    torch, nan, fin, r = resid_world()
+    checks, info = MR.resid_checks(r, fin, r.clone(), ["AAA", "BBB", "CCC"])
+    assert all(checks.values())
+    assert info == {"resid_nonfinite_on_finite_draws": 1, "resid_nonfinite_on_finite_refcodes": ["BBB"]}
+
+
+def test_resid_checks_still_fail_on_real_defects():
+    import n3_mcf_run as MR
+    torch, nan, fin, r = resid_world()
+    rec = r.clone()
+    rec[1, 2] += 1e-6                                                      # stored RESID not reproducible
+    assert not MR.resid_checks(r, fin, rec, ["A", "B", "C"])[0]["resid_recomputes_from_saved_rotmats"]
+    rec = r.clone()
+    rec[0, 1] = 0.5                                                        # recomputation finite where stored NaN
+    assert not MR.resid_checks(r, fin, rec, ["A", "B", "C"])[0]["resid_recomputes_from_saved_rotmats"]
+    bad = r.clone()
+    bad[0, 2] = 0.7                                                        # non-finite draw with a finite RESID
+    assert not MR.resid_checks(bad, fin, bad.clone(), ["A", "B", "C"])[0]["resid_nan_on_nonfinite_draws"]
+    assert not MR.resid_checks(r, fin, None, ["A", "B", "C"])[0]["resid_recomputes_from_saved_rotmats"]

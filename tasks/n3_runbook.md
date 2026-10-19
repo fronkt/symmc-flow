@@ -128,6 +128,14 @@ source "$N3_BOX_ROOT/.n3_box/env.sh"
 bash scripts/n3_box_setup.sh data
 ```
 
+A3 (protocol section 9) fixes the step-5 settings: FF* `batch`/float32/cuda (`ffstar_config.json`),
+P6 on, iv-P `pack` with 8 crystals per batch, no degrade item, and a 700 GPU-h cap for steps 5-7 on
+Anvil. Before any VALSEL truth, re-run the FD check at the A3 step size. It must pass:
+
+```bash
+"$PY_SYMMC" scripts/n3_classical.py fdcheck --set val --device cuda --ff-settings batch --ff-dtype float64   # h = 1e-5 (default)
+```
+
 First run Gate C, then train. Gate C-a scorer agreement, C-b and C-c must pass. A reproduction-rate
 failure alone requires the protocol's dated diagnosis and later harness wording; it is not permission
 to skip scorer agreement. Use the gate CLI's printed paths and retain its component records:

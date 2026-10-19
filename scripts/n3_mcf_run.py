@@ -690,10 +690,26 @@ def config_checks(cfg, man, S, cache_dir, seed):
     return cc
 
 
+def resid_checks(r, fin, rec, refcodes):
+    """RESID assertions of one run: r [S, n] stored RESID, fin [S, n] finite draws, rec [S, n] RESID recomputed
+    from the saved rotmats (None if absent). A3 item 4: a finite draw whose RESID forward is non-finite is NOT a
+    check failure (a deterministic regeneration would reproduce it). The draw stays valid and the RESID selector
+    ranks it last (n3_score.argmin_pick); it is counted in the run's info."""
+    rf = fin & torch.isfinite(r)
+    rnf = fin & ~torch.isfinite(r)
+    checks = {"resid_nan_on_nonfinite_draws": bool(torch.isnan(r[~fin]).all()),
+              "resid_recomputes_from_saved_rotmats": rec is not None and bool(((rec[rf] - r[rf]).abs() <= 1e-9).all())
+              and not bool(torch.isfinite(rec[rnf]).any())}
+    info = {"resid_nonfinite_on_finite_draws": int(rnf.sum()),
+            "resid_nonfinite_on_finite_refcodes": sorted({refcodes[i] for i in rnf.nonzero()[:, 1].tolist()})}
+    return checks, info
+
+
 def run_check(run_dir):
     """Every §3.2 assertion on (predictions, resid, resolved config) of one run -> <run>/check.json. Non-finite
-    draws (generator errors of the fallback included) are arm failures (§1.3): the clamp and RESID finiteness
-    are asserted on every finite draw, and RESID must be NaN on the others."""
+    draws (generator errors of the fallback included) are arm failures (§1.3): the clamp is asserted on every
+    finite draw, and RESID must be NaN on the others. A non-finite RESID on a finite draw is recorded, not
+    failed (A3 item 4)."""
     from omegaconf import OmegaConf
     import n3_mcf_resid as RS
     man, rp = ML.load_manifest(run_dir)
@@ -760,12 +776,11 @@ def run_check(run_dir):
         r = rs["resid"]
         c["resid_shape"] = tuple(r.shape) == (S, n)
         c["resid_state_finite_equals_predictions"] = "state_finite" in rs and torch.equal(rs["state_finite"], fin)
-        c["resid_finite_on_finite_draws"] = bool(torch.isfinite(r[fin]).all())
-        c["resid_nan_on_nonfinite_draws"] = bool(torch.isnan(r[~fin]).all())
         rec = torch.stack([RS.resid_from_rotmats(rs["pred_rotmats_resid"][s], pred["pred_rotmats"][s], nb[s])
                            for s in range(S)]) if "pred_rotmats_resid" in rs else None
-        c["resid_recomputes_from_saved_rotmats"] = rec is not None and bool(
-            ((rec[fin] - r[fin]).abs() <= 1e-9).all())
+        rc, ri = resid_checks(r, fin, rec, side["refcodes"])
+        c.update(rc)
+        info.update(ri)
         c["resid_matches_predictions"] = rs.get("predictions_sha256") == ML.sha256(rp["pred"])
         info["branch_cut_draws"] = int((rs["branch_cut_edges"] > 0).sum()) if "branch_cut_edges" in rs else None
     c = {k: bool(v) for k, v in c.items()}
@@ -853,7 +868,8 @@ def cmd_to_bundle(args):
             "arm_failures": {"nonfinite_draws": int((~valid).sum()),
                              "crystals_without_valid_draw": [refcode for refcode, v in zip(side["refcodes"], valid)
                                                              if not bool(v.any())],
-                             "generator_error_refcodes": (man.get("fallback") or {}).get("generator_error_refcodes", [])},
+                             "generator_error_refcodes": (man.get("fallback") or {}).get("generator_error_refcodes", []),
+                             "resid_nonfinite_on_finite_draws": chk["info"].get("resid_nonfinite_on_finite_draws", 0)},
             "z_MCF": [it["z_MCF"] for it in side["items"]], "M": Ms,
             "lj_sec": round(time.time() - t0, 1), "versions": ML.lib_versions()}
     if sub is not None:
