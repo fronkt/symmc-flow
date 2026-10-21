@@ -1,0 +1,50 @@
+{
+ "set": "valsel",
+ "n": 400,
+ "anchoring": 0.99,
+ "form": "EXACT",
+ "form_rule": "anchoring on the 400 VALSEL truths >= 0.5 -> EXACT, else BASIN (\u00a73.3)",
+ "anchoring_val_only": 1.0,
+ "labels": {
+  "ANCHORED": 396,
+  "DRIFTED": 0,
+  "UNRESOLVED": 4
+ },
+ "no_minimum": 0,
+ "match_det_fail": 0,
+ "partial": false,
+ "median_drift_deg": 0.47163315701845593,
+ "fftruth": "results/n3/private/draws/fftruth_s-1_valsel.pt",
+ "fftruth_sha256": "095a90eb4685129ebbc25af242255d6becb0e59557377dec27b8d8dee72b2cdc",
+ "match": "results/n3/private/match/fftruth_s-1_valsel__primary.jsonl",
+ "matcher": "primary",
+ "match_step9": false,
+ "ffident": {
+  "settings": "batch",
+  "dtype": "float32",
+  "max_atoms": null,
+  "device": "cuda"
+ },
+ "ff_state": {
+  "activation_checkpointing": true,
+  "backend": "ExecutionBackend",
+  "compile": false,
+  "dtype": "float32",
+  "execution_mode": null,
+  "external_graph_gen": false,
+  "graph_gen": 2,
+  "merge_mole": false,
+  "tf32": false
+ },
+ "fairchem_core": "2.23.0",
+ "det_fail": {
+  "n_ff_fail_start": 0,
+  "n_ff_fail": 0,
+  "n_crystals": 0,
+  "list": []
+ },
+ "source": "results/n3/private/classical/anchor_valsel.json (summary only; rows with refcodes stay private)",
+ "source_sha256": "1b812d06ea6e4380c5a5d49fed1967f3aba550a5675d053531182937e90f0325",
+ "made": "Anvil job 21571226, 2026-10-21",
+ "note": "H2 FORM, published before any arm candidate is FF*-minimised (protocol section 7 step 5, A3)"
+}

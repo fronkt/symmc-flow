@@ -354,3 +354,14 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     any candidate FF* minimisation.
   - I done → review the `select window` output → run seeds 1-2.
   - M done → VALSEL sampling (5b).
+- **2026-10-21 status:**
+  - **T done** (21571226, 9 min). FD at h = 1e-5 on the A100, float64: **PASS**, max relative error 1.29e-6
+    over 10 rows.
+  - VALSEL truths and anchor: **anchoring 0.99** (396 ANCHORED, 0 DRIFTED, 4 UNRESOLVED; VAL-only 1.00;
+    median drift 0.47°), so the **H2 FORM is EXACT**. Published as `results/n3/h2_form_valsel.json` (summary
+    only; private anchor sha256 `1b812d06…`).
+  - **I failed** (21571228) in the prelude, not in iv-P. verify's step-5 path rule (`/match/`, `labels_`)
+    matched T's own VALSEL products. The prelude now excuses only path hits under
+    `results/n3/private/{match,classical}/` that name valsel and no held-out set. Tested on the real root,
+    with a planted `fake_testB` match file as negative control (it still fails). Resubmitted as **21580267**.
+  - **G** (Gate C) is pending, Slurm ETA 10-26; M waits on G.
