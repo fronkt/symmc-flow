@@ -326,3 +326,31 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     unpack overwrites it with the new code.
   - Step 5 splits at the H2 form. 5a: FD h = 1e-5 → Gate C → training → VALSEL truths + anchor. Then pull the
     anchor back and push the H2 form from the laptop. 5b: candidates, VALSEL sampling, scoring, diagnostic (a).
+
+## Step 5a on Anvil (2026-10-20/21)
+
+- **Upload (manual mode):** step-5 tar sha256 OK. On unpack, `verify` FAILED only on the 11 step-4 wandb pointer
+  symlinks under `n3_mcf/_timing/wandb`. They were identical to `pullback_step4anvil.skipped_symlinks.json`,
+  so only the links were deleted (list in `$SCRATCH/n3_ops/removed_wandb_symlinks_step5_2026-10-20.txt`;
+  box-B precedent). After that, verify passed: 209 files, 0 missing, 0 hash mismatches, 0 forbidden.
+- **A3 item 5 in code:** `n3_mcf_run.py train` had no P6 switch. `--p6 on|off` was added, with on as the
+  default; the timing gate's default is unchanged (adfea31). The tar was re-packed (sha256
+  `3a9bcdbf0d992b20...`), the pending jobs were held, the tar was re-uploaded and unpacked, verify passed,
+  and the jobs were released.
+- **Login node, in the image:** Gate C `download` (Zenodo 19673190; md5 OK; best.ckpt sha256 `fd13cbb6...`)
+  and `cb_setup` (3c493f8). The MCF-R/A train preflight passed with P6 on. iv-P, classical and score
+  import OK.
+- **Jobs** (scripts in `results/n3/private/anvil_jobs/anvil_step5*.sh|sbatch` and `step5_{T,G,M,I}.sh`; each
+  re-verifies the manifest first):
+  - 21571226 `n3-s5T`: FD at h = 1e-5. Must pass, else no truths. Then VALSEL truths, match, anchor.
+  - 21571227 `n3-s5G`: Gate C. Exits 0 only if `all_pass`.
+  - 21571228 `n3-s5I`: iv-P seed 0 at three learning rates, then `select window`.
+  - 21571229 `n3-s5M` (afterok G): MCF-R/A × 3 seeds with P6 on, then train_report and fixed_val_loss.
+- Note: the A3 code edits changed `measurement_code_identity`, so `n3_timing_gate.py project` now refuses
+  `rates.json` against HEAD. No re-projection is planned. If one is ever needed, it has to be re-timed or the
+  substitution recorded.
+- **Next:**
+  - T done → pull `anchor_valsel.json` (numeric) → publish the H2 form under `results/n3` and push it before
+    any candidate FF* minimisation.
+  - I done → review the `select window` output → run seeds 1-2.
+  - M done → VALSEL sampling (5b).
