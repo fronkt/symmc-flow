@@ -118,17 +118,21 @@ def shell_line(env_keys, env, cmd):
 
 
 # ============================================================================================ train
-def train_overrides(arm, seed):
+def train_overrides(arm, seed, p6=False):
+    """Protocol training overrides. p6: both P6 keys on (A3 item 5: production trains with P6; the timing gate
+    reads the default and adds the keys itself for its P6-on rows)."""
     ov = []
     if arm == "R":
         ov += ["interpolant.trans.corrupt=False", "interpolant.lattice.corrupt=False",
                "experiment.training.translation_loss_weight=0", "experiment.training.cell_loss_weight=0"]
     ov += [f"experiment.seed={seed}", f"experiment.trainer.max_epochs={TRAIN_EPOCHS}",
            f"experiment.lr_scheduler.patience={TRAIN_PATIENCE}", f"experiment.wandb.name=n3_mcf{arm}_s{seed}"]
+    if p6:
+        ov += ["interpolant.rots.p6_vectorized_prior=true", "model.bb_embedder.p6_scatter_pooling=true"]
     return ov
 
 
-def preflight_train(arm, seed, ov):
+def preflight_train(arm, seed, ov, p6=False):
     """The composed training config holds the protocol values (§3.2 ii-R / ii-A)."""
     import yaml
     c = ML.compose(f"ours_molcrystal_{arm}", ov)
@@ -150,7 +154,8 @@ def preflight_train(arm, seed, ov):
            and list(c.interpolant.lattice.lognormal.scale) == lat["scale"],
            "cache_dir_trainval": os.path.normpath(c.data.cache_dir) == os.path.normpath(
                os.path.join(REPO, "n3_mcf", "trainval")),
-           "p6_off": c.model.bb_embedder.p6_scatter_pooling is False and c.interpolant.rots.p6_vectorized_prior is False}
+           f"p6_{'on' if p6 else 'off'}": c.model.bb_embedder.p6_scatter_pooling is p6
+           and c.interpolant.rots.p6_vectorized_prior is p6}
     if arm == "R":
         chk["R_overrides"] = (c.interpolant.trans.corrupt is False and c.interpolant.lattice.corrupt is False
                               and c.interpolant.rots.corrupt is True and e.training.translation_loss_weight == 0
@@ -165,8 +170,9 @@ def preflight_train(arm, seed, ov):
 def cmd_train(args):
     import n3_mcf_export as X
     ML.setup_mcf(args.shims)
-    ov = train_overrides(args.arm, args.seed)
-    cfg, chk = preflight_train(args.arm, args.seed, ov)
+    p6 = args.p6 == "on"
+    ov = train_overrides(args.arm, args.seed, p6)
+    cfg, chk = preflight_train(args.arm, args.seed, ov, p6)
     for s in ("train", "val"):
         X.load_export(s)                               # asserts pickle SHA-256 == sidecar
         chk[f"{s}_pickle_sha_ok"] = True
@@ -1002,6 +1008,7 @@ def main():
     p = common(sub.add_parser("train"))
     p.add_argument("--arm", choices=["R", "A"], required=True)
     p.add_argument("--seed", type=int, required=True, choices=[0, 1, 2])
+    p.add_argument("--p6", choices=["on", "off"], default="on", help="A3 item 5: production trains with P6 on")
     p.add_argument("--gpu", default=None)
     p.add_argument("--run", action="store_true")
     p.add_argument("--force", action="store_true")
