@@ -365,3 +365,15 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     `results/n3/private/{match,classical}/` that name valsel and no held-out set. Tested on the real root,
     with a planted `fake_testB` match file as negative control (it still fails). Resubmitted as **21580267**.
   - **G** (Gate C) is pending, Slurm ETA 10-26; M waits on G.
+- **2026-10-21 evening: RCAC emergency power shutdown** (rcac.purdue.edu/news/7936, posted 3:15 pm EDT,
+  updated 5:36 pm). Every RCAC system is powered off, Anvil and all storage included. Running jobs are
+  stopped and must be resubmitted. **No return-to-service ETA**; RCAC sends updates by email. RCAC also
+  plans a **MATH datacenter outage Nov 6-9**.
+  - Anvil ssh times out on all three login nodes.
+  - Nothing of ours was running: G 21571227, M 21571229 and I 21580267 were all PENDING.
+  - **On return, check:**
+    1. `squeue` (pending jobs may or may not survive).
+    2. `mybalance`.
+    3. `$SCRATCH/n3_ops` STEP5_* markers.
+    4. `manifest verify --step 5`.
+    Then resubmit what is missing.
