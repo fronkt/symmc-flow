@@ -1419,3 +1419,100 @@ minimised. The step-4 timing gate ran on TRAIN/VAL crystals only; nothing it pro
    21344282 (6.9 GPU-h).
 
 No scientific menu, seed, endpoint, hypothesis, never-reduced item or outcome-to-claim rule is changed.
+
+### A4 - Gate C-a scoring correction, Gate C-b GPU rule, Gate C paths in the step-5 prelude, 2026-11-02
+
+**State when made.** No N3 arm output exists on SEL, TEST-B or DEV-TEST. Step 5a: T done (21571226; FD at
+h = 1e-5 PASS; H2 form EXACT, published 1aff111). Gate C ran once (21571227, 2026-10-22) and its record
+`results/n3/gateC.json` says all_pass false, so no MCF arm has trained: M 21571229 never started and was
+cancelled on 2026-11-02. iv-P (I 21580267) stopped in the prelude before any training. Gate C used MCF's
+released checkpoint and MCF's released TEST / VAL pickles only. Record: `tasks/n3_step4_record_2026-10-11.md`.
+
+1. **Gate C-a was scored against the wrong reading. It is re-scored from the same predictions.**
+   - A2 item 7 defines the two checks. (i) compares MCF's scorer with `n3_score.py --mcf-reading`, which
+     emulates MCF's xyz reading, and reports n3_score's own adapter beside it. (ii) compares the 5-run medians
+     of MCF's scorer, the one behind Fig. 3a, with Fig. 3a, and prints n3_score's medians beside them.
+   - `n3_mcf_gateC.py ca_match` did neither. It ran `gate-ca` only in n3_score's own reading, then gated both
+     (i) and (ii) on that run. The protocol text and the code entered in the same commit (74f1921,
+     2026-09-28). The code never followed the text.
+   - 5-run medians of any-of-10 (%), from the same predictions files:
+
+     | split | reading | stol 0.8 | stol 0.9 (Fig. 3a ≈30) | stol 1.0 (Fig. 3a ≈66) |
+     |---|---|---|---|---|
+     | TEST (n = 750) | MCF's scorer (gated) | 5.73 | 29.73 | 66.53 |
+     | TEST | n3_score --mcf-reading | 5.73 | 29.73 | 66.53 |
+     | TEST | n3_score own reading | 6.93 | 32.93 | 72.80 |
+     | VAL (n = 738) | MCF's scorer (gated) | 6.91 | 30.22 | 65.85 |
+     | VAL | n3_score --mcf-reading | 6.91 | 30.22 | 65.85 |
+     | VAL | n3_score own reading | 6.78 | 36.72 | 71.68 |
+
+   - **(ii) passes on both splits under item 7: TEST −0.27 / +0.53 pp, VAL +0.22 / −0.15 pp.**
+   - **(i) passes on both splits under item 7.** The --mcf-reading run agrees with MCF's scorer on every
+     outcome: TEST 11,250 / 11,250 and VAL 11,070 / 11,070 (crystal, stol) outcomes, 100.00 %. Per draw it
+     agrees on 112,500 / 112,500 and 110,700 / 110,700.
+     - The own-reading agreement, reported beside it, is 89.35 % (10,052 / 11,250) and 89.51 %
+       (9,909 / 11,070). Source: the 2026-10-22 box records `gateCa_{test,val}.json`.
+     - The --mcf-reading numbers were computed on the laptop on 2026-11-02, from the box's predictions files
+       (SHA-256 checked) and MCF's CSVs. The box re-score below must reproduce them.
+   - **Correction:**
+     - `ca_match` now runs gate-ca in both readings and gates (i) on the --mcf-reading run and (ii) on MCF's
+       scorer medians.
+     - `n3_score.py gate-ca` writes MCF's scorer per-run and median any-of-10 into its summary (`mcf_scorer`).
+     - Code: the commit that adds this amendment (`scripts/n3_score.py`, `scripts/n3_mcf_gateC.py`,
+       `tests/test_n3_gateC_envelope.py`).
+     - Gate C-a is re-scored on Anvil from the existing predictions files. Nothing is re-sampled. The job is
+       CPU-only (`anvil_step5_cpu.sbatch step5_GCa.sh`, CPU debug partition) and goes through the same
+       prelude and manifest verify. The prelude now skips its GPU probe on a node without `nvidia-smi`.
+     - The 2026-10-22 record is kept beside the corrected one as `results/n3/gateC_2026-10-22.json`.
+   - **Observation, not a claim** (item 7, last bullet). On these predictions, n3_score's own reading matches
+     more often than MCF's scorer: +6.3 pp on TEST and +5.8 pp on VAL at stol 1.0.
+     - Every own-reading disagreement disappears in --mcf-reading mode. Under item 7 they are therefore
+       attributed to MCF's reader, which rebuilds the lattice from its six parameters around Cartesian
+       coordinates kept in the original frame. n3_score is not changed for them.
+     - Whether MCF's published numbers are affected is NOT claimed.
+   - Because (ii) passes under item 7, the H1 harness clause ("On failure of (ii) only") is not triggered.
+
+2. **Gate C-b, GPU half: the rule is replaced by a noise envelope fixed before the run (Frank chose option (b),
+   2026-11-02).**
+   - CPU half: 36/36 tensors bitwise equal, PASS. The patch does not change the computation on CPU.
+   - GPU half, 2026-10-22:
+     - The 12 corrupt_batch tensors are bitwise equal in all three runs.
+     - On the other 24, patched-vs-unpatched exceeded unpatched-vs-unpatched 10 times. Most margins are tiny,
+       e.g. b0 cart_coords 0.2332 vs 0.2323 and b2 lattices 0.25218 vs 0.25214. The larger ones are b0
+       pred_trans 0.0168 vs 0.0103, b1 lattices 0.142 vs 0.120 and b2 pred_rotmats 0.984 vs 0.950.
+   - **Why the rule goes.** Both sides of each comparison are single draws of GPU nondeterminism over a 50-step
+     sampler. If the patch changes nothing, each noisy tensor fails with probability about 1/2, so the 24
+     together very likely include a failure. The 10 of 24 observed is consistent with that (about 12 expected).
+     - On synthetic GPU-like noise (`tests/test_n3_gateC_envelope.py`), the old rule fails a patch that
+       changes nothing in more than 90% of trials.
+     - The first wording of option (b) compared one patched draw with the largest of K = 5 noise draws. Each
+       noisy tensor would then fail with probability about 1/6, so across 24 tensors that wording would still
+       fail most of the time. It is not used.
+   - **New rule (`n3_mcf_gateC.py cb --device cuda`, `cb_envelope`):**
+     - Same calls, seeds and batches as before. One patched run and 19 unpatched runs, each in its own process.
+     - For each tensor, a run's distance is the median of its max abs differences to the other 19 runs,
+       divided by the median over all 190 pairs. A distance of 0 stays 0. A nonzero distance where every pair
+       is 0 counts as infinite, so any change to a bitwise-deterministic tensor fails.
+     - A run's statistic is its largest scaled distance over the 36 tensors.
+     - **C-b cuda fails only if the patched run's statistic is the strict maximum of the 20.** If the patch
+       changes nothing, the 20 runs are exchangeable, so a false failure has probability at most 1/20 = 5%.
+     - A missing tensor or a shape change in the patched run fails.
+   - Sensitivity: the GPU half flags only changes larger than the noisiest unpatched run. On the heavy-tailed
+     synthetic noise, a change in one tensor of about 35× the median pair noise is caught 97% of the time, and
+     one of about 18× is caught 83% of the time. The exact check is the CPU half (bitwise).
+   - Run once to completion. It is resumable, and finished runs are kept in `n3_mcf/_gateC/cb/cuda_A4/`. A
+     finished result is never re-run. Cost: 20 runs × ~1.8 min ≈ 37 GPU-min.
+   - Every run file's SHA-256, both statistics and the per-tensor detail are recorded. The 2026-10-22
+     one-vs-one numbers are reported beside them.
+
+3. **Gate C paths in the step-5 prelude.**
+   - verify's `/test/` path rule matches Gate C's own run dirs, because they hold MCF's RELEASED TEST split.
+     iv-P (21580267) failed on them while Gate C ran. The prelude now excuses only path hits under
+     `n3_mcf/_gateC/ca/{test,val}/r0-r4/` and `n3_mcf/_gateC/cc/test/`.
+   - It does so only while both gate-ca records name the released pickles: TEST sha256 `24387808…222f8b`,
+     VAL-as-test `63835200…342bed`.
+   - Hash hits, content hits and every other path still fail.
+   - Overlap of the released pickles with the blinded sets, by gateca_guard's fingerprint on the laptop
+     (2026-11-02), against a 50 % refusal threshold: TEST 750 → TEST-B 7, DEV-TEST 3, SEL 2; VAL 738 → 7, 1, 1.
+
+No scientific menu, seed, endpoint, hypothesis, never-reduced item or outcome-to-claim rule is changed.

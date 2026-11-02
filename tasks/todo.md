@@ -1,3 +1,32 @@
+# N3 Gate C fix — 2026-11-02 (Frank: "yes, start on those")
+
+Gate C (21571227, 10-22) failed C-a (i), C-a (ii) and C-b cuda. iv-P (21580267) stopped in the prelude, and M
+(21571229) could never start.
+
+- [x] Cancel M 21571229.
+- [x] Diagnose C-a. `ca_match` gated (i) and (ii) on n3_score's own reading, against A2 item 7.
+- [x] Re-score locally from the box predictions (SHA-checked):
+  - --mcf-reading vs MCF's scorer is 100.00% on TEST and VAL, so (i) passes;
+  - MCF-scorer medians are TEST 29.73 / 66.53 and VAL 30.22 / 65.85, so (ii) passes.
+- [x] `n3_score.py gate-ca` writes the `mcf_scorer` block. `n3_mcf_gateC.py ca_match` runs both readings.
+  Re-summarised and the record keys checked.
+- [x] Prelude: Gate C run dirs are excused only with the released pickle SHAs, and the overlap is ≤ 1%. A CPU
+  sbatch and `step5_GCa.sh` are written (private anvil_jobs).
+- [x] Draft A4 in `tasks/n3_amendment_A4_DRAFT.md`. Only the commit hash is left.
+- [x] Frank OK'd A4 and chose C-b option (b) (2026-11-02).
+- [x] Option (b) as first worded (max of 5 noise draws) would still fail a perfect patch most of the time.
+  Replaced by `cb_envelope`: 1 patched + 19 unpatched runs, failing only if the patched run is the strict max
+  (≤ 5% false failure). `tests/test_n3_gateC_envelope.py` has 7 tests passing, and the full N3 suite passes.
+  `step5_GCb.sh` is written.
+- [x] Frank OK'd the corrected (b) wording and re-queuing M behind C-b (2026-11-02). A4 is appended to protocol §9.
+- [ ] Commit and push the code with A4 → re-pack the step-5 tar → upload (Frank in manual mode) → copy the
+  ops files to `$SCRATCH/n3_ops`.
+- [ ] Box re-score: `sbatch -J n3-gateCa -t 01:30:00 anvil_step5_cpu.sbatch step5_GCa.sh`. It must reproduce
+  the laptop numbers.
+- [ ] Run C-b per Frank's option, then resubmit iv-P. Anvil is down for MAINT on all nodes 11-16 → 11-23.
+
+---
+
 # ACS Omega continuation — 2026-10-11
 
 Decision on record: ao-2026-09173w rejected 2026-09-24, resubmission permitted through 2027-01-22.

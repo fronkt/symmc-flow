@@ -9,9 +9,11 @@ training (tasks/n3_protocol.md §3.2 "Gate C"). Released checkpoint and data are
              num_atom_types 7, molcrystal_lattice prior), released best.ckpt; 50 steps, s_uF 9, s_uR 3, 5 runs x
              10 samples (inference.seed 0-4) on the released TEST pickle and on VAL-as-test; one visible GPU.
   ca_match   MCF's own scorer once per stol (run_structure_matching.py --num_samples 10 --stol {0.8|0.9|1.0}
-             --ltol 0.3 --angle_tol 10) on every run, then n3_score.py gate-ca (same predictions files, MCF's
-             settings) per label -> agreement (i) >= 99% of (crystal, stol) outcomes and 5-run medians vs Fig. 3a
-             (ii: stol 0.9 / 1.0 within +-5 pp of 30% / 66%; stol 0.8 reported). If only VAL agrees, C-a passes
+             --ltol 0.3 --angle_tol 10) on every run, then n3_score.py gate-ca per label twice (same predictions
+             files, MCF's settings): --mcf-reading (label <lab>_mcfread) and n3_score's own reading. (i) = MCF's
+             scorer vs the --mcf-reading run, >= 99% of (crystal, stol) outcomes (own-reading agreement reported
+             beside); (ii) = the 5-run medians of MCF's scorer at stol 0.9 / 1.0 within +-5 pp of 30% / 66%
+             (stol 0.8 reported; n3_score's medians printed beside) -- A2 item 7. If only VAL agrees, C-a passes
              and this is disclosed.
   cb_setup   an unpatched checkout at 3c493f8 (n3_mcf/_gateC/mcf_unpatched; clean, HEAD asserted).
   cb         C-b: FlowModule(cfg) built in the patched and in the unpatched tree (separate processes: the two trees
@@ -19,8 +21,10 @@ training (tasks/n3_protocol.md §3.2 "Gate C"). Released checkpoint and data are
              config (the released config.yaml); per released TEST batch (the unshuffled loader at --batch_size,
              default 250: the 750 released TEST structures in exactly 3 batches -- the released batch_size.test
              of 512 gives only 2) random/numpy/torch seeded identically before each call: FlowModule.forward (the
-             sampler) and one corrupt_batch + model_step. CPU: every tensor bitwise equal. --device cuda: the
-             patched-vs-unpatched max difference is no larger than unpatched-vs-unpatched at the same seed.
+             sampler) and one corrupt_batch + model_step. CPU: every tensor bitwise equal. --device cuda (A4
+             item 2, option b): the patched run and 19 unpatched runs at the same seeds; the patched run must not
+             be the strict maximum of the noise-envelope statistic (cb_envelope; <= 5% false failure when the patch
+             changes nothing). Resumable: finished runs in n3_mcf/_gateC/cb/cuda_A4/ are kept.
              C-b passes only when BOTH the cpu and the cuda halves have run and passed.
   cc_infer   C-c sampling: released checkpoint, stock config, P3 ON (++inference.gt_lattice_trans=true), 16 samples,
              released TEST pickle.
@@ -186,20 +190,32 @@ def cmd_ca_match(args):
                                    stderr=subprocess.STDOUT)
                 if r.returncode:
                     raise SystemExit(f"run_structure_matching failed: {d} stol {stol}")
-        cmd = [sys.executable, os.path.join(REPO, "scripts", "n3_score.py"), "gate-ca", "--label", lab,
-               "--pickle", os.path.join(cache, "test_molcrystal_normalized.pkl.gz"),
-               "--predictions", *[os.path.join(d, "predictions_10.pt") for d in runs],
-               "--mcf-results", *runs, "--workers", str(args.num_cpus)]
-        print(" ".join(["python"] + cmd[1:]))
-        r = subprocess.run(cmd, cwd=REPO)
-        if r.returncode:
-            raise SystemExit(f"n3_score.py gate-ca failed for {lab}")
-        s = json.load(open(os.path.join(ML.nc.PRIVATE, f"gateCa_{lab}.json")))
-        recs[lab] = {"n": s["n"], "median_any_pct": s["median_any_pct"], "per_run_any_pct":
-                     {m: [e["any_pct"][m] for e in s["runs"]] for m in s["median_any_pct"]},
-                     "fig3a_ref_pct": s["fig3a_ref_pct"], "ii_within_5pp": s["ii_within_5pp"], "ii_pass": s["ii_pass"],
-                     "agreement": None if s["agreement"] is None else
-                     {k: s["agreement"][k] for k in ("outcomes", "agree", "fraction")}, "i_pass": s.get("i_pass")}
+        # A2 item 7 (§9): (i) compares MCF's scorer with n3_score --mcf-reading, which emulates MCF's xyz reading;
+        # n3_score's own reading is run and reported beside it. (ii) compares the 5-run medians of MCF's scorer
+        # (the one behind Fig. 3a) with Fig. 3a; n3_score's medians are printed beside them. Until A4 this
+        # function gated both (i) and (ii) on n3_score's own reading (job 21571227).
+        summ = {}
+        for mode, label in (("own", lab), ("mcf_reading", f"{lab}_mcfread")):
+            cmd = [sys.executable, os.path.join(REPO, "scripts", "n3_score.py"), "gate-ca", "--label", label,
+                   "--pickle", os.path.join(cache, "test_molcrystal_normalized.pkl.gz"),
+                   "--predictions", *[os.path.join(d, "predictions_10.pt") for d in runs],
+                   "--mcf-results", *runs, "--workers", str(args.num_cpus)]
+            cmd += ["--mcf-reading"] if mode == "mcf_reading" else []
+            print(" ".join(["python"] + cmd[1:]))
+            r = subprocess.run(cmd, cwd=REPO)
+            if r.returncode:
+                raise SystemExit(f"n3_score.py gate-ca failed for {label}")
+            summ[mode] = json.load(open(os.path.join(ML.nc.PRIVATE, f"gateCa_{label}.json")))
+        own, mr = summ["own"], summ["mcf_reading"]
+        mcf = mr["mcf_scorer"]
+        agree = lambda s: {k: s["agreement"][k] for k in ("outcomes", "agree", "fraction")}  # noqa: E731
+        recs[lab] = {"n": mr["n"], "mcf_scorer_median_any_pct": mcf["median_any_pct"],
+                     "mcf_scorer_per_run_any_pct": mcf["per_run_any_pct"],
+                     "n3_mcf_reading_median_any_pct": mr["median_any_pct"],
+                     "n3_own_reading_median_any_pct": own["median_any_pct"],
+                     "fig3a_ref_pct": mcf["fig3a_ref_pct"], "ii_within_5pp": mcf["ii_within_5pp"],
+                     "ii_pass": mcf["ii_pass"], "agreement": agree(mr), "i_pass": mr["i_pass"],
+                     "agreement_own_reading": agree(own)}
     i_pass = all(v["i_pass"] for v in recs.values())
     ii_test, ii_val = recs["test"]["ii_pass"], recs["val"]["ii_pass"]
     rec = {"labels": recs, "i_pass": i_pass, "ii_pass_test": ii_test, "ii_pass_val": ii_val,
@@ -214,8 +230,40 @@ def cmd_ca_match(args):
 
 # ============================================================================================ C-b
 def cb_pass(cb):
-    """C-b passes only when both halves (CPU bitwise; GPU no worse than unpatched-vs-unpatched) ran and passed."""
+    """C-b passes only when both halves (CPU bitwise; GPU within the noise envelope, A4 item 2) ran and passed."""
     return all(isinstance(cb.get(d), dict) and cb[d].get("pass") is True for d in ("cpu", "cuda"))
+
+
+def cb_dmax(a, b):
+    """Max abs difference of two output tensors; inf when one is missing or the shapes differ."""
+    if a is None or b is None or a.shape != b.shape:
+        return float("inf")
+    return float((a.double() - b.double()).abs().max()) if a.numel() else 0.0
+
+
+def cb_envelope(runs, keys):
+    """A4 item 2, option (b). runs[0] is the patched GPU execution, runs[1:] are unpatched ones, all at the same seeds.
+    If the patch changes nothing, the runs are exchangeable. Per tensor, a run's distance is the median of its max
+    abs differences to every other run, scaled by the median over all pairs (0 stays 0; a nonzero distance where
+    every pair is 0 is inf). A run's statistic is the largest scaled distance over tensors. C-b cuda fails only if
+    the patched run's statistic is the strict maximum: probability <= 1/len(runs) when the patch changes nothing."""
+    n = len(runs)
+    T = np.zeros(n)
+    per_key = {}
+    for k in keys:
+        D = np.zeros((n, n))
+        for i in range(n):
+            for j in range(i + 1, n):
+                D[i, j] = D[j, i] = cb_dmax(runs[i].get(k), runs[j].get(k))
+        if not np.isfinite(D[1:, 1:]).all():
+            raise SystemExit(f"C-b {k}: the unpatched runs differ in presence or shape")
+        pairs = float(np.median(D[np.triu_indices(n, 1)]))
+        dist = [float(np.median(np.delete(D[i], i))) for i in range(n)]
+        ratio = np.array([0.0 if d == 0 else (d / pairs if pairs > 0 else float("inf")) for d in dist])
+        T = np.maximum(T, ratio)
+        per_key[k] = {"pair_median": pairs, "patched_dist": dist[0], "patched_scaled": float(ratio[0]),
+                      "max_unpatched_scaled": float(ratio[1:].max())}
+    return T, per_key
 
 
 def cmd_cb_setup(args):
@@ -289,7 +337,8 @@ def cb_worker(args):
         for key in ("rotmats_t", "trans_t", "lattice_t", "so3_t"):
             out[f"b{k}/corrupt/{key}"] = noisy[key].detach().cpu()
     torch.save({"tensors": out, "tree": tree, "molcrystalflow": molcrystalflow.__file__, "batches": n_batches,
-                "crystals": n_crystals, "dataset": len(ds)}, args.out)
+                "crystals": n_crystals, "dataset": len(ds)}, args.out + ".tmp")
+    os.replace(args.out + ".tmp", args.out)              # a killed worker never leaves a readable partial file
 
 
 def cmd_cb(args):
@@ -299,19 +348,29 @@ def cmd_cb(args):
     config = args.config or os.path.join(os.path.dirname(CKPT), "config.yaml")
     pickle_ = args.pickle or os.path.join(NORM, "test_molcrystal_normalized.pkl.gz")
     unpatched = args.unpatched or UNPATCHED
+    out_dir = tmp if args.device == "cpu" else os.path.join(tmp, "cuda_A4")   # A4: fresh dir for the GPU envelope
+    os.makedirs(out_dir, exist_ok=True)
+    files = {}
 
     def run(tree, tag):
-        o = os.path.join(tmp, f"{tag}_{args.device}.pt")
-        cmd = [sys.executable, os.path.abspath(__file__), "_cb_worker", "--tree", tree, "--state", state,
-               "--config", config, "--pickle", pickle_, "--out", o, "--device", args.device, "--batches",
-               str(args.batches), "--batch_size", str(args.batch_size), "--threads", str(args.threads),
-               "--steps", str(args.steps)] + (["--shims"] if args.shims else [])
-        env = dict(os.environ)
-        env.pop("PYTHONPATH", None)
-        r = subprocess.run(cmd, env=env)
-        if r.returncode:
-            raise SystemExit(f"C-b worker failed in {tree}")
-        w = torch.load(o, weights_only=False)
+        o = os.path.join(out_dir, f"{tag}_{args.device}.pt")
+        w = None
+        if args.device != "cpu" and os.path.exists(o):     # GPU half is resumable across job slots: keep finished runs
+            w = torch.load(o, weights_only=False)
+            if w.get("tree") != os.path.abspath(tree):
+                raise SystemExit(f"{o} was written from another tree: delete it first")
+        if w is None:
+            cmd = [sys.executable, os.path.abspath(__file__), "_cb_worker", "--tree", tree, "--state", state,
+                   "--config", config, "--pickle", pickle_, "--out", o, "--device", args.device, "--batches",
+                   str(args.batches), "--batch_size", str(args.batch_size), "--threads", str(args.threads),
+                   "--steps", str(args.steps)] + (["--shims"] if args.shims else [])
+            env = dict(os.environ)
+            env.pop("PYTHONPATH", None)
+            r = subprocess.run(cmd, env=env)
+            if r.returncode:
+                raise SystemExit(f"C-b worker failed in {tree}")
+            w = torch.load(o, weights_only=False)
+        files[tag] = ML.sha256(o)
         cover.append({k: w.get(k) for k in ("batches", "crystals", "dataset")})
         return w["tensors"]
     cover = []
@@ -328,18 +387,20 @@ def cmd_cb(args):
         rec["differing"] = [k for k, v in same.items() if not v]
         rec["pass"] = all(same.values()) and len(keys) > 0 and rec["all_batches_run"]
     else:
-        U2 = run(unpatched, "unpatched2")
+        # A4 item 2, option (b): the patched run and --noise_runs unpatched runs, scored by cb_envelope. The rule of
+        # 2026-10-22 (one patched-vs-unpatched draw <= one unpatched-vs-unpatched draw, per tensor) is reported only.
+        Us = [U] + [run(unpatched, f"unpatched{i}") for i in range(2, args.noise_runs + 1)]
         rec["all_batches_run"] = all(c["batches"] == args.batches for c in cover)
-
-        def dmax(a, b):
-            if a is None or b is None or a.shape != b.shape:
-                return float("inf")
-            return float((a.double() - b.double()).abs().max()) if a.numel() else 0.0
-        cmp_ = {k: {"patched_vs_unpatched": dmax(P.get(k), U.get(k)), "unpatched_vs_unpatched": dmax(U2.get(k), U.get(k))}
-                for k in sorted(set(keys) | set(U2))}
-        rec["max_diffs"] = cmp_
-        rec["pass"] = (all(v["patched_vs_unpatched"] <= v["unpatched_vs_unpatched"] < float("inf") for v in cmp_.values())
-                       and len(keys) > 0 and rec["all_batches_run"])
+        keys = sorted(set(P).union(*Us))
+        rec["tensors"] = len(keys)
+        rec["max_diffs"] = {k: {"patched_vs_unpatched": cb_dmax(P.get(k), U.get(k)),
+                                "unpatched_vs_unpatched": cb_dmax(Us[1].get(k), U.get(k))} for k in keys}
+        T, per_key = cb_envelope([P] + Us, keys)
+        rec.update({"rule": "A4 item 2 (b): fails only if the patched run's statistic is the strict maximum",
+                    "runs": 1 + len(Us), "false_fail_bound": round(1 / (1 + len(Us)), 6), "run_files_sha256": files,
+                    "stat_patched": float(T[0]), "stat_unpatched": [float(t) for t in T[1:]],
+                    "per_tensor": per_key})
+        rec["pass"] = bool(T[0] <= T[1:].max()) and len(keys) > 0 and rec["all_batches_run"]
     reportable = not args.shims and state == CKPT
     if reportable:
         g = json.load(open(GATE_JSON)) if os.path.exists(GATE_JSON) else {}
@@ -409,6 +470,8 @@ def main():
     p.add_argument("--config", default=None, help="default: the released config.yaml")
     p.add_argument("--pickle", default=None, help="default: the released TEST pickle")
     p.add_argument("--unpatched", default=None)
+    p.add_argument("--noise_runs", type=int, default=19,
+                   help="cuda: unpatched GPU runs beside the patched one (A4 item 2: 19, false-failure rate <= 5%%)")
     p.add_argument("--shims", action="store_true")
     p = sub.add_parser("_cb_worker")
     for k in ("--tree", "--state", "--config", "--pickle", "--out", "--device"):

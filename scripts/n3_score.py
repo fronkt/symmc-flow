@@ -44,7 +44,8 @@ gate-ca   §3.2 Gate C-a (i)/(ii): any-of-10 of released-checkpoint predictions_
           pickle's ground truth (gt_coords, lattice_1, atom_types: what MCF's scorer reads) at MCF's settings,
           stol 0.8 / 0.9 / 1.0 (mcf08 / mcf09 / mcf10), through the same harness; per-(run, crystal, stol)
           outcomes, 5-run medians vs Fig. 3a, and, given MCF's run_structure_matching.py output dirs, the
-          scorer agreement with every (crystal, stol) and per-draw disagreement listed. --mcf-reading
+          scorer agreement with every (crystal, stol) and per-draw disagreement listed, plus MCF's scorer per-run
+          and median any-of-10 (`mcf_scorer`: C-a (ii) is judged on these, A2 item 7). --mcf-reading
           (diagnostic, own --label) scores MCF's xyz reading instead: 6-dp round trip and the lattice rebuilt
           from its six parameters around unchanged Cartesian coordinates, which is NOT the same crystal when
           the cell is not in pymatgen's parameter orientation (68/100 VAL, 115/200 DEV-TEST exported cells);
@@ -2078,12 +2079,14 @@ def cmd_gate_ca(args):
             raise SystemExit("--mcf-results needs one MCF output dir per --predictions file, same order")
         tot = agree = 0
         dis, per_draw = [], {"total": 0, "agree": 0}
+        mcf_any = {m: [] for m in matchers}
         for r, d in enumerate(args.mcf_results):
             S = runs[r][2]
             for m in matchers:
                 mcf, src = _mcf_csv(rel(d), S, GATECA_STOL[m])
                 if len(mcf) != len(truths):
                     raise SystemExit(f"{src}: {len(mcf)} rows, predictions {len(truths)} crystals")
+                mcf_any[m].append(round(100.0 * sum(any(mcf[i]) for i in range(n)) / n, 3))
                 rows = {(x["i"], x["s"]): x["ok"] for x in
                         H.read_jsonl(os.path.join(GATECA_DIR, f"{args.label}_r{r}__{m}.jsonl"))}
                 for i in range(n):
@@ -2104,6 +2107,12 @@ def cmd_gate_ca(args):
         summ["agreement"] = {"outcomes": tot, "agree": agree, "fraction": round(agree / tot, 6),
                              "per_draw": per_draw, "disagreements": dis}
         summ["i_pass"] = agree / tot >= 0.99
+        # A2 item 7: (ii) is judged on MCF's scorer (the one behind Fig. 3a); n3_score's medians are reported beside
+        med = {m: statistics.median(v) for m, v in mcf_any.items()}
+        within = {m: abs(med[m] - FIG3A_PCT[m]) <= 5.0 for m in gated}
+        summ["mcf_scorer"] = {"per_run_any_pct": mcf_any, "median_any_pct": med, "fig3a_ref_pct": FIG3A_PCT,
+                              "ii_within_5pp": within,
+                              "ii_pass": bool(gated) and all(within.values()) and len(runs) == 5}
     out = os.path.join(C.PRIVATE, f"gateCa_{args.label}.json")
     json.dump(summ, open(out, "w"), indent=1)
     for m in matchers:
@@ -2111,10 +2120,16 @@ def cmd_gate_ca(args):
               f"{[e['any_pct'][m] for e in summ['runs']]}  median {summ['median_any_pct'][m]:.2f}%"
               + (f"  (Fig. 3a {FIG3A_PCT[m]:.0f}%)" if m in FIG3A_PCT else ""))
     if summ["agreement"]:
-        a = summ["agreement"]
+        a, ms = summ["agreement"], summ["mcf_scorer"]
         print(f"  agreement with MCF's scorer: {a['agree']}/{a['outcomes']} (crystal, stol) outcomes "
-              f"= {100 * a['fraction']:.2f}%  -> (i) {'PASS' if summ['i_pass'] else 'FAIL'}")
-    print(f"  (ii) {'PASS' if summ['ii_pass'] else 'not met'}" + ("" if len(runs) == 5 else f" (needs 5 runs; {len(runs)} given)")
+              f"= {100 * a['fraction']:.2f}%  -> (i) {'PASS' if summ['i_pass'] else 'FAIL'}"
+              + ("" if args.mcf_reading else "  [own reading: reported beside; (i) is the --mcf-reading run]"))
+        for m in matchers:
+            print(f"  MCF's scorer {m}: any-of-{args.num_samples} per run {ms['per_run_any_pct'][m]}  "
+                  f"median {ms['median_any_pct'][m]:.2f}%" + (f"  (Fig. 3a {FIG3A_PCT[m]:.0f}%)" if m in FIG3A_PCT else ""))
+        print(f"  (ii) on MCF's scorer: {'PASS' if ms['ii_pass'] else 'not met'}")
+    print(f"  n3_score medians within 5 pp of Fig. 3a: {'yes' if summ['ii_pass'] else 'no'} (reported beside; "
+          f"(ii) is judged on MCF's scorer, A2 item 7)" + ("" if len(runs) == 5 else f" (needs 5 runs; {len(runs)} given)")
           + ("" if summ["complete"] else f"  [--limit {n}: not a gate result]"), "->", out)
 
 
