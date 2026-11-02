@@ -377,3 +377,33 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     3. `$SCRATCH/n3_ops` STEP5_* markers.
     4. `manifest verify --step 5`.
     Then resubmit what is missing.
+
+## Gate C failure and the A4 fix (2026-10-22 to 11-02)
+
+- **What happened after the outage (seen 11-02):**
+  - G 21571227 ran 10-22 and recorded all_pass false: C-a (i) 89.35 / 89.51 %, C-a (ii) +6-7 pp at stol 1.0,
+    C-b cpu PASS 36/36, C-b cuda 10/36 over, C-c PASS.
+  - I 21580267 failed in the prelude: verify's `/test/` path rule matched Gate C's own run dirs.
+  - M 21571229 sat in DependencyNeverSatisfied and was cancelled on 11-02.
+- **Diagnosis and fix: amendment A4, pushed b50fb74, Frank OK 11-02.**
+  - C-a was gated on n3_score's own reading, against A2 item 7. Re-scored on the laptop from the box
+    predictions: (i) 100.00 %, (ii) pass on MCF's scorer (TEST 29.73 / 66.53, VAL 30.22 / 65.85).
+  - C-b cuda moves to a 1 + 19-run noise envelope with at most 5 % false failure. 7 new tests; the N3 suite
+    passes.
+  - Gate C run dirs are excused in the prelude, with a pickle-SHA check.
+- **Deploy, Frank in manual mode:**
+  - Step-5 re-pack: deployable, 209 files, 0 refcode hits, sha256 `d48ae627...c465b`. The archive is at
+    `results/n3/private/uploads/step5_A4/`; the 10-20 archive is kept in `uploads/step5/`.
+  - Uploaded, sha OK. Unpack must run inside the image: the login node's python3 is 3.6, and argparse
+    fails there with nothing changed.
+  - Unpack then verify: 209 files, missing 0, hash mismatch 0. The only path hits are the 98 Gate C-a
+    run-dir files.
+  - New prelude (old one kept as `anvil_step5_prelude.sh.pre-A4`). A dry run on the login node inside the
+    image excused exactly those hits and ended PRELUDE_OK.
+- **Jobs (11-02, 16:4x EST):**
+  - 21898966 `n3-gateCa`: CPU debug, `anvil_step5_cpu.sbatch step5_GCa.sh`. Keeps `gateC_2026-10-22.json`,
+    then runs ca_match in both readings. It must reproduce the laptop numbers.
+  - 21898967 `n3-gateCb`: gpu, afterok GCa, `step5_GCb.sh`. The C-b cuda envelope; exits 0 only if all_pass.
+  - 21898968 `n3-s5I`: gpu, iv-P seed 0 at three learning rates, then `select window`.
+  - 21898969 `n3-s5M`: gpu, afterok GCb. MCF-R/A × 3 seeds.
+  - Anvil has a MAINT reservation on all nodes, 11-16 04:00 to 11-23 04:00 (`Nov16Flush`).
