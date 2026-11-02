@@ -407,3 +407,11 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - 21898968 `n3-s5I`: gpu, iv-P seed 0 at three learning rates, then `select window`.
   - 21898969 `n3-s5M`: gpu, afterok GCb. MCF-R/A × 3 seeds.
   - Anvil has a MAINT reservation on all nodes, 11-16 04:00 to 11-23 04:00 (`Nov16Flush`).
+- **21898966 `n3-gateCa` COMPLETED** 11-02, 16:59 to 17:06 EST, 6 min.
+  - **C-a PASS** (`i_pass` true, `ii_pass_test` true, `ii_pass_val` true); all_pass stays false until C-b
+    cuda runs.
+  - The box reproduces the laptop numbers exactly. --mcf-reading agreement is 11,250 / 11,250 and
+    11,070 / 11,070. MCF-scorer medians are TEST 5.73 / 29.73 / 66.53 and VAL 6.91 / 30.22 / 65.85.
+    Own-reading agreement (89.35 / 89.51 %) is reported beside.
+  - The 10-22 record is kept as `results/n3/gateC_2026-10-22.json`.
+  - Queue at 17:10: GCb Priority, I estimated 11-07 22:25, M on its Dependency.
