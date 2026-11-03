@@ -415,3 +415,24 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     Own-reading agreement (89.35 / 89.51 %) is reported beside.
   - The 10-22 record is kept as `results/n3/gateC_2026-10-22.json`.
   - Queue at 17:10: GCb Priority, I estimated 11-07 22:25, M on its Dependency.
+- **21898968 `n3-s5I` COMPLETED** 11-03, 17:51 to 18:16 EST, 25 min on g001 (it waited about 25 h). Prelude
+  verify excused only the 98 Gate C-a hits. STEP5_I_DONE.
+  - lr 1e-4 and 3e-4: flat for all 60 epochs at the predict-zero floor, train about 5.27 and fixed-draw val
+    about 5.33. A zero velocity scores pi^2/3 + 2 = 5.29 in expectation against Haar starts; this repeats
+    the old head's floor in `scripts/diag_orient_conditioning.py`.
+  - lr 1e-3: diverged in epoch 1. Val is NaN from epoch 1, and every batch is skipped from epoch 3 on.
+  - `select window` (`results/n3/private/old/selection_window.json` on the box): window 30 (no seed-0 run
+    improving), **lr = 1e-4**. Min val in window: 5.33186 (1e-4), 5.33210 (3e-4), NaN (1e-3).
+  - Code note, no effect on this result: `window_and_lr` (`scripts/n3_old_symmc.py:580`) takes a `min`
+    whose key can hold NaN. NaN compares False both ways, so the NaN lr can win only if it comes first in
+    LRS; 1e-3 comes last.
+- **21924846 `n3-s5I2` submitted** 11-03 ~18:25 EST: gpu, 1 h, `anvil_step5.sbatch step5_I2.sh` (inner
+  sha256 `01eecc1a...f572f`).
+  - Guard: refuses unless selection_window.json names lr 0.0001.
+  - Trains iv-P seeds 1-2 at lr 1e-4 (pack, cuda) and keeps the seed-0 selection as
+    `n3_ops/selection_window_seed0_21898968.json`.
+  - Then re-runs `select window` over the five runs (output in `n3_ops/step5_ivp_window2_<id>.txt`), and
+    touches STEP5_I2_DONE.
+  - Dry run inside the image on the login node: the prelude excused the same 98 hits, and the guard read
+    lr 0.0001.
+  - Queue at submit: GCb estimated 11-03 19:25 EST; I2 had no estimate yet.
