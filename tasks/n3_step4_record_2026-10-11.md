@@ -436,3 +436,16 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - Dry run inside the image on the login node: the prelude excused the same 98 hits, and the guard read
     lr 0.0001.
   - Queue at submit: GCb estimated 11-03 19:25 EST; I2 had no estimate yet.
+- **21898967 `n3-gateCb` COMPLETED** 11-03, 18:58 to 19:33 EST, 35 min. STEP5_GATEC_PASS, **Gate C all_pass true**.
+  - C-b cuda under A4 item 2 (b), 1 patched + 19 unpatched runs: patched statistic 3.017, unpatched maximum
+    36.18. The patched run is not the strict maximum, so it passes. C-c pass (16/16 bitwise).
+  - M 21898969 was released from its dependency; at 11-04 09:14 EST it is PENDING (Priority), estimated
+    11-06 23:35 EST. No Slurm reservation for the Nov 6-9 MATH outage is visible (only `Nov16Flush`).
+- **21924846 `n3-s5I2` COMPLETED** 11-04, 08:51 to 09:08 EST, 17 min on g006. STEP5_I2_DONE.
+  - Seeds 1-2 at lr 1e-4 sit at the same floor: val 5.350 / 5.341 / 5.339 (s1, epochs 1 / 30 / 60) and
+    5.347 / 5.336 / 5.332 (s2). No batch skipped.
+  - `select window` over five runs: window 30, no late extension. Candidates (best, last): s0 (9, 30),
+    s1 (23, 30), s2 (7, 30). Scorer config `results/n3/private/select/ivP.json`.
+  - Next, not queued: six VALSEL `sample` runs (`--pack --crystals-per-batch 8 --device cuda`), then
+    `n3_score.py match` on the six bundles, `n3_score.py select --config .../ivP.json`, and
+    `select ivs --record .../ivP_record.json`.
