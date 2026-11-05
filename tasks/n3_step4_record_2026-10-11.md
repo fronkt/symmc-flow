@@ -449,3 +449,24 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - Next, not queued: six VALSEL `sample` runs (`--pack --crystals-per-batch 8 --device cuda`), then
     `n3_score.py match` on the six bundles, `n3_score.py select --config .../ivP.json`, and
     `select ivs --record .../ivP_record.json`.
+- **21898969 `n3-s5M` COMPLETED** 11-05, 01:08 to 10:53 EST, 9.8 h on g007. STEP5_M_DONE. Every training
+  step returned rc 0. Each run logged 1,715 valid/loss points.
+  - MCF-R, 1.34-1.36 h per run. Fixed-draw VAL loss by checkpoint:
+    - s0: 0.7044 / 0.7021 / 0.7021 (ep 1331 / 1471 / 1531);
+    - s1: 0.8765 / 0.9076 / 0.8948 (ep 1563 / 715 / 796);
+    - s2: 0.7738 / 0.7711 / 0.7709 (ep 1067 / 1346 / 1397).
+  - MCF-A, 1.82-1.83 h per run. Fixed-draw VAL loss by checkpoint:
+    - s0: 1.9294 / 1.9548 / 1.9435 (ep 1155 / 648 / 752);
+    - s1: 1.8901 / 1.8994 / 1.8950 (ep 1070 / 1072 / 1503);
+    - s2: 1.9251 / 1.9251 / 1.9270 (ep 1195 / 1360 / 1534).
+  - **`last.ckpt` is not the final epoch.** In all six runs, train_report shows last.ckpt byte-identical
+    (same SHA-256) to the latest-epoch top-3 checkpoint:
+    - R: s0 ep 1531, s1 ep 1563, s2 ep 1397;
+    - A: s0 ep 1155, s1 ep 1503, s2 ep 1534.
+    The ckpt-dir mtimes agree: R s0's last.ckpt was written 02:20:48, about 8 min before the run ended at
+    epoch 1715. The released checkpointer (save_top_k 3, save_last True) rewrites last.ckpt only when it
+    saves a top-3 checkpoint. So "top-3 + last" (protocol lines 518, 553, 1234) gives 3 distinct candidates
+    per seed, not 4, and no epoch-1715 weights exist. This is consistent with "ModelCheckpoint ... plus last"
+    as written; the disclosure wording is Frank's call.
+  - Step 5a training is complete: T, G, I, I2 and M. Next is 5b (runbook "Then sample every VALSEL
+    candidate ..."), not built.
