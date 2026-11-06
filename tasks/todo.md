@@ -41,7 +41,7 @@ Readings I'll apply unless Frank objects:
 
 ## Build (laptop)
 
-- [ ] B0. **Designation record.** From `train_report`, before any score:
+- [x] B0. **Designation record.** From `train_report`, before any score:
   - MCF-R Stage A uses each seed's lowest *logged* valid/loss: s0 ep1471, s1 ep715, s2 ep1067.
   - MCF-A lowest per seed: s0 ep1155, s1 ep1070, s2 ep1534. For s0 and s2, that is the `last` twin.
   - Stage B / Stage 1 candidates: per decision 1.
@@ -51,7 +51,7 @@ Readings I'll apply unless Frank objects:
 - [x] B2. S NaN fix plus test (decision 2), with the dated clarification line in the protocol. Push it.
 - [x] B3. Run `n3_select.py --write-configs` on the laptop. It writes the iii-u, iii-p, p1-ours and p1-iii-p
   configs, which then get copied to the box.
-- [ ] B4. **New `scripts/n3_step5b.py`**, the largest item. It writes the 8 MCF configs that nothing writes
+- [x] B4. **New `scripts/n3_step5b.py`**, the largest item. It writes the 8 MCF configs that nothing writes
   today: `mcfR_A/B`, `mcfRG_A/B`, `iiS`, `mcfA_1/2/3`. They follow exactly the shape S:409-574 validates. It
   also reads each select record to make the next round's commands; for example, Stage B runs at Stage A's
   chosen s_uR.
@@ -60,13 +60,13 @@ Readings I'll apply unless Frank objects:
   - Every bundle path is repo-relative.
   - Pass `--workers $W` everywhere; the defaults are 1-4, and press at 1 worker would take about a day.
   - Unit tests feed synthetic records through S's own validators.
-- [ ] B5. Inner job scripts `step5_V{R,A,C,S}.sh` (private `anvil_jobs/`, in the step5_*.sh pattern). Each
+- [x] B5. Inner job scripts `step5_V{R,A,C,S}.sh` (private `anvil_jobs/`, in the step5_*.sh pattern). Each
   logs its own sha256 and n3_step5b.py's sha256, uses `$PY_MCF` for the `n3_mcf_*` scripts and `$PY_SYMMC` for
   everything else, and touches a STEP5_V*_DONE marker.
-- [ ] B6. The N3 suite and the new tests pass locally.
-- [ ] B7. Commit and push (explicit paths). Upload n3_step5b.py, the configs and the inner scripts to the box.
+- [x] B6. The N3 suite and the new tests pass locally.
+- [x] B7. Commit and push (explicit paths). Upload n3_step5b.py, the configs and the inner scripts to the box.
   None of them holds CSD content.
-- [ ] B8. Dry run on the login node, inside the image: the prelude passes, and each job prints its full plan
+- [x] B8. Dry run on the login node, inside the image: the prelude passes, and each job prints its full plan
   without touching the GPU.
 
 ## Jobs: 4 in parallel on `gpu` (1 GPU + 32 cores each), one queue wait

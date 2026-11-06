@@ -470,3 +470,48 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     as written; the disclosure wording is Frank's call.
   - Step 5a training is complete: T, G, I, I2 and M. Next is 5b (runbook "Then sample every VALSEL
     candidate ..."), not built.
+
+## Step 5b build (2026-11-06)
+
+- **Frank's decisions (11-06):** the three in `tasks/todo.md`:
+  - MCF top-3 + last is treated as a set;
+  - a diverged iv-P lr ranks last;
+  - the iii-s VAL row runs in step 5.
+
+  They are written up as dated clarifications in protocol §9, pushed in 159876d before any VALSEL candidate
+  score. The `n3_select.py` NaN fix carries one new test.
+- **Driver:** `scripts/n3_step5b.py` plus its tests (14) and `results/n3/mcf_designation_valsel.json`, pushed
+  in 6087ee6. The N3 suite gives 164 passed, 10 skipped. Inner scripts `step5_V{R,A,C,S}.sh` are in private
+  `anvil_jobs/`.
+- **Independent review** found two problems:
+  1. Four `n3_score.py match` calls passed several bundles with the same seed. `validate_bundles` would have
+     stopped VR, VA and VC partway. Fixed: one call per group of unique seeds, and the test's fake executor now
+     enforces the rule.
+  2. Smaller fixes: atomic config writes, one regeneration per submission.
+- **Prelude boundary check was partial (11-02 to 11-06).**
+  - `n3_box_manifest.py verify` prints only its first 10 boundary hits. The A4 prelude judged only the lines it
+    printed, and the box has held about 100 excused hits since Gate C-a.
+  - From 11-02 to 11-06, an unexcused path or forbidden-hash hit past the tenth line would therefore have
+    passed unseen.
+  - **Fix:** `anvil_jobs/step5_verify.py` (sha256 `732eb22a…`) judges every hit under the same rules. It also
+    skips files that vanish mid-walk, so concurrent 5b jobs cannot fail each other's prelude. The new prelude
+    calls it; the old one is kept as `anvil_step5_prelude.sh.pre-5b`.
+  - **Full check on the box, 11-06 23:00 EST:**
+    - 209 manifest files OK.
+    - 107 hits: 4 VALSEL truth match files (excused), 94 Gate C run-dir files (excused), and **9 wandb pointer
+      symlinks** that MCF training (M, 11-05) created under `n3_mcf/runs/wandb`.
+    - No unexcused path and no forbidden-hash hit.
+  - The 9 links were removed (links only; the targets are wandb logs inside the root, as in the 10-20
+    precedent). The list is in `$SCRATCH/n3_ops/removed_wandb_symlinks_step5b_2026-11-06.txt`.
+  - Re-check: 98 hits, all excused. Negative control: a planted `match/zz_fake_testB_valsel.jsonl` and
+    `labels_zz_fake.json` were both caught (rc 1), then removed (rc 0).
+- **Uploaded (no CSD content; SHA-256 match on all 13 files):**
+  - the driver and the designation file;
+  - `select/{iii-u,iii-p,p1-ours,p1-iii-p,degrade}.json`;
+  - the four inner scripts, `step5_verify.py` and the new prelude.
+- **Login-node dry run in the image:**
+  - prelude PASS;
+  - `designate --check` matches the training records;
+  - `plan --job VR|VA|VC|VS` all exit 0, each stopping at its first not-yet-written record;
+  - the Thurlemann `ckpt_info` loads.
+- **Not submitted.** Waiting for Frank's OK on the four sbatch commands.
