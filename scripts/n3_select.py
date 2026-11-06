@@ -607,10 +607,16 @@ def iv_p(P, I, allow_absent):
         return None
     minima, improving = win.get("lr_min_val_in_window"), win.get("improving_seed0")
     tags = {"lr1e-4": 1e-4, "lr3e-4": 3e-4, "lr1e-3": 1e-3}
+    # A seed-0 run that diverged records a non-finite minimum (lr 1e-3, job 21898968). It ranks last, as every
+    # non-finite selector input does (protocol §2.3; §9 clarification 2026-11-06). At least one must be finite.
     if not isinstance(minima, dict) or set(minima) != set(tags) or any(
-            isinstance(v, bool) or not isinstance(v, (float, int)) or not math.isfinite(v) for v in minima.values()):
-        P.err("ivP_window", "needs all three finite seed-0 fixed-draw VAL-loss minima")
-    elif tags[min(tags, key=lambda tag: (minima[tag], tags[tag] != 3e-4, tags[tag]))] != lr:
+            isinstance(v, bool) or not isinstance(v, (float, int)) for v in minima.values()):
+        P.err("ivP_window", "needs all three seed-0 fixed-draw VAL-loss minima")
+    elif not any(math.isfinite(v) for v in minima.values()):
+        P.err("ivP_window", "no seed-0 run has a finite fixed-draw VAL-loss minimum")
+    elif tags[min(tags, key=lambda tag: (not math.isfinite(minima[tag]),
+                                         minima[tag] if math.isfinite(minima[tag]) else 0.0,
+                                         tags[tag] != 3e-4, tags[tag]))] != lr:
         P.err("ivP_window", "lr does not follow the recorded seed-0 VAL losses and tie preference")
     if not isinstance(improving, dict) or set(improving) != set(tags) or any(type(v) is not bool for v in improving.values()):
         P.err("ivP_window", "needs the three seed-0 improvement decisions")

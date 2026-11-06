@@ -1516,3 +1516,26 @@ released checkpoint and MCF's released TEST / VAL pickles only. Record: `tasks/n
      (2026-11-02), against a 50 % refusal threshold: TEST 750 → TEST-B 7, DEV-TEST 3, SEL 2; VAL 738 → 7, 1, 1.
 
 No scientific menu, seed, endpoint, hypothesis, never-reduced item or outcome-to-claim rule is changed.
+
+### Step-5b clarifications, 2026-11-06 (Frank's OK, 2026-11-06; recorded before any VALSEL candidate score)
+
+These follow from the step-5a outcomes. None of them changes a menu, seed, endpoint, hypothesis, never-reduced
+item or outcome-to-claim rule.
+
+1. **A seed-0 iv-P run that diverged ranks last in the lr choice.** lr 1e-3 (job 21898968) diverged in epoch
+   1, so its fixed-draw val-loss minimum in the window is NaN. A non-finite minimum ranks below every finite
+   one, under the same rule as every non-finite selector input (§2.3; A3 item 4), and at least one minimum
+   must be finite. The choice is unchanged: lr 1e-4 (5.33186, against 5.33210 at 3e-4). The validator in
+   `n3_select.py` implements this rule.
+2. **MCF "top-3 + last" is a set.** In all six MCF runs, the released checkpointer (save_top_k 3, save_last
+   True) left `last.ckpt` SHA-identical to the latest-epoch top-3 checkpoint. It rewrites `last.ckpt` only
+   when it saves a top-3 checkpoint, so no final-epoch (1715) weights exist.
+   - The candidates are therefore the 3 distinct checkpoints, each sampled once.
+   - The duplicated checkpoint carries the label `last`.
+   - Sampling the same weights twice would let GPU nondeterminism decide between identical candidates.
+   - This applies to MCF-R/R+G Stage B and MCF-A Stage 1. The designation, with every SHA-256, is in
+     `results/n3/mcf_designation_valsel.json`.
+3. **The iii-s VAL sanity row (§3.3) runs in step 5.** This is where the step-4 projection booked it. It is
+   run once, it chooses nothing, and it is reported as a sanity row.
+4. **The final MCF-A Stage-1 tie-break is MCF's logged valid/loss** (§3.2, "lower valid/loss"). MCF-R Stage B
+   breaks ties on the fixed-draw VAL loss, as written.

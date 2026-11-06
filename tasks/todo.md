@@ -1,4 +1,4 @@
-# N3 step 5b plan — 2026-11-05 (Frank: "yes go ahead" to writing the plan; NOT approved to build)
+# N3 step 5b plan — 2026-11-05 (Frank: "yes go ahead"; 2026-11-06: decisions 1-3 as recommended, build approved, ask before sbatch)
 
 Step 5a is done (FD, Gate C all_pass, H2 form EXACT, iv-P x5, MCF-R/A x3). Step 5b means sampling every
 VALSEL candidate, scoring and selecting each arm, and running diagnostic (a) (runbook lines 176-196). Step 6,
@@ -11,7 +11,7 @@ checkpoints and converted VAL bundles, UMA and the FF* config. verify ignores fi
 (`n3_box_manifest.py:599-636`), so new scripts and config JSONs can go up without a re-pack. Editing a
 **shipped** script would break verify and force the CSD re-pack with Frank present, so 5b edits none.
 
-## Decisions for Frank (before the build)
+## Decisions (Frank, 2026-11-06: (b) set reading; NaN ranks last; iii-s runs in 5b)
 
 1. **`last.ckpt` twins.** In all 6 MCF runs, last.ckpt is SHA-identical to the latest top-3 checkpoint
    (REC:462-470). The protocol says "top-3 + last" (P:518, 553, 579, 1234) and has no dedup rule. S requires a
@@ -47,9 +47,9 @@ Readings I'll apply unless Frank objects:
   - Stage B / Stage 1 candidates: per decision 1.
   - Fixed-draw val loss for each candidate.
   - Commit a numeric copy under `results/n3/` and push it.
-- [ ] B1. `results/n3/private/select/degrade.json` = `{"items": [], "amendment": "A3 item 7"}`.
-- [ ] B2. S NaN fix plus test (decision 2), with the dated clarification line in the protocol. Push it.
-- [ ] B3. Run `n3_select.py --write-configs` on the laptop. It writes the iii-u, iii-p, p1-ours and p1-iii-p
+- [x] B1. `results/n3/private/select/degrade.json` = `{"items": [], "amendment": "A3 item 7"}`.
+- [x] B2. S NaN fix plus test (decision 2), with the dated clarification line in the protocol. Push it.
+- [x] B3. Run `n3_select.py --write-configs` on the laptop. It writes the iii-u, iii-p, p1-ours and p1-iii-p
   configs, which then get copied to the box.
 - [ ] B4. **New `scripts/n3_step5b.py`**, the largest item. It writes the 8 MCF configs that nothing writes
   today: `mcfR_A/B`, `mcfRG_A/B`, `iiS`, `mcfA_1/2/3`. They follow exactly the shape S:409-574 validates. It

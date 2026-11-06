@@ -434,6 +434,24 @@ def test_classical_select_configs(tmp_path):
     assert cfg["p1-ours"]["menu"] == ["lj", "lj_pre", "random"] and "resid" not in cfg["iii-p"]["menu"]
 
 
+def test_diverged_seed0_lr_ranks_last(tmp_path):
+    """A diverged seed-0 run records a NaN minimum (lr 1e-3, job 21898968); it ranks last (clarification 2026-11-06)."""
+    world = World(tmp_path)
+    record = json.load(open(world.inputs["ivP_window"]))
+    record["lr_min_val_in_window"]["lr1e-3"] = float("nan")             # json writes NaN, as on the box
+    world.write("ivP_window", record)
+    selection, problems = _run(world)
+    assert problems.of("ivP_window") == [] and selection["complete"] is True
+    record["lr_min_val_in_window"] = {"lr1e-4": 2.0, "lr3e-4": float("nan"), "lr1e-3": 3.0}   # chosen lr diverged
+    world.write("ivP_window", record)
+    selection, problems = _run(world)
+    assert selection["complete"] is False and any("seed-0 VAL losses" in m for m in problems.of("ivP_window"))
+    record["lr_min_val_in_window"] = {tag: float("inf") for tag in ("lr1e-4", "lr3e-4", "lr1e-3")}
+    world.write("ivP_window", record)
+    selection, problems = _run(world)
+    assert selection["complete"] is False and any("no seed-0 run has a finite" in m for m in problems.of("ivP_window"))
+
+
 @pytest.mark.parametrize("role,mutation,expected", [
     ("iii-u", lambda rec: rec.update(bundles_sha256={}), "coverage"),
     ("iii-p", lambda rec: rec["stage_a"].update(table=[]), "score table"),
