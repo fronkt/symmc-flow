@@ -1,0 +1,466 @@
+{
+ "what": "N3 step-5b MCF checkpoint designation (\u00a73.2), made from the raw training records before any VALSEL score (runbook step 5)",
+ "rules": {
+  "candidates": "MCF ModelCheckpoint top-3 valid/loss plus last (protocol \u00a73.2: P:517-518, 553, 579, 1234), read as a set: a last.ckpt byte-identical (SHA-256) to a top-3 checkpoint is listed once, under the label `last`; candidates are listed by ascending logged valid/loss (the listed-order fallback)",
+  "decision": "Frank 2026-11-06: set reading",
+  "stage_a": "MCF-R Stage A samples each seed's lowest logged valid/loss checkpoint at all five s_uR (P:549)",
+  "val_loss": "MCF-R / +G Stage B ties: fixed-draw VAL loss (P:554); MCF-A stage-1 ties: MCF's logged valid/loss (P:606)",
+  "logged_valid_loss": "train_report checkpoints[].logged_valid_loss: MCF's logged valid/loss at the checkpoint",
+  "fixed_val_loss": "n3_mcf_run.py fixed_val_loss (fixed-draw VAL loss, results/n3/private/mcf/fixed_val_loss.jsonl)"
+ },
+ "inputs": {
+  "results/n3/private/mcf/fixed_val_loss.jsonl": "060e99070b47f73fa8e9654d319c0e630d04ee40c290a584901b5b0246fb7666",
+  "results/n3/private/mcf/train_report/n3_mcfR_s0.json": "371fb9c7c551100449cecaa9dccb076b993dc45b88efe1dd542373ff81765ac3",
+  "results/n3/private/mcf/train_report/n3_mcfR_s1.json": "ac8719dc8e1ed316b5e5064a0aee40815e1d78b290db1e51c10cc6792525a88f",
+  "results/n3/private/mcf/train_report/n3_mcfR_s2.json": "f004f2d74058c312de62708981325ee3d9abbccc6ec36d1b70f018b6f04cead2",
+  "results/n3/private/mcf/train_report/n3_mcfA_s0.json": "d79cffc67d72e2334490336199d22c9e2a40d52d6464ec1a880d339e7f0086c2",
+  "results/n3/private/mcf/train_report/n3_mcfA_s1.json": "7a29ccee0e6b2d04e137d05661bcad2df61f7473462a158f4dfb79ef260d30c0",
+  "results/n3/private/mcf/train_report/n3_mcfA_s2.json": "2e2a347b9765ab2591c742299ed0fafc06d4e84f79b6f6740d5e5fb65ba2a252"
+ },
+ "runs": {
+  "n3_mcfR_s0": {
+   "arm": "R",
+   "seed": 0,
+   "checkpoints": [
+    {
+     "label": "ep1331_st18648",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/epoch_1331-step_18648-loss_0.6014.ckpt",
+     "ckpt_sha256": "257fc1854643ab049a5c095dca6b50dcab82fb6d0454e240c37fec9d46097da1",
+     "epoch": 1331,
+     "global_step": 18648,
+     "logged_valid_loss": 0.601364016532898,
+     "fixed_val_loss": 0.70444455742836
+    },
+    {
+     "label": "ep1471_st20608",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/epoch_1471-step_20608-loss_0.5922.ckpt",
+     "ckpt_sha256": "5361180594f4e3d4cdee25a596b242c97acf59a07d506351e26e30cc18279569",
+     "epoch": 1471,
+     "global_step": 20608,
+     "logged_valid_loss": 0.5921545028686523,
+     "fixed_val_loss": 0.7021186128258705
+    },
+    {
+     "label": "ep1531_st21448",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/epoch_1531-step_21448-loss_0.5932.ckpt",
+     "ckpt_sha256": "6415bf7035564b6724be1fcc26296474d2d32da3fd70f7b88dec23417c824f6d",
+     "epoch": 1531,
+     "global_step": 21448,
+     "logged_valid_loss": 0.5931840538978577,
+     "fixed_val_loss": 0.7020562961697578
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/last.ckpt",
+     "ckpt_sha256": "6415bf7035564b6724be1fcc26296474d2d32da3fd70f7b88dec23417c824f6d",
+     "epoch": 1531,
+     "global_step": 21448,
+     "logged_valid_loss": 0.5931840538978577,
+     "fixed_val_loss": 0.7020562887191772
+    }
+   ],
+   "last_identical_to": "ep1531_st21448",
+   "lowest_logged_valid_loss": "ep1471_st20608",
+   "stage_a": "ep1471_st20608",
+   "candidates": [
+    {
+     "label": "ep1471_st20608",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/epoch_1471-step_20608-loss_0.5922.ckpt",
+     "ckpt_sha256": "5361180594f4e3d4cdee25a596b242c97acf59a07d506351e26e30cc18279569",
+     "epoch": 1471,
+     "global_step": 20608,
+     "logged_valid_loss": 0.5921545028686523,
+     "fixed_val_loss": 0.7021186128258705
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/last.ckpt",
+     "ckpt_sha256": "6415bf7035564b6724be1fcc26296474d2d32da3fd70f7b88dec23417c824f6d",
+     "epoch": 1531,
+     "global_step": 21448,
+     "logged_valid_loss": 0.5931840538978577,
+     "fixed_val_loss": 0.7020562887191772
+    },
+    {
+     "label": "ep1331_st18648",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s0/ckpt/epoch_1331-step_18648-loss_0.6014.ckpt",
+     "ckpt_sha256": "257fc1854643ab049a5c095dca6b50dcab82fb6d0454e240c37fec9d46097da1",
+     "epoch": 1331,
+     "global_step": 18648,
+     "logged_valid_loss": 0.601364016532898,
+     "fixed_val_loss": 0.70444455742836
+    }
+   ]
+  },
+  "n3_mcfR_s1": {
+   "arm": "R",
+   "seed": 1,
+   "checkpoints": [
+    {
+     "label": "ep1563_st21896",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/epoch_1563-step_21896-loss_0.7674.ckpt",
+     "ckpt_sha256": "7ff5ee6900e2ffd5e2a18929226b799b26f9e7e23e3c216ffd661495d3f418c1",
+     "epoch": 1563,
+     "global_step": 21896,
+     "logged_valid_loss": 0.7674072980880737,
+     "fixed_val_loss": 0.87654809653759
+    },
+    {
+     "label": "ep715_st10024",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/epoch_715-step_10024-loss_0.7570.ckpt",
+     "ckpt_sha256": "cfe374ac3bb7757ef1c222e0d09058fac980c78ca1e834e24775f3addba2e2ba",
+     "epoch": 715,
+     "global_step": 10024,
+     "logged_valid_loss": 0.7569876313209534,
+     "fixed_val_loss": 0.9075700715184212
+    },
+    {
+     "label": "ep796_st11158",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/epoch_796-step_11158-loss_0.7671.ckpt",
+     "ckpt_sha256": "0f2c466f38baa450aedd6379a0f6eaffa488523a66c007f0393220ced93ed494",
+     "epoch": 796,
+     "global_step": 11158,
+     "logged_valid_loss": 0.7671481966972351,
+     "fixed_val_loss": 0.8948255777359009
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/last.ckpt",
+     "ckpt_sha256": "7ff5ee6900e2ffd5e2a18929226b799b26f9e7e23e3c216ffd661495d3f418c1",
+     "epoch": 1563,
+     "global_step": 21896,
+     "logged_valid_loss": 0.7674072980880737,
+     "fixed_val_loss": 0.8765481188893318
+    }
+   ],
+   "last_identical_to": "ep1563_st21896",
+   "lowest_logged_valid_loss": "ep715_st10024",
+   "stage_a": "ep715_st10024",
+   "candidates": [
+    {
+     "label": "ep715_st10024",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/epoch_715-step_10024-loss_0.7570.ckpt",
+     "ckpt_sha256": "cfe374ac3bb7757ef1c222e0d09058fac980c78ca1e834e24775f3addba2e2ba",
+     "epoch": 715,
+     "global_step": 10024,
+     "logged_valid_loss": 0.7569876313209534,
+     "fixed_val_loss": 0.9075700715184212
+    },
+    {
+     "label": "ep796_st11158",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/epoch_796-step_11158-loss_0.7671.ckpt",
+     "ckpt_sha256": "0f2c466f38baa450aedd6379a0f6eaffa488523a66c007f0393220ced93ed494",
+     "epoch": 796,
+     "global_step": 11158,
+     "logged_valid_loss": 0.7671481966972351,
+     "fixed_val_loss": 0.8948255777359009
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s1/ckpt/last.ckpt",
+     "ckpt_sha256": "7ff5ee6900e2ffd5e2a18929226b799b26f9e7e23e3c216ffd661495d3f418c1",
+     "epoch": 1563,
+     "global_step": 21896,
+     "logged_valid_loss": 0.7674072980880737,
+     "fixed_val_loss": 0.8765481188893318
+    }
+   ]
+  },
+  "n3_mcfR_s2": {
+   "arm": "R",
+   "seed": 2,
+   "checkpoints": [
+    {
+     "label": "ep1067_st14952",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/epoch_1067-step_14952-loss_0.6515.ckpt",
+     "ckpt_sha256": "cef0c023926dfdcfeeb64075e28952ac4c353fbc08934a3cec464148ae932ffa",
+     "epoch": 1067,
+     "global_step": 14952,
+     "logged_valid_loss": 0.651492714881897,
+     "fixed_val_loss": 0.7738332450389862
+    },
+    {
+     "label": "ep1346_st18858",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/epoch_1346-step_18858-loss_0.6586.ckpt",
+     "ckpt_sha256": "99a99b1a4295e54b1f13739c9b484374815b93ede6f9a26bb3454adbce6df890",
+     "epoch": 1346,
+     "global_step": 18858,
+     "logged_valid_loss": 0.6586215496063232,
+     "fixed_val_loss": 0.7711123675107956
+    },
+    {
+     "label": "ep1397_st19572",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/epoch_1397-step_19572-loss_0.6574.ckpt",
+     "ckpt_sha256": "0edda930a5ba31d8fa04b719738ac71a9a4413aef9277a14d756e28a13665ffa",
+     "epoch": 1397,
+     "global_step": 19572,
+     "logged_valid_loss": 0.6573560833930969,
+     "fixed_val_loss": 0.7708524540066719
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/last.ckpt",
+     "ckpt_sha256": "0edda930a5ba31d8fa04b719738ac71a9a4413aef9277a14d756e28a13665ffa",
+     "epoch": 1397,
+     "global_step": 19572,
+     "logged_valid_loss": 0.6573560833930969,
+     "fixed_val_loss": 0.7708524465560913
+    }
+   ],
+   "last_identical_to": "ep1397_st19572",
+   "lowest_logged_valid_loss": "ep1067_st14952",
+   "stage_a": "ep1067_st14952",
+   "candidates": [
+    {
+     "label": "ep1067_st14952",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/epoch_1067-step_14952-loss_0.6515.ckpt",
+     "ckpt_sha256": "cef0c023926dfdcfeeb64075e28952ac4c353fbc08934a3cec464148ae932ffa",
+     "epoch": 1067,
+     "global_step": 14952,
+     "logged_valid_loss": 0.651492714881897,
+     "fixed_val_loss": 0.7738332450389862
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/last.ckpt",
+     "ckpt_sha256": "0edda930a5ba31d8fa04b719738ac71a9a4413aef9277a14d756e28a13665ffa",
+     "epoch": 1397,
+     "global_step": 19572,
+     "logged_valid_loss": 0.6573560833930969,
+     "fixed_val_loss": 0.7708524465560913
+    },
+    {
+     "label": "ep1346_st18858",
+     "ckpt": "n3_mcf/runs/n3_mcfR_s2/ckpt/epoch_1346-step_18858-loss_0.6586.ckpt",
+     "ckpt_sha256": "99a99b1a4295e54b1f13739c9b484374815b93ede6f9a26bb3454adbce6df890",
+     "epoch": 1346,
+     "global_step": 18858,
+     "logged_valid_loss": 0.6586215496063232,
+     "fixed_val_loss": 0.7711123675107956
+    }
+   ]
+  },
+  "n3_mcfA_s0": {
+   "arm": "A",
+   "seed": 0,
+   "checkpoints": [
+    {
+     "label": "ep1155_st16184",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/epoch_1155-step_16184-loss_1.7146.ckpt",
+     "ckpt_sha256": "796fcdfe8a23c6d867f0ebe3581968743176f68f835c2ff3d0ebd9404f97e692",
+     "epoch": 1155,
+     "global_step": 16184,
+     "logged_valid_loss": 1.7146297693252563,
+     "fixed_val_loss": 1.929384708404541
+    },
+    {
+     "label": "ep648_st9086",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/epoch_648-step_9086-loss_1.7249.ckpt",
+     "ckpt_sha256": "d7c18e1135d9f3b97e0c0cbeae823e1c239bb3c63308a0c8c8e22d11193127b9",
+     "epoch": 648,
+     "global_step": 9086,
+     "logged_valid_loss": 1.7249157428741455,
+     "fixed_val_loss": 1.9547971189022064
+    },
+    {
+     "label": "ep752_st10542",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/epoch_752-step_10542-loss_1.7294.ckpt",
+     "ckpt_sha256": "c65d436c56cc4573871c2fba9ab138e1fb9ae722f2202d8a36eda5650442d326",
+     "epoch": 752,
+     "global_step": 10542,
+     "logged_valid_loss": 1.7294307947158813,
+     "fixed_val_loss": 1.9434961825609207
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/last.ckpt",
+     "ckpt_sha256": "796fcdfe8a23c6d867f0ebe3581968743176f68f835c2ff3d0ebd9404f97e692",
+     "epoch": 1155,
+     "global_step": 16184,
+     "logged_valid_loss": 1.7146297693252563,
+     "fixed_val_loss": 1.9293847382068634
+    }
+   ],
+   "last_identical_to": "ep1155_st16184",
+   "lowest_logged_valid_loss": "ep1155_st16184",
+   "stage_a": "last",
+   "candidates": [
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/last.ckpt",
+     "ckpt_sha256": "796fcdfe8a23c6d867f0ebe3581968743176f68f835c2ff3d0ebd9404f97e692",
+     "epoch": 1155,
+     "global_step": 16184,
+     "logged_valid_loss": 1.7146297693252563,
+     "fixed_val_loss": 1.9293847382068634
+    },
+    {
+     "label": "ep648_st9086",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/epoch_648-step_9086-loss_1.7249.ckpt",
+     "ckpt_sha256": "d7c18e1135d9f3b97e0c0cbeae823e1c239bb3c63308a0c8c8e22d11193127b9",
+     "epoch": 648,
+     "global_step": 9086,
+     "logged_valid_loss": 1.7249157428741455,
+     "fixed_val_loss": 1.9547971189022064
+    },
+    {
+     "label": "ep752_st10542",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s0/ckpt/epoch_752-step_10542-loss_1.7294.ckpt",
+     "ckpt_sha256": "c65d436c56cc4573871c2fba9ab138e1fb9ae722f2202d8a36eda5650442d326",
+     "epoch": 752,
+     "global_step": 10542,
+     "logged_valid_loss": 1.7294307947158813,
+     "fixed_val_loss": 1.9434961825609207
+    }
+   ]
+  },
+  "n3_mcfA_s1": {
+   "arm": "A",
+   "seed": 1,
+   "checkpoints": [
+    {
+     "label": "ep1070_st14994",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/epoch_1070-step_14994-loss_1.6384.ckpt",
+     "ckpt_sha256": "3620aacc8644a040a19f6daa7f94db8873a198b00d986977573548d3d53d016e",
+     "epoch": 1070,
+     "global_step": 14994,
+     "logged_valid_loss": 1.6384377479553223,
+     "fixed_val_loss": 1.8900510668754578
+    },
+    {
+     "label": "ep1072_st15022",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/epoch_1072-step_15022-loss_1.6556.ckpt",
+     "ckpt_sha256": "be4b35598a990ce55ee98d977e9d43128b0b4b454b7a20a48e998ba17dfd976c",
+     "epoch": 1072,
+     "global_step": 15022,
+     "logged_valid_loss": 1.655585765838623,
+     "fixed_val_loss": 1.8994442969560623
+    },
+    {
+     "label": "ep1503_st21056",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/epoch_1503-step_21056-loss_1.6593.ckpt",
+     "ckpt_sha256": "d82d3d40f9eac489971528dc46380bb00c4cc707c269b50a3ae73d746c0ed4bb",
+     "epoch": 1503,
+     "global_step": 21056,
+     "logged_valid_loss": 1.6593475341796875,
+     "fixed_val_loss": 1.8950413018465042
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/last.ckpt",
+     "ckpt_sha256": "d82d3d40f9eac489971528dc46380bb00c4cc707c269b50a3ae73d746c0ed4bb",
+     "epoch": 1503,
+     "global_step": 21056,
+     "logged_valid_loss": 1.6593475341796875,
+     "fixed_val_loss": 1.8950413018465042
+    }
+   ],
+   "last_identical_to": "ep1503_st21056",
+   "lowest_logged_valid_loss": "ep1070_st14994",
+   "stage_a": "ep1070_st14994",
+   "candidates": [
+    {
+     "label": "ep1070_st14994",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/epoch_1070-step_14994-loss_1.6384.ckpt",
+     "ckpt_sha256": "3620aacc8644a040a19f6daa7f94db8873a198b00d986977573548d3d53d016e",
+     "epoch": 1070,
+     "global_step": 14994,
+     "logged_valid_loss": 1.6384377479553223,
+     "fixed_val_loss": 1.8900510668754578
+    },
+    {
+     "label": "ep1072_st15022",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/epoch_1072-step_15022-loss_1.6556.ckpt",
+     "ckpt_sha256": "be4b35598a990ce55ee98d977e9d43128b0b4b454b7a20a48e998ba17dfd976c",
+     "epoch": 1072,
+     "global_step": 15022,
+     "logged_valid_loss": 1.655585765838623,
+     "fixed_val_loss": 1.8994442969560623
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s1/ckpt/last.ckpt",
+     "ckpt_sha256": "d82d3d40f9eac489971528dc46380bb00c4cc707c269b50a3ae73d746c0ed4bb",
+     "epoch": 1503,
+     "global_step": 21056,
+     "logged_valid_loss": 1.6593475341796875,
+     "fixed_val_loss": 1.8950413018465042
+    }
+   ]
+  },
+  "n3_mcfA_s2": {
+   "arm": "A",
+   "seed": 2,
+   "checkpoints": [
+    {
+     "label": "ep1195_st16744",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/epoch_1195-step_16744-loss_1.7035.ckpt",
+     "ckpt_sha256": "fb05b96b417ab5db00d9b2851faf2827069673d2f2624c16acaab03bbe559089",
+     "epoch": 1195,
+     "global_step": 16744,
+     "logged_valid_loss": 1.7034753561019897,
+     "fixed_val_loss": 1.9251128137111664
+    },
+    {
+     "label": "ep1360_st19054",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/epoch_1360-step_19054-loss_1.7019.ckpt",
+     "ckpt_sha256": "983fdf77931072b1a0de7304ef05aea58ef7ecc4df81b103c7a8b5b78a6ed5c7",
+     "epoch": 1360,
+     "global_step": 19054,
+     "logged_valid_loss": 1.7018918991088867,
+     "fixed_val_loss": 1.9250983446836472
+    },
+    {
+     "label": "ep1534_st21490",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/epoch_1534-step_21490-loss_1.6569.ckpt",
+     "ckpt_sha256": "b808899c4121f7d0a9ee34338bbf8b794cd04eed952498b4f30f08bc5a97c7e4",
+     "epoch": 1534,
+     "global_step": 21490,
+     "logged_valid_loss": 1.6568703651428223,
+     "fixed_val_loss": 1.9270360469818115
+    },
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/last.ckpt",
+     "ckpt_sha256": "b808899c4121f7d0a9ee34338bbf8b794cd04eed952498b4f30f08bc5a97c7e4",
+     "epoch": 1534,
+     "global_step": 21490,
+     "logged_valid_loss": 1.6568703651428223,
+     "fixed_val_loss": 1.927036002278328
+    }
+   ],
+   "last_identical_to": "ep1534_st21490",
+   "lowest_logged_valid_loss": "ep1534_st21490",
+   "stage_a": "last",
+   "candidates": [
+    {
+     "label": "last",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/last.ckpt",
+     "ckpt_sha256": "b808899c4121f7d0a9ee34338bbf8b794cd04eed952498b4f30f08bc5a97c7e4",
+     "epoch": 1534,
+     "global_step": 21490,
+     "logged_valid_loss": 1.6568703651428223,
+     "fixed_val_loss": 1.927036002278328
+    },
+    {
+     "label": "ep1360_st19054",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/epoch_1360-step_19054-loss_1.7019.ckpt",
+     "ckpt_sha256": "983fdf77931072b1a0de7304ef05aea58ef7ecc4df81b103c7a8b5b78a6ed5c7",
+     "epoch": 1360,
+     "global_step": 19054,
+     "logged_valid_loss": 1.7018918991088867,
+     "fixed_val_loss": 1.9250983446836472
+    },
+    {
+     "label": "ep1195_st16744",
+     "ckpt": "n3_mcf/runs/n3_mcfA_s2/ckpt/epoch_1195-step_16744-loss_1.7035.ckpt",
+     "ckpt_sha256": "fb05b96b417ab5db00d9b2851faf2827069673d2f2624c16acaab03bbe559089",
+     "epoch": 1195,
+     "global_step": 16744,
+     "logged_valid_loss": 1.7034753561019897,
+     "fixed_val_loss": 1.9251128137111664
+    }
+   ]
+  }
+ }
+}
