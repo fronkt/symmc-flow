@@ -1,3 +1,107 @@
+# N3 step 5b plan — 2026-11-05 (Frank: "yes go ahead" to writing the plan; NOT approved to build)
+
+Step 5a is done (FD, Gate C all_pass, H2 form EXACT, iv-P x5, MCF-R/A x3). Step 5b means sampling every
+VALSEL candidate, scoring and selecting each arm, and running diagnostic (a) (runbook lines 176-196). Step 6,
+the laptop freeze, comes after it. Abbreviations: P = `tasks/n3_protocol.md`, S = `scripts/n3_select.py`,
+REC = `tasks/n3_step4_record_2026-10-11.md`.
+
+**Already on the box, so no re-upload.** The deployed step-5 manifest (b50fb74, 209 files) matches HEAD on
+all 56 code files. It carries every 5b input: set caches, the valsel MCF export, the iv-P items, the OURS
+checkpoints and converted VAL bundles, UMA and the FF* config. verify ignores files that are not listed
+(`n3_box_manifest.py:599-636`), so new scripts and config JSONs can go up without a re-pack. Editing a
+**shipped** script would break verify and force the CSD re-pack with Frank present, so 5b edits none.
+
+## Decisions for Frank (before the build)
+
+1. **`last.ckpt` twins.** In all 6 MCF runs, last.ckpt is SHA-identical to the latest top-3 checkpoint
+   (REC:462-470). The protocol says "top-3 + last" (P:518, 553, 579, 1234) and has no dedup rule. S requires a
+   `last` label among 1-4 candidates (S:461-464).
+   - **(a) Literal.** List 4 labels and sample the twin twice.
+     - Cost: +6 MCF calls (~0.5 GPU-h).
+     - Both copies use the same weights and the same seed, so the choice between them is decided by GPU noise (P:1483-1485).
+   - **(b) Set reading (recommended).** List the 3 distinct checkpoints and label the twin `last`.
+     - Each set of weights is sampled once, and S accepts it unchanged.
+     - Disclose: "last coincided with a top-3 checkpoint in every run".
+2. **iv-P NaN minimum.** `S:610-612` needs three *finite* seed-0 minima. The box record has `lr1e-3: NaN`,
+   because that run diverged in epoch 1, so step 6 would refuse `ivP_window`.
+   - **Fix (recommended):** a non-finite minimum ranks last, matching the existing non-finite-last rule (P:258,
+     1394-1397). The choice is still lr 1e-4.
+   - It is a laptop-only fix with a new test, because S is not shipped to the box.
+   - Add a dated clarification line and push it **before any VALSEL score exists**. P:1054-1055 freezes
+     amendments once a score exists.
+3. **iii-s VAL sanity row** (P:667-668). It is booked in step 5 at 17.8 GPU-h on the A100, the largest 5b
+   item. It is not in the runbook's 5b text, and S's step-7 list leaves out VAL, so if 5b skips it, it never
+   runs. **Recommend: run it in 5b as its own parallel job.**
+
+Readings I'll apply unless Frank objects:
+- MCF-A Stage-1 final tie-break: MCF's logged valid/loss, as P:606 says. MCF-R Stage B uses the fixed-draw
+  VAL loss (P:554).
+- OURS-N2: sample SEL and concat as R:177 says, although nothing in S consumes it.
+- +G diagnostic (a): run it only when +G picks a different checkpoint (S:765-768).
+
+## Build (laptop)
+
+- [ ] B0. **Designation record.** From `train_report`, before any score:
+  - MCF-R Stage A uses each seed's lowest *logged* valid/loss: s0 ep1471, s1 ep715, s2 ep1067.
+  - MCF-A lowest per seed: s0 ep1155, s1 ep1070, s2 ep1534. For s0 and s2, that is the `last` twin.
+  - Stage B / Stage 1 candidates: per decision 1.
+  - Fixed-draw val loss for each candidate.
+  - Commit a numeric copy under `results/n3/` and push it.
+- [ ] B1. `results/n3/private/select/degrade.json` = `{"items": [], "amendment": "A3 item 7"}`.
+- [ ] B2. S NaN fix plus test (decision 2), with the dated clarification line in the protocol. Push it.
+- [ ] B3. Run `n3_select.py --write-configs` on the laptop. It writes the iii-u, iii-p, p1-ours and p1-iii-p
+  configs, which then get copied to the box.
+- [ ] B4. **New `scripts/n3_step5b.py`**, the largest item. It writes the 8 MCF configs that nothing writes
+  today: `mcfR_A/B`, `mcfRG_A/B`, `iiS`, `mcfA_1/2/3`. They follow exactly the shape S:409-574 validates. It
+  also reads each select record to make the next round's commands; for example, Stage B runs at Stage A's
+  chosen s_uR.
+  - Resumable: skip any stage whose outputs exist and match their recorded SHA, and never re-sample an
+    existing bundle (P:1018 resumes step 5 with the same seeds).
+  - Every bundle path is repo-relative.
+  - Pass `--workers $W` everywhere; the defaults are 1-4, and press at 1 worker would take about a day.
+  - Unit tests feed synthetic records through S's own validators.
+- [ ] B5. Inner job scripts `step5_V{R,A,C,S}.sh` (private `anvil_jobs/`, in the step5_*.sh pattern). Each
+  logs its own sha256 and n3_step5b.py's sha256, uses `$PY_MCF` for the `n3_mcf_*` scripts and `$PY_SYMMC` for
+  everything else, and touches a STEP5_V*_DONE marker.
+- [ ] B6. The N3 suite and the new tests pass locally.
+- [ ] B7. Commit and push (explicit paths). Upload n3_step5b.py, the configs and the inner scripts to the box.
+  None of them holds CSD content.
+- [ ] B8. Dry run on the login node, inside the image: the prelude passes, and each job prints its full plan
+  without touching the GPU.
+
+## Jobs: 4 in parallel on `gpu` (1 GPU + 32 cores each), one queue wait
+
+CPU work runs inside these GPU jobs, as the approved projection assumed. Anvil CPU SU stay reserved for STS,
+and `anvil_step5_cpu.sbatch` is debug-only (2 h).
+
+| Job | Contents (in order) | MCF/iv-P calls | Est. | Limit |
+|---|---|---|---|---|
+| V-R | MCF-R Stage A, 5 s_uR x 3 seeds → to_bundle → +G gauge → match → select `mcfR_A`, `mcfRG_A` → Stage B at the chosen s_uR (+6 more if +G picks a different s_uR) → gauge → match → select `mcfR_B`, `mcfRG_B` → ii-S → match → select `iiS` → diag (a) for the selected R (+G) checkpoints at their frozen s_uR, plus the Thurlemann provenance repeat | 15 + 6 (+6) | 6-8 h | 16 h |
+| V-A | MCF-A Stage 1 at (9,3) → match primary/mcf10/mcf08 → select `mcfA_1` → Stage 2: the remaining 8 grid cells x 3 seeds → match → select `mcfA_2` → select `mcfA_3` (rerank only) → diag (a) x3 | 9 + 24 | 6-8 h | 16 h |
+| V-C | iv-P sample x6 → match → select `ivP` → `select ivs` → ivs x3 → match → select `ivS`; OURS and OURS-N2 SEL sampling → concat; iii-u haar x3 → iii-p press x3; p1basin; p1-ours press x3; match (P1 against the pressed truth) → select iii-u, iii-p, p1-ours, p1-iii-p | 6 | 3-5 h | 12 h |
+| V-S | iii-s VAL sanity row: `screen --set val` → `search --set val` | n/a | ~18 h | 30 h |
+
+- **Counts.** MCF calls total 54 under decision (b), or 60 under (a).
+- **Cost.** About 45 GPU-h billed, from wall time x 1 GPU.
+- **Budget.** Balance is 1,451 GPU-h. Steps 5-7 run about 75 + ~500 against the 700 GPU-h cap.
+
+## Timeline
+
+- Build and test: 11-06 to 11-07. Submit by 11-08.
+- Latest safe submit is about 11-10. A 30-h job must *start* by 11-14 22:00, or Slurm holds it until after
+  `Nov16Flush` (11-16 04:00 to 11-23 04:00). Queue waits have run 9-25 h.
+- Step 6 (pullback, `n3_select.py --dry-run`, freeze, push) can run on the laptop during the flush.
+- Step 7 (~500 GPU-h FF*) runs after 11-23. The resubmission window is open to 2027-01-22.
+
+## Verification
+
+- [ ] After pullback, `n3_select.py --dry-run` lists no 5b role as missing.
+- [ ] Every VALSEL cell is recorded, losing choices included (R:189-190).
+- [ ] The diag (a) records carry the frozen s_uR/s_uF (S:808-811).
+- [ ] Job logs carry both sha256 values, and the prelude verify excused only VALSEL and Gate C hits.
+
+---
+
 # N3 Gate C fix — 2026-11-02 (Frank: "yes, start on those")
 
 Gate C (21571227, 10-22) failed C-a (i), C-a (ii) and C-b cuda. iv-P (21580267) stopped in the prelude, and M
@@ -19,11 +123,11 @@ Gate C (21571227, 10-22) failed C-a (i), C-a (ii) and C-b cuda. iv-P (21580267) 
   (≤ 5% false failure). `tests/test_n3_gateC_envelope.py` has 7 tests passing, and the full N3 suite passes.
   `step5_GCb.sh` is written.
 - [x] Frank OK'd the corrected (b) wording and re-queuing M behind C-b (2026-11-02). A4 is appended to protocol §9.
-- [ ] Commit and push the code with A4 → re-pack the step-5 tar → upload (Frank in manual mode) → copy the
+- [x] Commit and push the code with A4 → re-pack the step-5 tar → upload (Frank in manual mode) → copy the
   ops files to `$SCRATCH/n3_ops`.
-- [ ] Box re-score: `sbatch -J n3-gateCa -t 01:30:00 anvil_step5_cpu.sbatch step5_GCa.sh`. It must reproduce
+- [x] Box re-score: `sbatch -J n3-gateCa -t 01:30:00 anvil_step5_cpu.sbatch step5_GCa.sh`. It must reproduce
   the laptop numbers.
-- [ ] Run C-b per Frank's option, then resubmit iv-P. Anvil is down for MAINT on all nodes 11-16 → 11-23.
+- [x] Run C-b per Frank's option, then resubmit iv-P. Anvil is down for MAINT on all nodes 11-16 → 11-23.
 
 ---
 
