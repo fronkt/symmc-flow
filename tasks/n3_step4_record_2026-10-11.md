@@ -554,3 +554,17 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     the azimuth branch cut; and the 50-step sampler deviation R is 0.15-1.7 for MCF-R, against 2.5e-5 for
     Thurlemann, whose prior draw has 2 of 49 edges on the cut against 14 of 124. Both are the symmetric-prior
     branch-cut effect described in `n3_mcf_diag.py`'s docstring.
+- **VA: COMPLETED 11-08 00:51 EST, 5 h 54 min** (host g002; inner `step5_VA.sh` sha256 `86689033…`, same driver,
+  prelude verify PASS; `designate --check` matched). `STEP5_VA_DONE` touched.
+  - Stage 1 sampled all 9 designated candidates (top-3 + last per seed) at (s_uF 9, s_uR 3), each matched under
+    mcf10 and mcf08, one bundle per call.
+  - `select mcfA_1` picks (decided by any10@mcf10, no tie): s0 `ep752_st10542`, s1 `last`, s2 `ep1195_st16744`.
+  - Stage 2 ran the 8 other cells of the 3x3 grid (s_uF 5/9/13 x s_uR 1/2/3) at those checkpoints. The (9,3)
+    group was already matched (0 fits to run).
+  - `select mcfA_2` picked f9_u3 by any10@mcf10 (438 against 437 for f9_u2). `select mcfA_3` picked selector lj.
+  - Diagnostic (a) at (s_uF 9, s_uR 3) on mcfA_s0-s2: all **PASS**, reportable. The corrupt_batch state gives
+    HARNESS_CHECK (reported, not gated) for the branch-cut reason given under VR.
+- **Step 5b complete: all four markers present** (`STEP5_V{R,A,C,S}_DONE`). About 14.6 GPU-h billed (wall x 1
+  GPU), against the plan's ~45.
+- **Step 6, box side (11-08 06:03Z):** `n3_box_manifest.py pullback --label step5b` started on the login node in
+  the image, with N3_MANIFEST_DIR = `$SCRATCH/n3_manifests`, where the step 4/5 receipts are.
