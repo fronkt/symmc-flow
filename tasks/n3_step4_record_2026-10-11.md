@@ -538,3 +538,19 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     normalised C-H 1435, N-H 35, O-H 31 (48 shortened).
   - This bundle is not matched on the box, because a match file whose path lacks "valsel" would fail the prelude.
     It goes in the step-6 pullback.
+- **VR: COMPLETED 11-07 23:59 EST, 5 h 14 min** (host g011; inner `step5_VR.sh` sha256 `7976b551…`, same driver,
+  prelude verify PASS; `designate --check` matched). `STEP5_VR_DONE` touched.
+  - MCF-R Stage A: 5 s_uR x 3 seeds at each seed's lowest-logged checkpoint, plus the +G gauge scans.
+    `select mcfR_A` and `select mcfRG_A` both chose s_uR 5 (lj).
+  - Stage B ran the top-3 + last set at s_uR 5 (lj). MCF-R picks: s0 `last`, s1 `last`, s2 `ep1067_st14952`.
+    +G picks: s0 `ep1331_st18648`, s1 `last`, s2 `ep1067_st14952`.
+  - The `last` picks for MCF-R s0 and s1 were decided by the fixed-draw VAL loss tie key (P:554), not by the
+    logged loss. Checked against `mcf_designation_valsel.json`: s0 `last` 0.702056 < ep1471 0.702119; s1 `last`
+    0.876548 < ep796 0.894826 < ep715 0.907570. The picks are as specified.
+  - ii-S of the three +G picks, then `select iiS`.
+  - Diagnostic (a) at s_uR 5 on mcfR_s0-s2 and mcfRG_s0, plus the Thurlemann provenance repeat (s_uR 3, its own
+    test pickle): all **PASS**, reportable, with q/lat/tr <= 4e-14 and R <= 7e-7.
+  - Two reported fields are not gated: at the corrupt_batch state, MCF-R gives HARNESS_CHECK, with 4 of 124 edges on
+    the azimuth branch cut; and the 50-step sampler deviation R is 0.15-1.7 for MCF-R, against 2.5e-5 for
+    Thurlemann, whose prior draw has 2 of 49 edges on the cut against 14 of 124. Both are the symmetric-prior
+    branch-cut effect described in `n3_mcf_diag.py`'s docstring.
