@@ -530,3 +530,11 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     (two against `p1ref_s-1_valsel.pt`, 0 reference-invalid rows).
   - Select records written: `ivP_record`, `ivS_record`, `iiiu_record`, `iiip_record`, `p1_ours_record`,
     `p1_iiip_record`.
+- **VS: COMPLETED 11-07 22:43 EST, 2 h 35 min** (host g011; inner `step5_VS.sh` sha256 `23eca870…`, same driver,
+  prelude verify PASS). `STEP5_VS_DONE` touched.
+  - The iii-s VAL screen resumed its shard and finished. The iii-s VAL search used the fixed FF* configuration
+    (no `--ff-*` flags, 1 FF* GPU worker as timed in A3): 100 crystals in 8723 s.
+  - It wrote `draws/iii-s_s-1_val.pt`: 0 MISS crystals, 0 deterministic FF* failures, 0 retries; X-H bonds
+    normalised C-H 1435, N-H 35, O-H 31 (48 shortened).
+  - This bundle is not matched on the box, because a match file whose path lacks "valsel" would fail the prelude.
+    It goes in the step-6 pullback.
