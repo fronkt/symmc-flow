@@ -31,6 +31,8 @@ external/
 n3_mcf/
 results/n3/private/
 data/n3_sets/
+# N3 box manifests unpacked with a pullback (paths + hashes of CSD-derived files)
+.n3_box/
 .DS_Store
 
 # Generated intermediate: build_docx.py rewrites main.tex for pandoc. Do not edit.

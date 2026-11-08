@@ -95,10 +95,15 @@ and `anvil_step5_cpu.sbatch` is debug-only (2 h).
 
 ## Verification
 
-- [ ] After pullback, `n3_select.py --dry-run` lists no 5b role as missing.
-- [ ] Every VALSEL cell is recorded, losing choices included (R:189-190).
-- [ ] The diag (a) records carry the frozen s_uR/s_uF (S:808-811).
-- [ ] Job logs carry both sha256 values, and the prelude verify excused only VALSEL and Gate C hits.
+- [x] After pullback, `n3_select.py --dry-run` lists no 5b role as missing. (11-08: 27 records present,
+      0 problems, diag (a) PASS, H2 FORM EXACT, 76 step-7 runs.)
+- [x] Every VALSEL cell is recorded, losing choices included (R:189-190). (Every cell is in the select
+      records and in the preview's `valsel_cell_scores`; the validator recomputes each winner, 0 problems.)
+- [x] The diag (a) records carry the frozen s_uR/s_uF (S:808-811). (Checked by the dry run: MCF-R/+G s_uR 5,
+      MCF-A s_uF 9 / s_uR 3.)
+- [x] Job logs carry both sha256 values, and the prelude verify excused only VALSEL and Gate C hits. (All
+      four: inner + driver sha256 lines; STEP5_VERIFY_PASS, unexcused 0.)
+- [ ] Frank reviews the freeze preview, then `n3_select.py`, then commit + push `results/n3/n3_selection.json`.
 
 ---
 

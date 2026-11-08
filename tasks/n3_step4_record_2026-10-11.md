@@ -568,3 +568,29 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   GPU), against the plan's ~45.
 - **Step 6, box side (11-08 06:03Z):** `n3_box_manifest.py pullback --label step5b` started on the login node in
   the image, with N3_MANIFEST_DIR = `$SCRATCH/n3_manifests`, where the step 4/5 receipts are.
+- **Step 6, laptop (11-08, Frank in manual mode, "go ahead"):**
+  - scp took 1445 s. The laptop sha256 of `n3_pullback_step5b.tar` matches the box (`2ee2ca81…c9795`).
+  - **First unpack refused (`--no-overwrite`): 64 laptop files differed.** Nothing was extracted.
+    - 62 were the 11-02 morning laptop Gate C-a re-score from the A4 diagnosis (`gateCa_{val,test}_mcfread.json`
+      and 60 `gateCa/*_mcfread_*` files). The box copies come from Gate C-a job 21898966, which reproduced
+      those numbers.
+    - Compared field by field: identical verdict fields, the same (crystal, draw) rows with 0 `ok` flips and
+      max |d rms| 7e-16. The differences are row order, host paths, and the blinding guard: the laptop also
+      counted overlap with DEV-TEST/TEST-B, sets the box does not hold.
+    - 2 were Gate C-b `n3_mcf/_gateC/cb/{patched,unpatched}_cpu.pt` (laptop: a 09-28 smoke; box: the 10-22 gate).
+  - The 64 laptop files were moved, paths and hashes kept, to `results/n3/private/returns/laptop_pre_step5b/`
+    (list in `MOVED.json`). The box copies are the records of record.
+  - Second unpack (`--no-overwrite`): 2281 members, then `verify pullback_step5b: 2278 files, missing 0, hash
+    mismatch 0` **PASS**. The receipt (`verified: true`) went back to `$SCRATCH/n3_manifests/` (sha256 matches).
+  - `.gitignore` now covers `.n3_box/`, the manifest copies the unpack writes into the repo root.
+  - **`n3_select.py --dry-run`:** 27 records present, 0 problems; diagnostic (a) PASS; H2 FORM EXACT; 76 step-7
+    runs listed.
+  - **Preview** (`--out`, outside the repo; `results/n3/n3_selection.json` is NOT written): `complete` true;
+    runs step7 76, step9 16, step9_scoring 2; 29 step-7 inputs; degrade items none; 0 refcode-like tokens.
+    The only host paths are two Gate C-b `config` entries naming the released Thurlemann `config.yaml` on the box.
+  - **Pre-registered consequence:** `mcf_diagnostic_a.approximate` is true for all 7 selected MCF checkpoints.
+    Their 50-step float32 sampler deviation exceeds 1e-3, so under A2 item 3 diagnostics (b)-(d) are labelled
+    "approximate".
+  - New untracked public records from the pullback: `results/n3/gateC.json` (read by the freeze) and
+    `results/n3/gateC_2026-10-22.json`. Neither has refcode-like tokens.
+  - **Waiting for Frank's review** before `n3_select.py`, the commit and the push.
