@@ -515,3 +515,18 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - `plan --job VR|VA|VC|VS` all exit 0, each stopping at its first not-yet-written record;
   - the Thurlemann `ckpt_info` loads.
 - **Not submitted.** Waiting for Frank's OK on the four sbatch commands.
+
+## Step 5b submission (2026-11-06/07)
+
+- **Submitted 11-06 23:39 EST** with Frank's OK: VR 22019599, VA 22019600, VC 22019601, VS 22019602 (`gpu`, 1 GPU
+  each). They waited about 19 h in the queue (Priority) and started 11-07 18:45 to 20:09 EST.
+- **VC: COMPLETED 11-07 20:05 EST, 54 min** (host g011; inner `step5_VC.sh` sha256 `02177172…`, driver
+  `9fe25a7f…`, prelude verify `732eb22a…` PASS). `STEP5_VC_DONE` touched.
+  - iv-P: 6 VALSEL sampling runs (lr 1e-4, window 30), 0 failed and 0 invalid draws; two match calls, as the
+    review fix requires; `select ivP` (Stage B by val_loss: s0 ep09, s1 ep23, s2 ep07); `select ivs`; iv-S x3;
+    `select ivS`.
+  - OURS and OURS-N2: SEL sampling (seed 90000 + i), 0 arm failures, VAL + SEL concat.
+  - Classical: iii-u and iii-p bases 0-2, the P1 reference press and P1 presses of OURS s0-s2; four match calls
+    (two against `p1ref_s-1_valsel.pt`, 0 reference-invalid rows).
+  - Select records written: `ivP_record`, `ivS_record`, `iiiu_record`, `iiip_record`, `p1_ours_record`,
+    `p1_iiip_record`.
