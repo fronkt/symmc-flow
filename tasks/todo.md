@@ -80,7 +80,17 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
       - the prelude logs its own sha256;
       - a real recorded-file test.
 - [ ] Login-node dry run: prelude + `plan --job X` (needs the step-7 upload, manual mode).
-- [ ] **Pre-sbatch, Frank's OK needed: one gpu-debug smoke of the FF* / floor paths no test has run**, on VAL / VALSEL
+- [x] **Smoke 22088788 RAN 11-09 12:41-12:47 (gpu-debug): verify, ie, basin --from-ie, basin direct, prior_floor and its
+      6400 LJ evaluations PASSED; floor `to_bundle` FAILED (`KeyError: 'info'`).** Cause: A3 (a25a444) made to_bundle
+      read `chk["info"]`, and `run_check_floor` had none. Frank's OK 11-09: "Fix + re-smoke". The fix, record and
+      re-ship route are in `tasks/n3_step7_codefix_2026-11-09.md`; tests are in `tests/test_n3_mcf_floor_bundle.py`;
+      N3 suite: 203 passed, 10 skipped.
+- [ ] **Smoke 2** (`step7_smoke2.sh`): re-runs only the floor `to_bundle` with the fixed script from
+      `$OPS/fix7/scripts/` (SHA-256 `86dfe34d…`), outside the box root.
+      `sbatch -p gpu-debug -t 00:30:00 -J n3-s7smoke2 anvil_step5.sbatch step7_smoke2.sh`
+- [ ] At the step-7 pack: confirm that `list --step 7` shows group `code_fix_7` and that the box-side
+      `step7_verify` prints `scripts/n3_mcf_run.py` among the re-shipped paths.
+- (Smoke 1 plan, as approved 11-08:) **one gpu-debug smoke of the FF* / floor paths no test has run**, on VAL / VALSEL
       only, BEFORE the step-7 upload.
       - The step-5 prelude refuses once a step-7 manifest exists, so the smoke runs under `anvil_step5.sbatch`:
         `sbatch -p gpu-debug -t 00:30:00 -J n3-s7smoke anvil_step5.sbatch step7_smoke.sh`.

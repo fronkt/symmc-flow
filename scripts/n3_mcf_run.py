@@ -958,8 +958,10 @@ def run_check_floor(run_dir):
     n, S = len(entries), man["num_samples"]
     c = {"S_n": tuple(pred["num_atoms"].shape) == (S, n), "pickle_sha": side["sha256"] == man["pickle_sha256"],
          "num_atoms": all(int(pred["num_atoms"][0][b]) == int(entries[b]["local_coords"].shape[0]) for b in range(n))}
+    # "info" is empty because the floor has no RESID. to_bundle reads chk["info"] for every arm (A3), and this
+    # key's absence crashed the floor's to_bundle in the 2026-11-09 Anvil smoke (tasks/n3_step7_codefix_2026-11-09.md).
     res = {"run_dir": fwd(run_dir), "pass": all(c.values()), "failed": [k for k, v in c.items() if not v], "checks": c,
-           "predictions_sha256": ML.sha256(rp["pred"]), "resid_sha256": None}
+           "info": {}, "predictions_sha256": ML.sha256(rp["pred"]), "resid_sha256": None}
     ML.atomic_json(res, rp["check"], indent=1)
     return res
 

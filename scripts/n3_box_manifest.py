@@ -250,6 +250,9 @@ def groups(step, new_box=False):
         return g5
     g7 = [
         ("public_protocol_7", False, True, ["tasks/n3_protocol.md"]),
+        # the post-freeze run_check_floor fix (tasks/n3_step7_codefix_2026-11-09.md), re-shipped over the step-5
+        # copy; step7_verify judges a re-shipped path by the step-7 manifest
+        ("code_fix_7", False, True, ["scripts/n3_mcf_run.py"]),
         ("frozen_lists_7", False, True, ["tasks/n3_sets/testB_refcodes.txt", "results/n3/n3_selection.json"]),
         ("gate_records_7", False, True, [f"results/n3/gateF_{s}.json" for s in ("testB", "devtest")]),
         ("set_caches_7", True, True, [f"{S}/{s}.{e}" for s in ("testB", "devtest") for e in ("pt", "json")]),

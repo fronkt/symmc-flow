@@ -634,3 +634,26 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
      `ie`, `basin` (both modes) and the MCF-A `prior_floor`. Needs Frank's OK.
   2. `pack --step 7`, the upload in manual mode, then a login-node dry run.
   3. Frank's OK on the 9 sbatch commands.
+
+## Step-7 smoke and code fix (2026-11-09)
+
+- **Smoke 22088788** (gpu-debug, g013, 12:41-12:47 EST; `step7_smoke.sh` `e3ffaea3…`), VAL / VALSEL only, before any
+  TEST-B or DEV-TEST input reached the box.
+  - **Passed:**
+    - the prelude verify;
+    - `ie` on 2 VAL crystals (0 MISS; C-H normalised 34);
+    - `basin --from-ie`;
+    - `basin` direct on 2;
+    - `prior_floor --seed 0 --set valsel` (400 x 16) and its 6400 LJ evaluations (about 7 s at W = 28).
+  - **Failed:** floor `to_bundle`, `KeyError: 'info'` (`n3_mcf_run.py:878`).
+- **Cause:** amendment A3's commit a25a444 (10-19) made `to_bundle` read `chk["info"]` for every arm, but
+  `run_check_floor` returns no `info`. The laptop floor smoke had passed on 09-28, before A3.
+- Reproduced on the laptop with the frozen script unedited. Then fixed, with Frank's OK 11-09 ("Fix + re-smoke"):
+  - `run_check_floor` returns `"info": {}`;
+  - `n3_mcf_run.py` `a4c99a1d…` (box, step-5 manifest) becomes `86dfe34d…`.
+  - The fix is re-shipped by the step-7 pack (group `code_fix_7`). The record is
+    `tasks/n3_step7_codefix_2026-11-09.md`, kept outside the protocol.
+  - Tests: `tests/test_n3_mcf_floor_bundle.py` (3). N3 suite: 203 passed, 10 skipped.
+- No run, seed or command changed. MCF-R and MCF-A are unaffected. Nothing was matched.
+- **Next:** smoke 2 (`step7_smoke2.sh`) re-runs only the floor `to_bundle` with the fixed file from outside the box
+  root.
