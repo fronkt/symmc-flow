@@ -1,4 +1,8 @@
-# N3 step 7 plan — 2026-11-08 (DRAFT, awaiting Frank's OK)
+# N3 step 7 plan — 2026-11-08 (Frank 11-08: decisions 1-7 as recommended; build approved; ask before sbatch)
+
+**Decision 1 is recorded in `tasks/n3_step7_clarification_2026-11-08.md`, not as a §9 clarification in P.**
+SEL records P's SHA-256, and `n3_score.py` `selection_data` refuses a freeze whose protocol file has changed
+(`scripts/n3_score.py:165-167`). An edit to P after the freeze would invalidate it.
 
 The freeze is published: 772a36e, `results/n3/n3_selection.json`, sha256 `553f1dc9…e1f491`. Step 7 runs exactly
 the 76 runs in `runs.step7` on TEST-B (1000 crystals) and DEV-TEST (200 crystals), with their committed seeds.
