@@ -37,20 +37,27 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
 
 `step5_verify.py` refuses once a step-7 manifest exists, by design. Step 7 gets `anvil_step7_prelude.sh` and
 `step7_verify.py` in `results/n3/private/anvil_jobs/`. The verify:
-- [ ] runs M `verify` on the step-7 inventory;
-- [ ] verifies the step-5 inventory, taking any path the step-7 manifest re-ships from the step-7 manifest.
+- [x] runs M `verify` on the step-7 inventory;
+- [x] verifies the step-5 inventory, taking any path the step-7 manifest re-ships from the step-7 manifest.
       **The shipped `verify --step 5` would FAIL after the step-7 unpack**, because the step-7 copy of
       `tasks/n3_protocol.md` differs from the step-5 one. Handle that here, not by editing M.
-- [ ] refuses if the box SEL sha256 is not `553f1dc9…`, and logs the inner script, driver and freeze sha256 values;
-- [ ] **refuses any match, anchor, report, label or truth-based diagnostic output on TEST-B / DEV-TEST** under the
+- [x] refuses if the box SEL sha256 is not `553f1dc9…`, and logs the inner script, driver and freeze sha256 values;
+- [x] **refuses any match, anchor, report, label or truth-based diagnostic output on TEST-B / DEV-TEST** under the
       root (R:235): e.g. `private/match/*testB*|*devtest*`, `report_*`, `labels_*`, `anchor_{testB,devtest}*`,
       `diag_[bcd]_*`. Nothing on the box may call match, anchor, report or diagnostics (b)-(d) on test outputs;
-- [ ] refuses symlinks, as step 5 does: list them and leave a removal for Frank, if MCF inference leaves wandb
+- [x] refuses symlinks, as step 5 does: list them and leave a removal for Frank, if MCF inference leaves wandb
       or hydra links.
+- (11-08, laptop) Built: `anvil_step7_prelude.sh`, `anvil_step7.sbatch` (new; `anvil_step5.sbatch` sources the
+  step-5 prelude) and `step7_verify.py`. A synthetic-root smoke passed: clean PASS; planted controls all FAIL
+  (TEST-B match rows, anchor_testB, report_devtest, diag_b_testB, oracle_aligned in a TEST-B run dir,
+  ff_labels_devtest, a changed step7_inputs file, a changed step-5 file, a wrong freeze sha, a step-7 pullback
+  manifest); VALSEL match rows and the fftruth TEST-B bundle pass. The same synthetic root confirms that the
+  shipped `verify --step 5` FAILs on the re-shipped protocol. The box check waits for the dry run.
 
 ## 3. Driver and jobs
 
-- [ ] `scripts/n3_step7.py` (new, stdlib only, not shipped; built on `n3_step5b.py`).
+- [x] `scripts/n3_step7.py` (new, stdlib only, not shipped; built on `n3_step5b.py`). (11-08; `jobs`, `plan`, `run`;
+      the two uploaded DEV-TEST conversions sit in 7C as check-only runs, so 7C lists 27.)
       - It reads the run list from the box SEL, runs each run's `commands` verbatim, and substitutes only
         `{W}`/`{G}`/`{GPU}`. It refuses a command or run id that is not in SEL.
       - Python per script, as 5b: `n3_mcf_run`/`n3_mcf_gauge`/`n3_mcf_sg` → `PY_MCF`; `n3_ours`/`n3_classical`/
@@ -59,8 +66,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
         list (R:231). It also checks that each MCF `check.json` passes and that each production bundle carries
         the full frozen refcode order (R:234; refcode order only, no truth).
       - A finished run (all outputs present and checksummed) is never redone.
-- [ ] Tests with a fake executor, as in 5b: verbatim commands, the placeholder rule, refusal of unlisted runs,
-      dependency order, the checksum list, and the restart rule of section 5.
+- [x] Tests with a fake executor, as in 5b: verbatim commands, the placeholder rule, refusal of unlisted runs,
+      dependency order, the checksum list, and the restart rule of section 5. (`tests/test_n3_step7.py`, 24
+      cases on the real freeze; N3 suite 192 passed, 10 skipped.)
 - [ ] Review it (an independent reviewer on the code), then a login-node dry run: prelude + `plan --job X`.
 
 **Job grouping.** One A100 and 32 cores per job (W = 28, G = 1, as timed). The 2 DEV-TEST OURS/N2 conversions are

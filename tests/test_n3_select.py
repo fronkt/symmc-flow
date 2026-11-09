@@ -179,6 +179,10 @@ class World:
                      for f in (5, 9, 13) for u in (1, 2, 3)]
             W.record("mcfA_2", {"name": "mcfA_2", "stage_a": {"cells": cells, "menu": None, "prefer_cell": "(9,3)"}},
                      stage_a=W.sa("(13,2)", None, ("any10@mcf10", "prefer_cell")), menu=None)
+        else:
+            # no knob-grid record in this world; never fall back to the real repo's default path (since the step-6
+            # pullback, 2026-11-08, results/n3/private/select/mcfA_2_record.json exists on the laptop)
+            W.inputs["mcfA_2"] = str(W.tmp / "absent" / "mcfA_2_record.json")
         cells = [{"label": f"({knobs[0]},{knobs[1]})",
                   "bundles": [W.bundle(f"mcfA_{A_CHOSEN[s]}_u{knobs[1]}_f{knobs[0]}_s{s}_valsel.pt") for s in a_seeds]}]
         W.record("mcfA_3", {"name": "mcfA_3", "stage_a": {"cells": cells, "menu": NS.MCFA_MENU}},
