@@ -602,3 +602,35 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     / VALSEL.
   - **Step 7 may now start** (TEST-B / DEV-TEST upload, the 76 listed runs) once Anvil is back from `Nov16Flush`
     (11-23 04:00). It needs a `pack --step 7` and a CSD upload with Frank in manual mode.
+
+## Step 7 build (2026-11-08)
+
+- **Plan** d7013b8. Frank's OK 11-08: decisions 1-7 as recommended, build approved, ask before sbatch.
+- **Failure rule A** is recorded in `tasks/n3_step7_clarification_2026-11-08.md` (8e45e1a), outside the protocol.
+  The freeze stores the protocol's SHA-256, and `n3_score.selection_data` refuses a changed protocol.
+- **Driver** `scripts/n3_step7.py` (8a1883a) runs the freeze's 76 runs verbatim in 9 jobs, resumable per the
+  clarification, and writes done records with output SHA-256s.
+  - New private files: `step7_verify.py`, `anvil_step7_prelude.sh` and `anvil_step7.sbatch`. A new sbatch was
+    needed because `anvil_step5.sbatch` sources the step-5 prelude, which refuses once a step-7 manifest exists.
+    There are also 9 inner scripts.
+- **Independent review:** no crash and no protocol violation on the normal path. Every frozen command form was
+  parsed by its target script's argparse.
+  - **Fixed in 42d0b44:**
+    - a cut-off final classical shard line is trimmed before a resume and logged, because the shipped
+      `n3_classical._read_jsonl` would crash on it;
+    - `--dependency=singleton` and fixed job names stop two copies of one job running;
+    - `--open-mode=append`;
+    - a failing MCF `check.json` is kept in the event log;
+    - one in-job retry for single-call runs;
+    - side outputs are checksummed;
+    - two verify patterns that were missing, `(mcf/)?sg_oracle` and `mcfRoal_`;
+    - the prelude logs its own sha256;
+    - a recorded-file test that really tests the case.
+  - N3 suite after the fixes: 200 passed, 10 skipped (exit 0; rerun by main).
+  - Private file sha256s: `step7_verify.py` `6c182630…`, `anvil_step7_prelude.sh` `79ee2187…`,
+    `anvil_step7.sbatch` `cddd51da…`. `scripts/n3_step7.py` is `fa45c7d0…`.
+- **Open before sbatch:**
+  1. A gpu-debug smoke, on VAL / VALSEL only and before the upload, of the never-run FF* / floor paths:
+     `ie`, `basin` (both modes) and the MCF-A `prior_floor`. Needs Frank's OK.
+  2. `pack --step 7`, the upload in manual mode, then a login-node dry run.
+  3. Frank's OK on the 9 sbatch commands.
