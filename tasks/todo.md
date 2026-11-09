@@ -1,3 +1,173 @@
+# N3 step 7 plan — 2026-11-08 (DRAFT, awaiting Frank's OK)
+
+The freeze is published: 772a36e, `results/n3/n3_selection.json`, sha256 `553f1dc9…e1f491`. Step 7 runs exactly
+the 76 runs in `runs.step7` on TEST-B (1000 crystals) and DEV-TEST (200 crystals), with their committed seeds.
+Only `{W}`, `{G}` and `{GPU}` may be replaced, and they affect scheduling only. Abbreviations: P =
+`tasks/n3_protocol.md`, R = `tasks/n3_runbook.md`, SEL = `results/n3/n3_selection.json`, REC =
+`tasks/n3_step4_record_2026-10-11.md`, M = `scripts/n3_box_manifest.py`.
+
+**Maintenance does not block step 7.** `Nov_16_Flush` (11-16 to 11-23) reserves only the CPU, big-memory and H100
+nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI nodes are down 11-16 04:00 to
+11-18 06:00; login, A100 GPU nodes and storage stay online). This replaces the 5b plan's "Step 7 runs after
+11-23" line.
+
+## 1. Pack and upload (Frank in manual-approval mode)
+
+- [ ] `python scripts/n3_box_manifest.py pack --step 7 --out results/n3/private/uploads/step7` (not `--new-box`:
+      step 7 reuses the step-5 box root `$SCRATCH/n3_box`).
+      - `list --step 7` (11-08): deployable, 24 files, 70.3 MB.
+      - Contents: protocol, `testB_refcodes.txt` + SEL, `gateF_{testB,devtest}`, TEST-B/DEV-TEST set caches, the
+        MCF test/devtest exports, `items_{testB,devtest}` + `ivP_frozen.json`, and the stored N1/N2 DEV-TEST
+        draws + LJ picks.
+      - The pack checks that SEL is complete, tracked, unchanged and pushed. It ships no code: the box keeps the
+        step-5 code.
+      - All 56 step-5 code files equal HEAD except `tasks/n3_protocol.md`, which the 11-06 clarifications changed
+        and the step-7 pack re-ships.
+- [ ] scp the tar + `.sha256` to `$SCRATCH/n3_upload/` (CSD: manual mode only).
+- [ ] Unpack inside the image on the login node (its python3 is 3.6), with
+      `N3_MANIFEST_DIR=$SCRATCH/n3_manifests`; then verify. Copy the receipt back to `C:/Users/frank/n3_manifests`.
+- [ ] Check that every `step7_inputs` row (29: frozen MCF/iv-P/OURS checkpoints, MCF configs, OURS/N2 DEV-TEST
+      draws) is on the box with its SEL sha256.
+
+## 2. Prelude and verify for step 7 (new private files, no shipped script edited)
+
+`step5_verify.py` refuses once a step-7 manifest exists, by design. Step 7 gets `anvil_step7_prelude.sh` and
+`step7_verify.py` in `results/n3/private/anvil_jobs/`. The verify:
+- [ ] runs M `verify` on the step-7 inventory;
+- [ ] verifies the step-5 inventory, taking any path the step-7 manifest re-ships from the step-7 manifest.
+      **The shipped `verify --step 5` would FAIL after the step-7 unpack**, because the step-7 copy of
+      `tasks/n3_protocol.md` differs from the step-5 one. Handle that here, not by editing M.
+- [ ] refuses if the box SEL sha256 is not `553f1dc9…`, and logs the inner script, driver and freeze sha256 values;
+- [ ] **refuses any match, anchor, report, label or truth-based diagnostic output on TEST-B / DEV-TEST** under the
+      root (R:235): e.g. `private/match/*testB*|*devtest*`, `report_*`, `labels_*`, `anchor_{testB,devtest}*`,
+      `diag_[bcd]_*`. Nothing on the box may call match, anchor, report or diagnostics (b)-(d) on test outputs;
+- [ ] refuses symlinks, as step 5 does: list them and leave a removal for Frank, if MCF inference leaves wandb
+      or hydra links.
+
+## 3. Driver and jobs
+
+- [ ] `scripts/n3_step7.py` (new, stdlib only, not shipped; built on `n3_step5b.py`).
+      - It reads the run list from the box SEL, runs each run's `commands` verbatim, and substitutes only
+        `{W}`/`{G}`/`{GPU}`. It refuses a command or run id that is not in SEL.
+      - Python per script, as 5b: `n3_mcf_run`/`n3_mcf_gauge`/`n3_mcf_sg` → `PY_MCF`; `n3_ours`/`n3_classical`/
+        `n3_old_symmc` → `PY_SYMMC`; FF* through `N3_FF_PYTHON`.
+      - After each run it checks that every listed output exists and writes its sha256 to a per-job checksum
+        list (R:231). It also checks that each MCF `check.json` passes and that each production bundle carries
+        the full frozen refcode order (R:234; refcode order only, no truth).
+      - A finished run (all outputs present and checksummed) is never redone.
+- [ ] Tests with a fake executor, as in 5b: verbatim commands, the placeholder rule, refusal of unlisted runs,
+      dependency order, the checksum list, and the restart rule of section 5.
+- [ ] Review it (an independent reviewer on the code), then a login-node dry run: prelude + `plan --job X`.
+
+**Job grouping.** One A100 and 32 cores per job (W = 28, G = 1, as timed). The 2 DEV-TEST OURS/N2 conversions are
+done; their bundles arrive in the step-7 pack.
+
+| job | runs | deps | est GPU-h (scaled from measured) | worst case (A3 projection) | limit |
+|---|---|---|---|---|---|
+| 7O | ours/testB, ours_n2/testB, p1-ours/testB/s0-s2 (5) | none | ~1.5 | ~3 | 8 h |
+| 7C | iii-u x6 (haar+press), p1ref x2, p1-ours/devtest x3, iv-P x6, iv-S x6, fftruth x2 (25) | none | ~2 | ~6 | 8 h |
+| 7M | MCF-R x6, MCF-R+G x6 (2 infer + 6 gauge scans), ii-S x6, MCF-A x6, MCF-A floor x6 (30) | none | ~5 | ~8 | 12 h |
+| 7S | iii-s/testB (screen + search) (1) | none | ~25 | ~190 | 48 h |
+| 7Sd | iii-s/devtest (1) | none | ~5 | ~38 | 48 h |
+| 7E0/7E1/7E2 | i-E+basin-ours/testB/sk and basin-ours_n2/testB/sk (2 each) | afterok 7O | ~6.5 each | ~50 each | 48 h |
+| 7Ed | i-E+basin-ours/devtest x3, basin-ours_n2/devtest x3 (6) | none | ~4 | ~30 | 48 h |
+
+- The jobs cover 74 runs, plus the 2 conversions already done, for 76. The order inside a job follows SEL's
+  order: iii-u then press; iii-s screen then search; MCF-R infer then gauge then ii-S; iv-P then iv-S.
+- **Estimates are guesses scaled from measured 5b rates:**
+  - iii-s VAL search: 100 crystals in 8723 s at G = 1, i.e. 87 s/crystal and 1.36 s per minimisation;
+  - MCF call: about 10 min per 400 crystals;
+  - OURS sampling: 300 crystals in 11.3 min;
+  - VALSEL truths: 400 in a 9-min job.
+- i-E is unmeasured. Its starts are generated draws, not screened starts, so they may need more evaluations.
+- The A3 projection costs a minimisation at about 10.6 s, 7.8x the measured 1.36 s. It is the worst case,
+  roughly every minimisation at its 100-evaluation cap.
+- **Total:** about 60-120 GPU-h likely (point estimate ~62), and at most about 475 (A3: step 7 is 473-482 box-h).
+- **Cap:** 700 GPU-h over steps 5-7. Steps 5a+5b used 27.7 GPU-h (sacct, elapsed x GPUs, n3-* jobs since 10-19),
+  so about 672 are left. Both cases fit. Balance: 1,429 GPU-h (`mybalance`, 11-08).
+- **48 h wall:** at the worst-case rate, 7S needs about 4 job lengths and each 7E about 1. That works only
+  under the restart rule of section 5 (per-crystal resume) or with a larger G.
+- **The 12-GPU per-user cap is shared with pxrd array 22019698** (%8, 2 h tasks). At most 8 N3 jobs run at once
+  (7E waits for 7O). Queue starts have run at a few per day, so the cap rarely binds.
+
+## 4. Runs labelled CPU or "local after step 8"
+
+- ii-S (6), iv-S (6), the +G gauge scans (6 inside MCF-R+G), the MCF-A prior floor (6), iii-u/press (6), p1ref
+  (2) and p1-ours (6) are CPU work. Anvil CPU SU are STS-only, so they run **inside the GPU jobs** above, on 28
+  of the 32 cores. That keeps every step-7 output in one step-8 pullback.
+- "Local after step 8" is also allowed for the gauge scans and ii-S. It is not needed: they cost under 1 box-h.
+- No FF* call runs after step 8 (P step 7). Every FF* run (iii-s, fftruth, i-E, both BASIN rows) is on the box.
+
+## 5. Failure handling: record before any test output exists
+
+P (§7 Failures and the Budget overrun paragraph) and R:237-239 say: if the box dies or the cap forces a stop during
+step 7, discard **all** partial test outputs unscored and re-run the complete list with the same seeds.
+
+**Open question:** on a persistent Anvil box, does one Slurm job ending early (timeout, node failure, preemption,
+OOM) count as a "box death"? Options, to record as a dated §9 clarification before the upload:
+- **A (recommended).**
+  - A job stop is not a box death. Its finished runs stay; its unfinished runs continue with the committed seeds.
+  - Per-crystal resumable runs continue from their complete records, which are cfg-checked and refuse another
+    configuration. These are `n3_classical` haar/press/screen/search/truths/ie/basin/p1basin and the
+    `n3_ours sample` part file.
+  - Single-call runs delete their partial outputs and re-run from the start: MCF infer (which refuses a run dir
+    holding partial outputs), iv-P sample, prior_floor, gauge, ii-S and iv-S.
+  - Every stop and restart is listed in REC. Nothing is matched or inspected before step 9.
+  - A box death (box root lost or corrupted, a verify failure, a scratch purge, account loss) or a cap stop still
+    means the full discard and full re-run as written.
+- B. Strict reading: any job stop means discarding every step-7 output and re-running all 76 runs. The cost is up
+  to 2x step 7, and with 9 jobs one stop is not unlikely.
+- C. Per-run restart only, with no per-crystal resume. This is infeasible for 7S at the worst-case rate (one run
+  over 48 h) unless G >= 4.
+
+## 6. Steps 8 and 9 (brief)
+
+- [ ] Step 8, after every listed run is checksummed:
+      - On the box, `pullback --label step7` with `N3_MANIFEST_DIR=$SCRATCH/n3_manifests` set explicitly (the
+        env.sh default does not exist). The size is a guess, about 10-20 GB.
+      - scp in manual mode, then `unpack --no-overwrite` on the laptop, then send the receipt back.
+      - `N3_CLEANUP_PLAN_ONLY=1 bash scripts/n3_box_cleanup.sh`: review the targets, then run the cleanup.
+      - Targets: `$SCRATCH/n3_box` (inputs, exports, checkpoints, outputs, wandb/hydra dirs), `$SCRATCH/n3_upload`
+        (including the step-6 pullback tar). Add `$SCRATCH/n3_ops` logs via `N3_EXTRA_DELETE_FILE` if the
+        search finds names in them.
+      - Keep the receipts in `$SCRATCH/n3_manifests`. "Destroy the box" on Anvil means deleting the root;
+        `$PROJECT` envs and images hold no CSD (check with the cleanup search).
+- [ ] Step 9, on the laptop: `runs.step9` (16: MCF diagnostics (b)-(d) and the Haar floor), then
+      `runs.step9_scoring` (2 reports, 10,000 bootstrap draws). The projection gives about 164 CPU-h, ~27 h on 6
+      cores. Write `results/n3/n3_results.json`, commit and push.
+- Tier-2 (§8) runs only after step 9 and is not in the step-7 list. D-c0 uses TEST-B but OURS + iii-u on CPU
+  locally.
+
+## Timeline
+
+- Build, tests, review and dry run: about 1 day after the OK. Pack + upload: 1 manual-mode session, at the dry run.
+- Queue waits have run 9-25 h. The longest job is ~25 h (guess), so step 7 ends about 3-5 days after submission.
+  Steps 8 + 9 take about 2-3 days.
+- **Results about 11-16 to 11-20** if submitted by ~11-11. At worst-case rates with resubmits, about 2 weeks
+  later. Either way it is well inside the 2027-01-22 window.
+
+## Decisions for Frank (recommended first)
+
+1. Failure rule: **A** (job stop ≠ box death; per-crystal resume or a per-run restart with committed seeds),
+   recorded as a dated §9 clarification before the upload / B (strict) / C (per-run only).
+2. Build: **build the driver, prelude, verify and tests; review; dry run; ask before sbatch** / plan changes first.
+3. Upload timing: **at the dry run, in one manual-mode session** / now.
+4. FF* workers: **G = 1, as timed in A3** / G = 2 for 7S and 7E (invariant; halves wall if the GPU has room,
+   unmeasured).
+5. pxrd sharing the cap: **leave array 22019698 at %8** / lower it to %4 while step 7 runs.
+6. CPU-labelled runs: **inside the GPU jobs on the box** / gauge + ii-S locally after step 8.
+7. Limits: **48 h for the FF* jobs (7S, 7Sd, 7E\*)** / 24 h + resume (needs 1A; shorter jobs backfill sooner).
+
+## Verification
+
+- [ ] `pack --step 7` deployable; upload sha OK; unpack + verify PASS (receipt on the laptop).
+- [ ] The step-7 prelude passes on the box and fails on the planted controls (a fake `match/zz_testB.jsonl`,
+      a changed SEL).
+- [ ] Every job log carries the inner, driver and SEL sha256 values; every listed output exists with a checksum.
+- [ ] No match, anchor, report or diagnostic (b)-(d) output on TEST-B / DEV-TEST exists on the box at step 8.
+
+---
+
 # N3 step 5b plan — 2026-11-05 (Frank: "yes go ahead"; 2026-11-06: decisions 1-3 as recommended, build approved, ask before sbatch)
 
 Step 5a is done (FD, Gate C all_pass, H2 form EXACT, iv-P x5, MCF-R/A x3). Step 5b means sampling every
