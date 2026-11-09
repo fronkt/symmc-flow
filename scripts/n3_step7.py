@@ -29,14 +29,21 @@ Resumption (the 2026-11-08 clarification: one Slurm job ending early is not a bo
     outputs changed stops the driver (that is box-root corruption, not a resumable stop);
   * per-crystal resumable runs (n3_classical haar / press / screen / search / truths / ie / basin / p1basin and the
     n3_ours sample part file) re-invoke their commands: each continues from its complete, configuration-checked
-    records;
+    records. A cut-off final line of the run's own n3_classical shards (a kill mid-write; n3_classical's reader
+    would die on it) is trimmed first and logged as `repaired_shard` (n3_ours repairs its part file itself).
+    A failure stops the job (no in-job retry);
   * single-call runs (MCF infer / to_bundle / prior_floor, the gauge scan, ii-S, iv-P sample, iv-S) delete their
-    partial outputs (listed outputs, part files, the run dir an infer creates, gauge rows of a scanned run dir)
-    and run again from the start with the committed seed. A file recorded by a finished run is never deleted.
-Every start, continuation and finish is appended to results/n3/private/step7/events.jsonl (for the run record).
-After a run: every listed output exists, each infer run dir's check.json passes (R:234; to_bundle also refuses a
-failed check, and save_bundle refuses a bundle without the full frozen refcode order), and a done record with the
-SHA-256 of every output file is written. At the end of a job, <job>_checksums.tsv lists them (R:231).
+    partial outputs (listed outputs, part / row files, the run dir an infer creates, the full MCF-R draws of an
+    unlisted infer, iv-P's .rot.pt, gauge rows of a scanned run dir) and run again from the start with the
+    committed seed; a failing MCF check.json is copied into the event first. A failure gets ONE in-job retry
+    (delete, re-run), then stops the job. A file recorded by a finished run is never deleted or trimmed.
+Every start, continuation, repair, deletion, retry and finish is appended to results/n3/private/step7/events.jsonl
+(for the run record). After a run: every listed output and side output exists, each infer run dir's check.json
+passes (R:234; to_bundle also refuses a failed check, and save_bundle refuses a bundle without the full frozen
+refcode order), and a done record is written with the SHA-256 of every output file and of the side outputs other
+runs read (+G s0's full MCF-R draws, iv-P's .rot.pt, the gauge counts). At the end of a job, <job>_checksums.tsv
+lists them (R:231). Submit each job under its fixed name with --dependency=singleton (anvil_step7.sbatch): two
+copies of one job would append to the same shards.
 Stdlib only: it runs under $PY_SYMMC.
 """
 import argparse
@@ -44,6 +51,7 @@ import fnmatch
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -75,6 +83,21 @@ FORBIDDEN_TOKENS = {"match", "anchor", "report", "check", "--oracle", "--after_s
 PLACEHOLDERS = ("{W}", "{G}", "{GPU}")
 INPUT_FLAGS = ("--draws", "--bundle", "--run_dir", "--ckpt")
 DELETABLE = ("n3_mcf/infer/", "results/n3/private/draws/")           # the only trees a restart may delete in
+DRAWS = "results/n3/private/draws"
+CLS = "results/n3/private/classical"                                  # n3_classical's per-crystal JSONL shards
+GAUGE_COUNTS = "results/n3/private/mcf/gauge_counts"
+BUNDLE_NAME = re.compile(r"^(?P<arm>.+)_s(?P<seed>-?\d+)_(?P<set>[A-Za-z]+)\.pt$")   # n3_common.bundle_path
+MCF_RUN_DIR = re.compile(r"^n3_mcf/infer/(?P<arm>mcfR|mcfA)/(?P<set>[A-Za-z]+)/s(?P<seed>\d+)_(?P<rest>.+)$")
+FLOOR_RUN_DIR = re.compile(r"^n3_mcf/infer/mcfA_floor/(?P<set>[A-Za-z]+)/s(?P<seed>\d+)$")
+
+
+def mcf_bundle_of(run_dir):
+    """The bundle n3_mcf_run to_bundle writes for a run dir (bundle_arm + n3_common.bundle_path), or None."""
+    m = MCF_RUN_DIR.match(run_dir or "")
+    if m:
+        return f"{DRAWS}/{m['arm']}_{m['rest']}_s{m['seed']}_{m['set']}.pt"
+    m = FLOOR_RUN_DIR.match(run_dir or "")
+    return f"{DRAWS}/mcfAfloor_s{m['seed']}_{m['set']}.pt" if m else None
 
 
 class Stop(SystemExit):
@@ -253,7 +276,7 @@ class Runner:
         """Recorded output files that are missing or changed (files added later inside a recorded dir are allowed:
         the +G gauge scan writes its rows into the MCF-R run dir it scans)."""
         bad = []
-        for rel, c in rec["outputs"].items():
+        for rel, c in {**rec["outputs"], **rec.get("side_outputs", {})}.items():
             if c.get("dir"):
                 for f, h in c["files"].items():
                     q = os.path.join(self.p(rel), f)
@@ -291,7 +314,7 @@ class Runner:
             if not f.endswith(".json"):
                 continue
             rec = json.load(open(os.path.join(d, f)))
-            for rel, c in rec.get("outputs", {}).items():
+            for rel, c in {**rec.get("outputs", {}), **rec.get("side_outputs", {})}.items():
                 if c.get("dir"):
                     out |= {os.path.normpath(os.path.join(rel, x)) for x in c["files"]}
                 else:
@@ -342,6 +365,84 @@ class Runner:
                 die(f"{rid}: input {rel} comes from {prod} (job {self.job[prod]}), which is not done")
         return True
 
+    def side_outputs(self, rid):
+        """Files the run itself writes besides its listed outputs, that other runs read or that document it: the
+        full MCF-R draws to_bundle writes from an unlisted infer run dir (+G s0), iv-P's .rot.pt (read by iv-S),
+        and the gauge scan's LJ-evaluation counts."""
+        r = self.runs[rid]
+        outs, side = set(r["outputs"]), set()
+        for c in r["commands"]:
+            t, script, sub = parse(c)
+            if (script, sub) == ("scripts/n3_mcf_run.py", "to_bundle"):
+                b = mcf_bundle_of(opt(t, "--run_dir"))
+                if b is None:
+                    die(f"{rid}: to_bundle of an unrecognised run dir {opt(t, '--run_dir')}")
+                if b not in outs:
+                    side.add(b)
+            elif (script, sub) == ("scripts/n3_old_symmc.py", "sample"):
+                side |= {o[:-3] + ".rot.pt" for o in r["outputs"] if o.endswith(".pt")}
+            elif script == "scripts/n3_mcf_gauge.py":
+                side |= {f"{GAUGE_COUNTS}/{os.path.basename(o)[:-3]}.json" for o in r["outputs"]
+                         if os.path.basename(o).startswith("mcfRG_") and o.endswith(".pt")}
+        return sorted(side)
+
+    def classical_shards(self, rid):
+        """The n3_classical JSONL shards this run's own commands append to (n3_classical's shard names)."""
+        out = []
+        for c in self.runs[rid]["commands"]:
+            t, script, sub = parse(c)
+            if script != "scripts/n3_classical.py":
+                continue
+            st, base, draws = opt(t, "--set"), opt(t, "--base"), opt(t, "--draws")
+            m = BUNDLE_NAME.match(os.path.basename(draws)) if draws else None
+            if draws and m is None:
+                die(f"{rid}: cannot name the shard of {draws}")
+            if sub == "haar":
+                out.append(f"{CLS}/iii-u_s{base}_{st}.jsonl")
+            elif sub == "press":
+                out.append(f"{CLS}/iii-p_s{base}_{st}.jsonl" if m is None else
+                           f"{CLS}/{opt(t, '--arm') or 'p1-' + m['arm']}_s{m['seed']}_{m['set']}.jsonl")
+            elif sub == "p1basin":
+                out.append(f"{CLS}/p1ref_{st}.jsonl")
+            elif sub == "screen":
+                out.append(f"{CLS}/screen_{st}.jsonl")
+            elif sub == "search":
+                out.append(f"{CLS}/iii-s_{st}.jsonl")
+            elif sub == "truths":
+                out.append(f"{CLS}/fftruth_{st}.jsonl")
+            elif sub == "ie":
+                out.append(f"{CLS}/i-E-{m['arm']}_s{m['seed']}_{m['set']}.jsonl")
+            elif sub == "basin" and "--from-ie" not in t:
+                out.append(f"{CLS}/basin-{m['arm']}_s{m['seed']}_{m['set']}.jsonl")
+        return out
+
+    def repair_shards(self, rid, job):
+        """n3_classical's reader dies on a cut-off final line (a wall-time kill mid-write): trim it off this run's own
+        shards before they are re-invoked. A file recorded by a finished run is never touched."""
+        keep = self.recorded_files()
+        fixed = []
+        for rel in self.classical_shards(rid):
+            p = self.p(rel)
+            if not os.path.isfile(p) or os.path.getsize(p) == 0:
+                continue
+            with open(p, "rb") as fh:
+                fh.seek(-1, os.SEEK_END)
+                if fh.read(1) == b"\n":
+                    continue
+            if os.path.normpath(rel) in keep:
+                die(f"{rid}: {rel} ends in a cut-off line but is recorded by a finished run; not touched")
+            data = open(p, "rb").read()
+            cut = len(data) - (data.rfind(b"\n") + 1)
+            row = {"path": rel, "bytes_removed": cut, "sha256_before": hashlib.sha256(data).hexdigest(),
+                   "sha256_after": hashlib.sha256(data[:len(data) - cut]).hexdigest()}
+            print(f"  {'would trim' if self.dry else 'trimmed'} a cut-off final line ({cut} bytes) of {rel}", flush=True)
+            if not self.dry:
+                with open(p, "rb+") as fh:
+                    fh.truncate(len(data) - cut)
+                self.event(job, rid, "repaired_shard", row)
+            fixed.append(row)
+        return fixed
+
     def partial_targets(self, rid):
         """What a single-call run deletes before it runs again from the start."""
         r = self.runs[rid]
@@ -352,6 +453,7 @@ class Runner:
             targets.append(o)
             if o.endswith(".pt"):
                 targets += [o + ".part.pt", o[:-3] + ".jsonl", o[:-3] + ".events.jsonl"]
+        targets += [s for s in self.side_outputs(rid) if s.startswith(DELETABLE)]   # gauge counts: overwritten
         for t, script, _ in toks:
             if script == "scripts/n3_mcf_gauge.py":
                 d = opt(t, "--run_dir")
@@ -361,7 +463,8 @@ class Runner:
 
     def delete_partial(self, rid, job):
         keep = self.recorded_files()
-        gone = []
+        gone, failed_check = [], {}
+        targets = []
         for rel in self.partial_targets(rid):
             norm = os.path.normpath(rel).replace(os.sep, "/")
             if not norm.startswith(DELETABLE) or ".." in norm.split("/"):
@@ -373,6 +476,16 @@ class Runner:
                 {k for k in keep if k == os.path.normpath(norm) or k.startswith(os.path.normpath(norm) + os.sep)}
             if inside & keep:
                 die(f"{rid}: {rel} holds a finished run's recorded output; not deleted")
+            targets.append((norm, p))
+        for norm, p in targets:                       # every target cleared before anything is deleted
+            chk = os.path.join(p, "check.json")
+            if os.path.isdir(p) and norm.startswith("n3_mcf/infer/") and os.path.isfile(chk):
+                try:
+                    c = json.load(open(chk))
+                except (OSError, json.JSONDecodeError) as e:
+                    c = {"unreadable": str(e)}
+                if c.get("pass") is not True:         # a failed MCF check is kept in the event log (never scored)
+                    failed_check[norm] = c
             gone.append(norm)
             if self.dry:
                 continue
@@ -382,7 +495,8 @@ class Runner:
                 os.remove(p)
         if gone:
             print(f"  {'would delete' if self.dry else 'deleted'} partial outputs of {rid}: {gone}", flush=True)
-            self.event(job, rid, "deleted_partial", gone)
+            self.event(job, rid, "deleted_partial", {"deleted": gone, **({"failed_check": failed_check}
+                                                                         if failed_check else {})})
         return gone
 
     # ------------------------------------------------------------------ runs and jobs
@@ -407,13 +521,39 @@ class Runner:
             return False
         started = os.path.exists(self.rec_path(rid, "started"))
         stage(f"{rid} [{mode}{', continuing after a stop' if started else ''}]")
-        if mode == "restart":
+        if mode == "resume":
+            self.repair_shards(rid, job)
+        else:
             self.delete_partial(rid, job)
         if not self.dry:
             self.atomic_json({"run": rid, "job": job, "first_start": time.strftime("%Y-%m-%d %H:%M:%S")}
                              if not started else json.load(open(self.rec_path(rid, "started"))),
                              self.rec_path(rid, "started"))
             self.event(job, rid, ("resume" if mode == "resume" else "restart") if started else "start")
+        # a single-call run that fails gets ONE in-job retry from the start with the committed seed (as 5b's one
+        # regeneration per submission); a per-crystal resumable run stops at once (its resubmission resumes it)
+        tries = 2 if mode == "restart" else 1
+        for k in range(1, tries + 1):
+            why, executed = self.attempt(rid, job)
+            if why is None:
+                break
+            if not self.dry:
+                self.event(job, rid, "attempt_failed", {"attempt": k, "why": why})
+            if k == tries:
+                die(f"{rid}: {why}" + (" (after its one in-job retry)" if tries == 2 else ""))
+            print(f"  {rid}: {why}; one in-job retry from the start with the committed seed", flush=True)
+            self.delete_partial(rid, job)
+            self.event(job, rid, "retry_in_job")
+        if self.dry:
+            self.planned.add(rid)
+            return True
+        self.write_record(rid, mode, executed)
+        self.event(job, rid, "done")
+        return True
+
+    def attempt(self, rid, job):
+        """Run every command of rid once; -> (None, argvs) on success, else (why, argvs)."""
+        r = self.runs[rid]
         executed = []
         for c in r["commands"]:
             a = self.argv(c)
@@ -424,22 +564,19 @@ class Runner:
             rc = self.call(a)
             if rc:
                 self.event(job, rid, "command_failed", {"rc": rc, "command": c})
-                die(f"{rid}: rc {rc} from `{c}`")
+                return f"rc {rc} from `{c}`", executed
         if self.dry:
-            self.planned.add(rid)
-            return True
-        missing = [o for o in r["outputs"] if not os.path.exists(self.p(o))]
+            return None, executed
+        missing = [o for o in r["outputs"] + self.side_outputs(rid) if not os.path.exists(self.p(o))]
         if missing:
-            die(f"{rid}: did not write {missing}")
-        for d in sorted(self.made_in_run(rid)):
-            if any(parse(c)[1:] == ("scripts/n3_mcf_run.py", "infer") for c in r["commands"]) and \
-                    os.path.isdir(self.p(d)) and d.startswith("n3_mcf/infer/"):
-                chk = self.p(f"{d}/check.json")
-                if not os.path.isfile(chk) or json.load(open(chk)).get("pass") is not True:
-                    die(f"{rid}: {d}/check.json is missing or did not pass")
-        self.write_record(rid, mode, executed)
-        self.event(job, rid, "done")
-        return True
+            return f"did not write {missing}", executed
+        if any(parse(c)[1:] == ("scripts/n3_mcf_run.py", "infer") for c in r["commands"]):
+            for d in sorted(self.made_in_run(rid)):
+                if os.path.isdir(self.p(d)) and d.startswith("n3_mcf/infer/"):
+                    chk = self.p(f"{d}/check.json")
+                    if not os.path.isfile(chk) or json.load(open(chk)).get("pass") is not True:
+                        return f"{d}/check.json is missing or did not pass", executed
+        return None, executed
 
     def write_record(self, rid, mode, executed):
         r = self.runs[rid]
@@ -447,6 +584,7 @@ class Runner:
                "driver_sha256": self.driver_sha, "commands": r["commands"], "seeds": r.get("seeds"),
                "executed": [[str(x) for x in a] for a in executed],
                "outputs": {o: self.checksum(o) for o in r["outputs"]},
+               "side_outputs": {s: self.checksum(s) for s in (self.side_outputs(rid) if mode != "uploaded" else [])},
                "slurm_job": os.environ.get("SLURM_JOB_ID"), "finished": time.strftime("%Y-%m-%d %H:%M:%S")}
         self.atomic_json(rec, self.rec_path(rid))
 
@@ -463,7 +601,7 @@ class Runner:
         rows = []
         for rid in ids:
             rec = self.record(rid)
-            for o, c in rec["outputs"].items():
+            for o, c in {**rec["outputs"], **rec.get("side_outputs", {})}.items():
                 if c.get("dir"):
                     rows += [(h, f"{o}/{f}") for f, h in c["files"].items()]
                 else:

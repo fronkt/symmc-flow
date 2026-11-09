@@ -28,10 +28,11 @@ def is_dir_output(rel):
 
 
 class Fake:
-    """Writes each command's outputs; infer refuses a run dir that already holds predictions (as n3_mcf_run does)."""
+    """Writes each command's outputs and side outputs; infer refuses a run dir that already holds predictions (as
+    n3_mcf_run does). fail[(rid, i)] = n makes that command fail n times (after its partial writes)."""
 
     def __init__(self, X):
-        self.X, self.calls, self.fail_once, self.check_pass = X, [], set(), True
+        self.X, self.calls, self.fail, self.check_pass, self.gauge_into = X, [], {}, True, set()
         self.table = {}
         for rid in X.order:
             if X.mode(rid) == "uploaded":
@@ -54,23 +55,34 @@ class Fake:
         script = argv[1]
         assert argv[0] == ("PYMCF" if script in S7.MCF_SCRIPTS else "PYSYMMC"), argv
         rid, i = self.table[tuple(argv[1:])]
-        cmds = self.X.runs[rid]["commands"]
+        cmds, outs = self.X.runs[rid]["commands"], self.X.runs[rid]["outputs"]
         t, _, sub = S7.parse(cmds[i])
         if (script, sub) == ("scripts/n3_mcf_run.py", "infer"):
             d = S7.opt(shlex.split(cmds[i + 1]), "--run_dir")
             if os.path.exists(self.p(f"{d}/out/predictions_16.pt")):
                 return 2                                            # "already holds a run"
             self.write(f"{d}/out/predictions_16.pt", f"pred {rid}")
-            self.write(f"{d}/check.json", json.dumps({"pass": self.check_pass}))
+            self.write(f"{d}/check.json", json.dumps({"pass": self.check_pass, "failed": [] if self.check_pass
+                                                      else ["finite_R"]}))
+            if rid in self.gauge_into:
+                self.write(f"{d}/gauge_16_step5.jsonl", f"stray rows {rid}")
         if script == "scripts/n3_mcf_gauge.py":
             d = S7.opt(argv, "--run_dir")
             assert os.path.isdir(self.p(d)), d
             self.write(f"{d}/gauge_16_step5.jsonl", f"rows {rid}")
-        if (rid, i) in self.fail_once:
-            self.fail_once.discard((rid, i))
+        if self.fail.get((rid, i), 0) > 0:
+            self.fail[(rid, i)] -= 1
             return 1
+        if (script, sub) == ("scripts/n3_mcf_run.py", "to_bundle"):
+            self.write(S7.mcf_bundle_of(S7.opt(argv, "--run_dir")), f"bundle {rid}")
+        if (script, sub) == ("scripts/n3_old_symmc.py", "sample"):
+            for o in outs:
+                self.write(o[:-3] + ".rot.pt", f"rot {rid}")
+        if script == "scripts/n3_mcf_gauge.py":
+            for o in outs:
+                self.write(f"{S7.GAUGE_COUNTS}/{os.path.basename(o)[:-3]}.json", f"counts {rid}")
         if i == len(cmds) - 1:
-            for o in self.X.runs[rid]["outputs"]:
+            for o in outs:
                 if is_dir_output(o):
                     os.makedirs(self.p(o), exist_ok=True)
                     if not os.listdir(self.p(o)):
@@ -204,40 +216,52 @@ def test_plan_executes_nothing(world):
 
 
 # ------------------------------------------------------------------------------------------- resumption
+def ev_of(root, rid):
+    return [e["event"] for e in events(root) if e["run"] == rid]
+
+
 def test_resumable_run_reinvokes_its_commands_after_a_stop(world):
     root, sel = world
     X, fake = runner(root, sel)
-    fake.fail_once.add(("iii-u/testB/b0", 1))                        # press stops after haar finished
-    with pytest.raises(SystemExit, match="iii-u/testB/b0: rc 1"):
+    fake.fail[("iii-u/testB/b0", 1)] = 1                             # press stops after haar finished
+    with pytest.raises(SystemExit, match="iii-u/testB/b0: rc 1"):    # no in-job retry for a resumable run
         X.run_job("7C")
+    assert fake.executed().count(("iii-u/testB/b0", 1)) == 1
     X2, fake2 = runner(root, sel)
     X2.run_job("7C")
     assert fake2.executed()[:2] == [("iii-u/testB/b0", 0), ("iii-u/testB/b0", 1)]   # haar re-invoked (resumes)
-    ev = [e for e in events(root) if e["run"] == "iii-u/testB/b0"]
-    assert [e["event"] for e in ev] == ["start", "command_failed", "resume", "done"]
+    assert ev_of(root, "iii-u/testB/b0") == ["start", "command_failed", "attempt_failed", "resume", "done"]
     assert X2.record("iii-u/testB/b0") is not None
 
 
-def test_single_call_run_deletes_its_partial_outputs_and_restarts(world):
+def test_single_call_run_gets_one_in_job_retry(world):
     root, sel = world
     X, fake = runner(root, sel)
-    fake.fail_once.add(("MCF-R/testB/s0", 1))                        # to_bundle fails after infer wrote the run dir
-    with pytest.raises(SystemExit, match="MCF-R/testB/s0: rc 1"):
+    fake.fail[("MCF-R/testB/s0", 1)] = 1                             # to_bundle fails once after infer wrote the dir
+    X.run_job("7M")                                                  # infer would refuse (rc 2) without the delete
+    assert ev_of(root, "MCF-R/testB/s0") == ["start", "command_failed", "attempt_failed", "deleted_partial",
+                                             "retry_in_job", "done"]
+    assert fake.executed()[:4] == [("MCF-R/testB/s0", 0), ("MCF-R/testB/s0", 1)] * 2
+
+
+def test_single_call_run_failing_twice_stops_then_restarts_on_resubmission(world):
+    root, sel = world
+    X, fake = runner(root, sel)
+    fake.fail[("MCF-R/testB/s0", 1)] = 2
+    with pytest.raises(SystemExit, match=r"MCF-R/testB/s0: rc 1 .* \(after its one in-job retry\)"):
         X.run_job("7M")
-    rd = os.path.join(root, "n3_mcf/infer/mcfR/testB/s0_last_u5/out/predictions_16.pt")
-    assert os.path.exists(rd)
+    assert os.path.exists(os.path.join(root, "n3_mcf/infer/mcfR/testB/s0_last_u5/out/predictions_16.pt"))
     X2, fake2 = runner(root, sel)
-    X2.run_job("7M")                                                 # infer would refuse (rc 2) without the delete
-    ev = [e["event"] for e in events(root) if e["run"] == "MCF-R/testB/s0"]
-    assert ev == ["start", "command_failed", "deleted_partial", "restart", "done"]
+    X2.run_job("7M")
+    assert ev_of(root, "MCF-R/testB/s0")[-3:] == ["deleted_partial", "restart", "done"]
     assert fake2.executed()[:2] == [("MCF-R/testB/s0", 0), ("MCF-R/testB/s0", 1)]
 
 
 def test_gauge_restart_keeps_the_scanned_mcf_run(world):
     root, sel = world
     X, fake = runner(root, sel)
-    fake.fail_once.add(("MCF-R+G/testB/s1", 0))                      # gauge rows written, then the scan stops
-    with pytest.raises(SystemExit, match="MCF-R\\+G/testB/s1: rc 1"):
+    fake.fail[("MCF-R+G/testB/s1", 0)] = 2                           # gauge rows written, then the scan stops twice
+    with pytest.raises(SystemExit, match=r"MCF-R\+G/testB/s1: rc 1"):
         X.run_job("7M")
     src = os.path.join(root, "n3_mcf/infer/mcfR/testB/s1_last_u5")
     pred = open(os.path.join(src, "out/predictions_16.pt")).read()
@@ -250,32 +274,133 @@ def test_gauge_restart_keeps_the_scanned_mcf_run(world):
     assert ("MCF-R/testB/s1", 0) not in fake2.executed()
 
 
-def test_a_finished_runs_recorded_file_is_never_deleted(world):
+def test_restart_targets_recorded_by_another_finished_run_are_kept(world):
+    root, sel = world
+    # a restart target (the sibling .jsonl of MCF-A-floor's bundle) that a finished earlier run recorded
+    s = _tampered(sel, "MCF-R/testB/s0", outputs=["n3_mcf/infer/mcfR/testB/s0_last_u5",
+                                                  "results/n3/private/draws/mcfR_last_u5_s0_testB.pt",
+                                                  "results/n3/private/draws/mcfAfloor_s0_testB.jsonl"])
+    X, fake = runner(root, s)
+    sib = os.path.join(root, "results/n3/private/draws/mcfAfloor_s0_testB.jsonl")
+    with pytest.raises(SystemExit, match="MCF-A-floor/testB/s0: results/n3/private/draws/mcfAfloor_s0_testB.jsonl "
+                                         "holds a finished run's recorded output"):
+        X.run_job("7M")
+    assert open(sib).read() == "out MCF-R/testB/s0"
+    assert X.record("MCF-R/testB/s0") is not None
+
+
+def test_gauge_glob_target_recorded_by_the_mcf_run_is_kept(world):
+    root, sel = world
+    X, fake = runner(root, sel)
+    fake.gauge_into.add("MCF-R/testB/s1")                            # MCF-R s1 finished with a gauge_* file inside
+    with pytest.raises(SystemExit, match=r"MCF-R\+G/testB/s1: .*gauge_16_step5.jsonl holds a finished run's "
+                                         "recorded output"):
+        X.run_job("7M")
+    rows = os.path.join(root, "n3_mcf/infer/mcfR/testB/s1_last_u5/gauge_16_step5.jsonl")
+    assert open(rows).read() == "stray rows MCF-R/testB/s1"
+    assert X.record("MCF-R/testB/s1") is not None
+
+
+def test_one_output_listed_by_two_runs_is_refused(world):
+    root, sel = world
+    s = copy.deepcopy(sel)
+    for r in s["runs"]["step7"]:
+        if r["id"] == "MCF-R+G/testB/s1":
+            r["outputs"].append("results/n3/private/draws/mcfR_last_u5_s1_testB.pt")
+    with pytest.raises(SystemExit, match="is listed by both"):
+        runner(root, s)
+
+
+def test_cut_off_shard_line_is_trimmed_before_a_resume(world):
+    root, sel = world
+    shard = os.path.join(root, S7.CLS, "iii-u_s0_testB.jsonl")
+    whole = os.path.join(root, S7.CLS, "iii-u_s1_testB.jsonl")
+    other = os.path.join(root, S7.CLS, "screen_testB.jsonl")         # job 7S's shard: never touched by 7C
+    os.makedirs(os.path.dirname(shard), exist_ok=True)
+    open(shard, "wb").write(b'{"refcode": "A"}\n{"refc')
+    open(whole, "wb").write(b'{"refcode": "B"}\n')
+    open(other, "wb").write(b'{"refcode": "C"}\n{"ref')
+    X, fake = runner(root, sel)
+    X.run_job("7C")
+    assert open(shard, "rb").read() == b'{"refcode": "A"}\n'
+    assert open(whole, "rb").read() == b'{"refcode": "B"}\n'
+    assert open(other, "rb").read() == b'{"refcode": "C"}\n{"ref'
+    rep = [e for e in events(root) if e["event"] == "repaired_shard"]
+    assert len(rep) == 1 and rep[0]["run"] == "iii-u/testB/b0"
+    d = rep[0]["detail"]
+    assert d["path"] == f"{S7.CLS}/iii-u_s0_testB.jsonl" and d["bytes_removed"] == 6
+    assert d["sha256_after"] == S7.sha256(shard) and d["sha256_before"] != d["sha256_after"]
+
+
+def test_a_cut_off_file_recorded_by_a_finished_run_is_not_trimmed(world):
+    root, sel = world
+    rel = f"{S7.CLS}/iii-u_s0_testB.jsonl"
+    outs = next(r for r in sel["runs"]["step7"] if r["id"] == "ours/testB")["outputs"]
+    X, fake = runner(root, _tampered(sel, "ours/testB", outputs=list(outs) + [rel]))
+    X.run_job("7O")                                                  # the fake writes it without a final newline
+    before = open(os.path.join(root, rel), "rb").read()
+    with pytest.raises(SystemExit, match="recorded by a finished run; not touched"):
+        X.run_job("7C")
+    assert open(os.path.join(root, rel), "rb").read() == before
+
+
+def test_classical_shard_names_follow_n3_classical(world):
+    root, sel = world
+    X, _ = runner(root, sel)
+    C = S7.CLS
+    assert X.classical_shards("iii-u/testB/b0") == [f"{C}/iii-u_s0_testB.jsonl", f"{C}/iii-p_s0_testB.jsonl"]
+    assert X.classical_shards("p1-ours/devtest/s1") == [f"{C}/p1-ours_s1_devtest.jsonl"]
+    assert X.classical_shards("i-E+basin-ours/testB/s2") == [f"{C}/i-E-ours_s2_testB.jsonl"]   # basin --from-ie: none
+    assert X.classical_shards("basin-ours_n2/testB/s0") == [f"{C}/basin-ours_n2_s0_testB.jsonl"]
+    assert X.classical_shards("iii-s/testB") == [f"{C}/screen_testB.jsonl", f"{C}/iii-s_testB.jsonl"]
+    assert X.classical_shards("fftruth/devtest") == [f"{C}/fftruth_devtest.jsonl"]
+    assert X.classical_shards("p1ref/testB") == [f"{C}/p1ref_testB.jsonl"]
+    assert X.classical_shards("MCF-R/testB/s0") == [] and X.classical_shards("ours/testB") == []
+
+
+def test_mcf_bundle_naming_matches_the_freeze(world):
+    root, sel = world
+    X, _ = runner(root, sel)
+    side = {}
+    for rid in X.order:
+        if X.mode(rid) == "uploaded":
+            continue
+        for c in X.runs[rid]["commands"]:
+            t, script, sub = S7.parse(c)
+            if (script, sub) == ("scripts/n3_mcf_run.py", "to_bundle"):
+                b = S7.mcf_bundle_of(S7.opt(t, "--run_dir"))
+                if not rid.startswith("MCF-R+G/"):
+                    assert b in X.runs[rid]["outputs"], (rid, b)        # the naming rule reproduces the freeze
+                else:
+                    side[rid] = b
+    assert side == {"MCF-R+G/testB/s0": "results/n3/private/draws/mcfR_ep1331_st18648_u5_s0_testB.pt",
+                    "MCF-R+G/devtest/s0": "results/n3/private/draws/mcfR_ep1331_st18648_u5_s0_devtest.pt"}
+
+
+def test_side_outputs_are_checksummed(world):
     root, sel = world
     X, fake = runner(root, sel)
     X.run_job("7M")
-    sel2 = copy.deepcopy(sel)
-    for r in sel2["runs"]["step7"]:
-        if r["id"] == "MCF-R+G/testB/s1":                            # pretend the scan also re-made MCF-R's bundle
-            r["outputs"].append("results/n3/private/draws/mcfR_last_u5_s1_testB.pt")
-            r["commands"] = list(r["commands"])
-    with pytest.raises(SystemExit):
-        S7.Runner(root, sel2, "f" * 64, 28, 1, 0, "PYSYMMC", "PYMCF")   # one output, two runs: refused at load
-    X3, _ = runner(root, sel)
-    keep = X3.recorded_files()
-    assert os.path.normpath("n3_mcf/infer/mcfR/testB/s1_last_u5/out/predictions_16.pt") in keep
-    with pytest.raises(SystemExit, match="holds a finished run's recorded output"):
-        X3.delete_partial("MCF-R/testB/s1", "7M")                    # its run dir is recorded: never deleted
-    os.remove(X3.rec_path("MCF-R+G/testB/s1"))
-    X3.delete_partial("MCF-R+G/testB/s1", "7M")                      # the scan's own rows + bundle only
-    assert os.path.exists(os.path.join(root, "n3_mcf/infer/mcfR/testB/s1_last_u5/out/predictions_16.pt"))
-    assert not os.path.exists(os.path.join(root, "n3_mcf/infer/mcfR/testB/s1_last_u5/gauge_16_step5.jsonl"))
+    X.run_job("7C")
+    g = json.load(open(X.rec_path("MCF-R+G/testB/s0")))["side_outputs"]
+    assert set(g) == {"results/n3/private/draws/mcfR_ep1331_st18648_u5_s0_testB.pt",
+                      f"{S7.GAUGE_COUNTS}/mcfRG_ep1331_st18648_u5_s0_testB.json"}
+    assert set(json.load(open(X.rec_path("MCF-R+G/testB/s1")))["side_outputs"]) == \
+        {f"{S7.GAUGE_COUNTS}/mcfRG_last_u5_s1_testB.json"}
+    assert set(json.load(open(X.rec_path("iv-P/devtest/s2")))["side_outputs"]) == \
+        {"results/n3/private/draws/ivP_s2_devtest.rot.pt"}
+    assert json.load(open(X.rec_path("MCF-R/testB/s0")))["side_outputs"] == {}
+    tsv = open(os.path.join(root, S7.STATE, "7C_checksums.tsv")).read()
+    assert "results/n3/private/draws/ivP_s0_testB.rot.pt" in tsv
+    open(os.path.join(root, "results/n3/private/draws/ivP_s0_testB.rot.pt"), "w").write("changed")
+    with pytest.raises(SystemExit, match="iv-P/testB/s0: outputs changed after the run finished"):
+        X.run_job("7C")
 
 
 def test_cross_job_input_must_be_done(world):
     root, sel = world
     X, fake = runner(root, sel)
-    with pytest.raises(SystemExit, match="comes from ours/testB \\(job 7O\\), which is not done"):
+    with pytest.raises(SystemExit, match=r"comes from ours/testB \(job 7O\), which is not done"):
         X.run_job("7E0")
     assert fake.calls == []
     X.run_job("7O")
@@ -290,12 +415,16 @@ def test_uploaded_bundles_must_match_the_freeze(world):
         X.run_job("7C")
 
 
-def test_mcf_check_must_pass(world):
+def test_a_failed_mcf_check_stops_after_one_retry_and_is_kept_in_the_log(world):
     root, sel = world
     X, fake = runner(root, sel)
     fake.check_pass = False
-    with pytest.raises(SystemExit, match="check.json is missing or did not pass"):
+    with pytest.raises(SystemExit, match=r"check.json is missing or did not pass \(after its one in-job retry\)"):
         X.run_job("7M")
+    dele = [e for e in events(root) if e["run"] == "MCF-R/testB/s0" and e["event"] == "deleted_partial"]
+    assert len(dele) == 1
+    fc = dele[0]["detail"]["failed_check"]
+    assert fc == {"n3_mcf/infer/mcfR/testB/s0_last_u5": {"pass": False, "failed": ["finite_R"]}}
 
 
 # ------------------------------------------------------------------------------------------- refusals

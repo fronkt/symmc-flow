@@ -67,9 +67,55 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
         the full frozen refcode order (R:234; refcode order only, no truth).
       - A finished run (all outputs present and checksummed) is never redone.
 - [x] Tests with a fake executor, as in 5b: verbatim commands, the placeholder rule, refusal of unlisted runs,
-      dependency order, the checksum list, and the restart rule of section 5. (`tests/test_n3_step7.py`, 24
-      cases on the real freeze; N3 suite 192 passed, 10 skipped.)
-- [ ] Review it (an independent reviewer on the code), then a login-node dry run: prelude + `plan --job X`.
+      dependency order, the checksum list, and the restart rule of section 5. (`tests/test_n3_step7.py`, 32
+      cases on the real freeze after the review fixes; N3 suite 200 passed, 10 skipped.)
+- [x] Review it (an independent reviewer on the code). 11-08: no crash or protocol violation on the normal path.
+      The 8 build fixes it asked for are in the driver and private files:
+      - trim a cut-off shard line before a resume;
+      - `--dependency=singleton` plus a fixed job name, and `--open-mode=append`;
+      - a failing `check.json` is kept in the event;
+      - one in-job retry for single-call runs;
+      - side outputs are checksummed;
+      - the `(mcf/)?sg_oracle` and `mcfRoal_` verify patterns;
+      - the prelude logs its own sha256;
+      - a real recorded-file test.
+- [ ] Login-node dry run: prelude + `plan --job X` (needs the step-7 upload, manual mode).
+- [ ] **Pre-sbatch, Frank's OK needed: one gpu-debug smoke of the FF* / floor paths no test has run**, on VAL / VALSEL
+      only, BEFORE the step-7 upload.
+      - The step-5 prelude refuses once a step-7 manifest exists, so the smoke runs under `anvil_step5.sbatch`:
+        `sbatch -p gpu-debug -t 00:30:00 -J n3-s7smoke anvil_step5.sbatch step7_smoke.sh`.
+      - `step7_smoke.sh` would be written only after the OK. Its commands, with where each output lands; none
+        can collide with a step-7 output (`_val` / `_valsel` names; no 5b product of these names exists):
+        ```
+        "$PY_SYMMC" scripts/n3_classical.py ie --draws results/n3/private/draws/ours_s0_val.pt --limit 2 --before-form --workers 1
+          # -> draws/i-E-ours_s0_val.partial.pt; shard classical/i-E-ours_s0_val.smoke.jsonl; classical/ff_logs/i-E-ours_s0_val/
+        "$PY_SYMMC" scripts/n3_classical.py basin --draws results/n3/private/draws/i-E-ours_s0_val.partial.pt --from-ie --limit 2
+          # -> draws/basin-ours_s0_val.partial.pt (no FF*, no shard)
+        "$PY_SYMMC" scripts/n3_classical.py basin --draws results/n3/private/draws/ours_n2_s0_val.pt --limit 2 --before-form --workers 1
+          # -> draws/basin-ours_n2_s0_val.partial.pt; shard classical/basin-ours_n2_s0_val.smoke.jsonl
+        "$PY_MCF" scripts/n3_mcf_run.py prior_floor --seed 0 --set valsel
+        "$PY_MCF" scripts/n3_mcf_run.py to_bundle --run_dir n3_mcf/infer/mcfA_floor/valsel/s0 --workers 28
+          # -> n3_mcf/infer/mcfA_floor/valsel/s0/ and draws/mcfAfloor_s0_valsel.pt
+        ```
+      - Recommendation: drop `--before-form`. The H2 form exists (`classical/anchor_valsel.json`), so without the
+        flag `ie` and the direct `basin` run step 7's own form guard and FF* configuration check.
+      - Nothing is matched. These are CSD-derived VAL / VALSEL products, deleted with the root at step 8.
+      - The prior floor runs on all 400 VALSEL crystals; its time is unmeasured, so if 30 min is short it goes on
+        `gpu` with `-t 01:00:00`.
+- **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
+  script refuses any other, and `--dependency=singleton` keys on the name.
+  ```
+  sbatch -J n3-s7O  -t 08:00:00 anvil_step7.sbatch step7_7O.sh
+  sbatch -J n3-s7C  -t 08:00:00 anvil_step7.sbatch step7_7C.sh
+  sbatch -J n3-s7M  -t 12:00:00 anvil_step7.sbatch step7_7M.sh
+  sbatch -J n3-s7S  -t 2-00:00:00 anvil_step7.sbatch step7_7S.sh
+  sbatch -J n3-s7Sd -t 2-00:00:00 anvil_step7.sbatch step7_7Sd.sh
+  sbatch -J n3-s7Ed -t 2-00:00:00 anvil_step7.sbatch step7_7Ed.sh
+  sbatch -J n3-s7E0 -t 2-00:00:00 --dependency=afterok:<7O id>,singleton anvil_step7.sbatch step7_7E0.sh   # same for 7E1, 7E2
+  ```
+  - A command-line `--dependency` replaces the script's `singleton` line, so the 7E jobs repeat `,singleton`.
+  - **If 7O is resubmitted**, the queued 7E0-7E2 still wait on the old 7O id (afterok on a failed job never
+    clears). Cancel them and resubmit them with `--dependency=afterok:<new 7O id>,singleton`.
 
 **Job grouping.** One A100 and 32 cores per job (W = 28, G = 1, as timed). The 2 DEV-TEST OURS/N2 conversions are
 done; their bundles arrive in the step-7 pack.
