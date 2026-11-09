@@ -103,7 +103,7 @@ and `anvil_step5_cpu.sbatch` is debug-only (2 h).
       MCF-A s_uF 9 / s_uR 3.)
 - [x] Job logs carry both sha256 values, and the prelude verify excused only VALSEL and Gate C hits. (All
       four: inner + driver sha256 lines; STEP5_VERIFY_PASS, unexcused 0.)
-- [ ] Frank reviews the freeze preview, then `n3_select.py`, then commit + push `results/n3/n3_selection.json`.
+- [x] Frank reviews the freeze preview, then `n3_select.py`, then commit + push `results/n3/n3_selection.json`. (11-08, Frank: "yes go ahead"; 772a36e, remote confirmed.)
 
 ---
 

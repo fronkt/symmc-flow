@@ -594,3 +594,11 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
   - New untracked public records from the pullback: `results/n3/gateC.json` (read by the freeze) and
     `results/n3/gateC_2026-10-22.json`. Neither has refcode-like tokens.
   - **Waiting for Frank's review** before `n3_select.py`, the commit and the push.
+- **FREEZE PUBLISHED (11-08 ~21:55 EST, Frank: "yes go ahead").** `python scripts/n3_select.py` wrote
+  `results/n3/n3_selection.json` (sha256 `553f1dc9…e1f491`, git_head 0ce4beb). It is identical to the reviewed
+  preview except `written` and `git_head`.
+  - Committed with the Gate C records it reads (`results/n3/gateC.json`, `gateC_2026-10-22.json`) as 772a36e and
+    pushed; `origin/paper-draft` = 772a36e. A refcode-pattern scan found only the words FAILED / PASSES / RANDOM
+    / VALSEL.
+  - **Step 7 may now start** (TEST-B / DEV-TEST upload, the 76 listed runs) once Anvil is back from `Nov16Flush`
+    (11-23 04:00). It needs a `pack --step 7` and a CSD upload with Frank in manual mode.
