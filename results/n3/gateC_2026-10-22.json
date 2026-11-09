@@ -1,0 +1,307 @@
+{
+ "protocol": "tasks/n3_protocol.md \u00a73.2 Gate C",
+ "C-a": {
+  "labels": {
+   "test": {
+    "n": 750,
+    "median_any_pct": {
+     "mcf08": 6.933,
+     "mcf09": 32.933,
+     "mcf10": 72.8
+    },
+    "per_run_any_pct": {
+     "mcf08": [
+      8.133,
+      6.8,
+      6.4,
+      6.933,
+      7.067
+     ],
+     "mcf09": [
+      31.867,
+      31.6,
+      32.933,
+      35.6,
+      33.333
+     ],
+     "mcf10": [
+      72.933,
+      72.8,
+      72.267,
+      73.6,
+      71.467
+     ]
+    },
+    "fig3a_ref_pct": {
+     "mcf09": 30.0,
+     "mcf10": 66.0
+    },
+    "ii_within_5pp": {
+     "mcf09": true,
+     "mcf10": false
+    },
+    "ii_pass": false,
+    "agreement": {
+     "outcomes": 11250,
+     "agree": 10052,
+     "fraction": 0.893511
+    },
+    "i_pass": false
+   },
+   "val": {
+    "n": 738,
+    "median_any_pct": {
+     "mcf08": 6.775,
+     "mcf09": 36.721,
+     "mcf10": 71.68
+    },
+    "per_run_any_pct": {
+     "mcf08": [
+      6.504,
+      8.401,
+      7.859,
+      6.775,
+      5.691
+     ],
+     "mcf09": [
+      36.992,
+      36.721,
+      36.585,
+      37.398,
+      36.043
+     ],
+     "mcf10": [
+      71.003,
+      71.68,
+      71.68,
+      72.493,
+      70.054
+     ]
+    },
+    "fig3a_ref_pct": {
+     "mcf09": 30.0,
+     "mcf10": 66.0
+    },
+    "ii_within_5pp": {
+     "mcf09": false,
+     "mcf10": false
+    },
+    "ii_pass": false,
+    "agreement": {
+     "outcomes": 11070,
+     "agree": 9909,
+     "fraction": 0.895122
+    },
+    "i_pass": false
+   }
+  },
+  "i_pass": false,
+  "ii_pass_test": false,
+  "ii_pass_val": false,
+  "pass": false,
+  "disclose_only_val_agrees": false,
+  "on_ii_failure": "record the diagnosis and the TEST / VAL 5-run medians at stol 0.9 / 1.0 in a dated \u00a79 amendment before any N3 MCF training; H1 sentences carry the harness clause"
+ },
+ "all_pass": false,
+ "C-b": {
+  "cpu": {
+   "device": "cpu",
+   "batches": 3,
+   "batch_size": 250,
+   "steps": 50,
+   "threads": 1,
+   "state_dict_sha256": "fd13cbb687273833324dcb923de0b52ec6e7369966155965de1eba2c1eded4ec",
+   "config": "/anvil/scratch/x-fcai3/n3_box/external/mcf_release/model-checkpoints/thurlemann23/config.yaml",
+   "pickle_sha256": "2438780868f38c0f8b6c509c50e81004e8eff58a38ab8a442c2a572067222f8b",
+   "tensors": 36,
+   "shims": false,
+   "coverage": {
+    "batches": 3,
+    "crystals": 750,
+    "dataset": 750
+   },
+   "all_batches_run": true,
+   "bitwise_equal": 36,
+   "differing": [],
+   "pass": true
+  },
+  "pass": false,
+  "cuda": {
+   "device": "cuda",
+   "batches": 3,
+   "batch_size": 250,
+   "steps": 50,
+   "threads": 1,
+   "state_dict_sha256": "fd13cbb687273833324dcb923de0b52ec6e7369966155965de1eba2c1eded4ec",
+   "config": "/anvil/scratch/x-fcai3/n3_box/external/mcf_release/model-checkpoints/thurlemann23/config.yaml",
+   "pickle_sha256": "2438780868f38c0f8b6c509c50e81004e8eff58a38ab8a442c2a572067222f8b",
+   "tensors": 36,
+   "shims": false,
+   "coverage": {
+    "batches": 3,
+    "crystals": 750,
+    "dataset": 750
+   },
+   "all_batches_run": true,
+   "max_diffs": {
+    "b0/corrupt/lattice_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b0/corrupt/rotmats_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b0/corrupt/so3_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b0/corrupt/trans_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b0/forward/cart_coords": {
+     "patched_vs_unpatched": 0.23322081565856934,
+     "unpatched_vs_unpatched": 0.23225617408752441
+    },
+    "b0/forward/lattices": {
+     "patched_vs_unpatched": 0.11810865998268127,
+     "unpatched_vs_unpatched": 0.11794242262840271
+    },
+    "b0/forward/pred_rotmats": {
+     "patched_vs_unpatched": 0.04098770022392273,
+     "unpatched_vs_unpatched": 0.03643593192100525
+    },
+    "b0/forward/pred_trans": {
+     "patched_vs_unpatched": 0.016836166381835938,
+     "unpatched_vs_unpatched": 0.010341182351112366
+    },
+    "b0/model_step/cell_loss": {
+     "patched_vs_unpatched": 9.5367431640625e-07,
+     "unpatched_vs_unpatched": 1.0728836059570312e-06
+    },
+    "b0/model_step/rots_vf_loss": {
+     "patched_vs_unpatched": 7.152557373046875e-07,
+     "unpatched_vs_unpatched": 1.0728836059570312e-06
+    },
+    "b0/model_step/se3_vf_loss": {
+     "patched_vs_unpatched": 7.152557373046875e-07,
+     "unpatched_vs_unpatched": 1.0728836059570312e-06
+    },
+    "b0/model_step/trans_loss": {
+     "patched_vs_unpatched": 1.341104507446289e-07,
+     "unpatched_vs_unpatched": 1.4901161193847656e-07
+    },
+    "b1/corrupt/lattice_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b1/corrupt/rotmats_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b1/corrupt/so3_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b1/corrupt/trans_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b1/forward/cart_coords": {
+     "patched_vs_unpatched": 0.4758644104003906,
+     "unpatched_vs_unpatched": 0.47612571716308594
+    },
+    "b1/forward/lattices": {
+     "patched_vs_unpatched": 0.14167171716690063,
+     "unpatched_vs_unpatched": 0.11964160203933716
+    },
+    "b1/forward/pred_rotmats": {
+     "patched_vs_unpatched": 0.022274941205978394,
+     "unpatched_vs_unpatched": 0.05391794443130493
+    },
+    "b1/forward/pred_trans": {
+     "patched_vs_unpatched": 0.029935985803604126,
+     "unpatched_vs_unpatched": 0.030283629894256592
+    },
+    "b1/model_step/cell_loss": {
+     "patched_vs_unpatched": 1.5497207641601562e-06,
+     "unpatched_vs_unpatched": 1.1920928955078125e-06
+    },
+    "b1/model_step/rots_vf_loss": {
+     "patched_vs_unpatched": 1.9073486328125e-06,
+     "unpatched_vs_unpatched": 1.0728836059570312e-06
+    },
+    "b1/model_step/se3_vf_loss": {
+     "patched_vs_unpatched": 1.9073486328125e-06,
+     "unpatched_vs_unpatched": 1.0728836059570312e-06
+    },
+    "b1/model_step/trans_loss": {
+     "patched_vs_unpatched": 8.940696716308594e-08,
+     "unpatched_vs_unpatched": 8.940696716308594e-08
+    },
+    "b2/corrupt/lattice_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b2/corrupt/rotmats_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b2/corrupt/so3_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b2/corrupt/trans_t": {
+     "patched_vs_unpatched": 0.0,
+     "unpatched_vs_unpatched": 0.0
+    },
+    "b2/forward/cart_coords": {
+     "patched_vs_unpatched": 3.9490692615509033,
+     "unpatched_vs_unpatched": 4.111185312271118
+    },
+    "b2/forward/lattices": {
+     "patched_vs_unpatched": 0.25217747688293457,
+     "unpatched_vs_unpatched": 0.25213515013456345
+    },
+    "b2/forward/pred_rotmats": {
+     "patched_vs_unpatched": 0.9844765067100525,
+     "unpatched_vs_unpatched": 0.950082391500473
+    },
+    "b2/forward/pred_trans": {
+     "patched_vs_unpatched": 0.9926248230040073,
+     "unpatched_vs_unpatched": 0.9942332934588194
+    },
+    "b2/model_step/cell_loss": {
+     "patched_vs_unpatched": 1.043081283569336e-06,
+     "unpatched_vs_unpatched": 1.3113021850585938e-06
+    },
+    "b2/model_step/rots_vf_loss": {
+     "patched_vs_unpatched": 1.430511474609375e-06,
+     "unpatched_vs_unpatched": 1.6689300537109375e-06
+    },
+    "b2/model_step/se3_vf_loss": {
+     "patched_vs_unpatched": 1.430511474609375e-06,
+     "unpatched_vs_unpatched": 1.6689300537109375e-06
+    },
+    "b2/model_step/trans_loss": {
+     "patched_vs_unpatched": 8.940696716308594e-08,
+     "unpatched_vs_unpatched": 1.043081283569336e-07
+    }
+   },
+   "pass": false
+  }
+ },
+ "C-c": {
+  "S": 16,
+  "n": 750,
+  "gt_equals_pickle": true,
+  "lattice_bitwise": 16,
+  "trans_bitwise": 16,
+  "max_lattice_dev": 0.0,
+  "max_trans_dev": 0.0,
+  "pass": true,
+  "predictions_sha256": "70e6c87f151c2a06b7db467bed16016c4dd4f2b9e1da1fa98543db7aead86fde",
+  "ckpt_sha256": "fd13cbb687273833324dcb923de0b52ec6e7369966155965de1eba2c1eded4ec"
+ }
+}
