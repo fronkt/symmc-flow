@@ -17,7 +17,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
 
 ## 1. Pack and upload (Frank in manual-approval mode)
 
-- [ ] `python scripts/n3_box_manifest.py pack --step 7 --out results/n3/private/uploads/step7` (not `--new-box`:
+- **DONE 11-10 (Frank: "Go ahead", manual mode): packed, uploaded, unpacked, verified, dry-run PASS. Details are in
+  REC, "Step-7 upload and dry run (2026-11-10)".**
+- [x] `python scripts/n3_box_manifest.py pack --step 7 --out results/n3/private/uploads/step7` (not `--new-box`:
       step 7 reuses the step-5 box root `$SCRATCH/n3_box`).
       - `list --step 7` (11-08): deployable, 24 files, 70.3 MB.
       - Contents: protocol, `testB_refcodes.txt` + SEL, `gateF_{testB,devtest}`, TEST-B/DEV-TEST set caches, the
@@ -27,10 +29,10 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
         step-5 code.
       - All 56 step-5 code files equal HEAD except `tasks/n3_protocol.md`, which the 11-06 clarifications changed
         and the step-7 pack re-ships.
-- [ ] scp the tar + `.sha256` to `$SCRATCH/n3_upload/` (CSD: manual mode only).
-- [ ] Unpack inside the image on the login node (its python3 is 3.6), with
+- [x] scp the tar + `.sha256` to `$SCRATCH/n3_upload/` (CSD: manual mode only).
+- [x] Unpack inside the image on the login node (its python3 is 3.6), with
       `N3_MANIFEST_DIR=$SCRATCH/n3_manifests`; then verify. Copy the receipt back to `C:/Users/frank/n3_manifests`.
-- [ ] Check that every `step7_inputs` row (29: frozen MCF/iv-P/OURS checkpoints, MCF configs, OURS/N2 DEV-TEST
+- [x] Check that every `step7_inputs` row (29: frozen MCF/iv-P/OURS checkpoints, MCF configs, OURS/N2 DEV-TEST
       draws) is on the box with its SEL sha256.
 
 ## 2. Prelude and verify for step 7 (new private files, no shipped script edited)
@@ -79,7 +81,8 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
       - the `(mcf/)?sg_oracle` and `mcfRoal_` verify patterns;
       - the prelude logs its own sha256;
       - a real recorded-file test.
-- [ ] Login-node dry run: prelude + `plan --job X` (needs the step-7 upload, manual mode).
+- [x] Login-node dry run: prelude + `plan --job X` (needs the step-7 upload, manual mode). 11-10: STEP7_VERIFY_PASS;
+      `jobs` lists 76 runs in 9 jobs; all 9 `plan` calls exit 0. 7E0-7E2 wait on 7O's TEST-B draws, as designed.
 - [x] **Smoke 22088788 RAN 11-09 12:41-12:47 (gpu-debug): verify, ie, basin --from-ie, basin direct, prior_floor and its
       6400 LJ evaluations PASSED; floor `to_bundle` FAILED (`KeyError: 'info'`).** Cause: A3 (a25a444) made to_bundle
       read `chk["info"]`, and `run_check_floor` had none. Frank's OK 11-09: "Fix + re-smoke". The fix, record and
@@ -90,7 +93,7 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
       the box root. The prelude verify passed first (209 files, unexcused 0). It wrote `draws/mcfAfloor_s0_valsel.pt`
       (n 400, S 16, 6400 valid; LJ ok 6395, spacing_inf 5), and `check.json` passed with `"info": {}`.
       `sbatch -p gpu-debug -t 00:30:00 -J n3-s7smoke2 anvil_step5.sbatch step7_smoke2.sh`
-- [ ] At the step-7 pack: confirm that `list --step 7` shows group `code_fix_7` and that the box-side
+- [x] (11-10: both confirmed.) At the step-7 pack: confirm that `list --step 7` shows group `code_fix_7` and that the box-side
       `step7_verify` prints `scripts/n3_mcf_run.py` among the re-shipped paths.
 - (Smoke 1 plan, as approved 11-08:) **one gpu-debug smoke of the FF* / floor paths no test has run**, on VAL / VALSEL
       only, BEFORE the step-7 upload.

@@ -668,3 +668,44 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     name (grep of `step7_7*.sh` and `n3_step7.py`).
 - **Next:** in manual mode with Frank, pack step 7 (confirm group `code_fix_7`), then upload, verify, and do the
   login-node dry run. Each step-7 sbatch needs Frank's OK.
+
+## Step-7 upload and dry run (2026-11-10)
+
+Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-derived transfer.
+
+- **Pack** at 119eef8: `pack --step 7`, deployable, 25 files, 70.5 MB.
+  - It includes group `code_fix_7` (`scripts/n3_mcf_run.py` `86dfe34d…`).
+  - Protocol `9a483a41…`, SEL `553f1dc9…`.
+  - Archive `n3_step7.tar` sha256 `d2f40f5d97d405ed10cfef1179f08f8bcab85a1e52654e114b738bc0f42d33bd`, in
+    `results/n3/private/uploads/step7/`.
+- **Pre-check on the box:** 3 of the 25 paths already existed.
+  - `tasks/n3_protocol.md` and `scripts/n3_mcf_run.py` differed, as expected: these are the two re-shipped files.
+  - `results/n3/private/old/ivP_frozen.json` was identical.
+  - `scripts/n3_step7.py` was absent.
+- **Upload (scp), 16 files, all SHA-256 OK on Anvil:**
+  - to `$SCRATCH/n3_upload/`: the tar, its `.sha256` and `n3_box_manifest.py`;
+  - to the box root, as the 5b precedent did with `n3_step5b.py`: the driver `scripts/n3_step7.py`;
+  - to `$SCRATCH/n3_ops/`: `anvil_step7.sbatch`, `anvil_step7_prelude.sh` (`79ee2187…`), `step7_verify.py`
+    (`6c182630…`) and the nine `step7_7*.sh`.
+- **Unpack** inside `jammy.sif` on login01, in overwrite mode, with `N3_MANIFEST_DIR=$SCRATCH/n3_manifests`.
+  - Tar sha256 OK; 28 members extracted.
+  - `verify step7`: 25 files, 0 missing, 0 mismatched, PASS.
+  - The receipt `step7.unpack_receipt.json` (`verified: true`, sha256 `b456aab4…`) and the manifest copies are
+    also at `C:/Users/frank/n3_manifests/`, with matching hashes.
+- **Login-node dry run in the image** (no GPU): the step-7 prelude, then `n3_step7.py jobs`, then `plan --job X`
+  for all 9 jobs. Log: `$SCRATCH/n3_ops/step7_dryrun_20261110T123902.txt`.
+  - `step7_verify.py`:
+    - step 7: 25 files OK;
+    - step 5: 207 carried files OK, 0 forbidden;
+    - re-shipped and judged by the step-7 manifest: `scripts/n3_mcf_run.py`, `tasks/n3_protocol.md`;
+    - freeze `553f1dc9…`, with all 29 `step7_inputs` present at their SHA-256;
+    - 0 symlinks and 0 TEST-B / DEV-TEST match, anchor, report, label or diagnostic files;
+    - result: `STEP7_VERIFY_PASS`.
+  - `jobs`: 76 runs in 9 jobs (7O 5, 7C 27, 7M 30, 7S 1, 7Sd 1, 7E0-7E2 2 each, 7Ed 6).
+  - All 9 `plan` calls exit 0.
+    - 7C counts the two uploaded DEV-TEST conversions as `[uploaded]` (3 bundles each match `step7_inputs`).
+    - 7E0-7E2 wait on 7O's TEST-B OURS / OURS-N2 draws (`afterok`), as designed.
+    - Nothing is done yet.
+- **Not submitted.** The nine sbatch commands (todo section 5) wait for Frank's OK.
+  - GPU balance: 1,412.8 of 1,485 GPU-h.
+  - pxrd array 22019698 at 11-10 12:40 EST: 18 of 120 done, 0 running, 102 pending (Priority).
