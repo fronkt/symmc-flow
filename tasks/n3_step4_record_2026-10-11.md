@@ -655,5 +655,16 @@ No more Vast spend. Frank left auto mode before the CSD transfer.
     `tasks/n3_step7_codefix_2026-11-09.md`, kept outside the protocol.
   - Tests: `tests/test_n3_mcf_floor_bundle.py` (3). N3 suite: 203 passed, 10 skipped.
 - No run, seed or command changed. MCF-R and MCF-A are unaffected. Nothing was matched.
-- **Next:** smoke 2 (`step7_smoke2.sh`) re-runs only the floor `to_bundle` with the fixed file from outside the box
-  root.
+- **Smoke 2 22112588 PASSED** (gpu-debug, 19:54:47-19:55:33 EST, 46 s; `step7_smoke2.sh` `c6d493e6…`). It re-ran
+  only the floor `to_bundle`, using the fixed file from `$OPS/fix7/scripts/`, outside the box root.
+  - The job checked that file's SHA-256 (`86dfe34d…`) before running it.
+  - The prelude verify passed first: 209 files, 0 missing, 0 mismatched; 422 boundary hits, all excused (328
+    step-5 VALSEL products, 94 Gate C run-dir files).
+  - It wrote `draws/mcfAfloor_s0_valsel.pt` (n 400, S 16, 6400 valid; LJ ok 6395, spacing_inf 5, det_fail 0,
+    nonfinite 0).
+  - `check.json` passed (S_n, pickle_sha and num_atoms all true) with `"info": {}` and `resid_sha256: null`.
+  - The 6400 LJ rows from 22088788 were reused, and nothing was matched.
+  - The bundle stays on the box. `step7_verify.py` does not flag VALSEL files, and no step-7 job writes a `valsel`
+    name (grep of `step7_7*.sh` and `n3_step7.py`).
+- **Next:** in manual mode with Frank, pack step 7 (confirm group `code_fix_7`), then upload, verify, and do the
+  login-node dry run. Each step-7 sbatch needs Frank's OK.

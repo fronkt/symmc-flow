@@ -85,8 +85,10 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
       read `chk["info"]`, and `run_check_floor` had none. Frank's OK 11-09: "Fix + re-smoke". The fix, record and
       re-ship route are in `tasks/n3_step7_codefix_2026-11-09.md`; tests are in `tests/test_n3_mcf_floor_bundle.py`;
       N3 suite: 203 passed, 10 skipped.
-- [ ] **Smoke 2** (`step7_smoke2.sh`): re-runs only the floor `to_bundle` with the fixed script from
-      `$OPS/fix7/scripts/` (SHA-256 `86dfe34d…`), outside the box root.
+- [x] **Smoke 2 22112588 PASSED 11-09 19:54-19:55 EST (gpu-debug, 46 s)** (`step7_smoke2.sh` `c6d493e6…`): the floor
+      `to_bundle` with the fixed script from `$OPS/fix7/scripts/` (SHA-256 `86dfe34d…`, checked in the job), outside
+      the box root. The prelude verify passed first (209 files, unexcused 0). It wrote `draws/mcfAfloor_s0_valsel.pt`
+      (n 400, S 16, 6400 valid; LJ ok 6395, spacing_inf 5), and `check.json` passed with `"info": {}`.
       `sbatch -p gpu-debug -t 00:30:00 -J n3-s7smoke2 anvil_step5.sbatch step7_smoke2.sh`
 - [ ] At the step-7 pack: confirm that `list --step 7` shows group `code_fix_7` and that the box-side
       `step7_verify` prints `scripts/n3_mcf_run.py` among the re-shipped paths.
