@@ -117,6 +117,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
       - Nothing is matched. These are CSD-derived VAL / VALSEL products, deleted with the root at step 8.
       - The prior floor runs on all 400 VALSEL crystals; its time is unmeasured, so if 30 min is short it goes on
         `gpu` with `-t 01:00:00`.
+- **SUBMITTED 11-10 ~12:50 EST (Frank: "Submit all 9 now", chosen over holding for pxrd):** 7O 22137510, 7C
+  22137516, 7M 22137517, 7S 22137518, 7Sd 22137519, 7Ed 22137520, and 7E0/7E1/7E2 22137521/22137522/22137523
+  (afterok:22137510, singleton). All are PENDING; the IDs are also in `$SCRATCH/n3_ops/step7_submitted.txt`.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

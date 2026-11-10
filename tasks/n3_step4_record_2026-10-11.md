@@ -706,6 +706,12 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     - 7C counts the two uploaded DEV-TEST conversions as `[uploaded]` (3 bundles each match `step7_inputs`).
     - 7E0-7E2 wait on 7O's TEST-B OURS / OURS-N2 draws (`afterok`), as designed.
     - Nothing is done yet.
-- **Not submitted.** The nine sbatch commands (todo section 5) wait for Frank's OK.
+- At this point nothing was submitted.
   - GPU balance: 1,412.8 of 1,485 GPU-h.
   - pxrd array 22019698 at 11-10 12:40 EST: 18 of 120 done, 0 running, 102 pending (Priority).
+- **Submitted 11-10 ~12:50 EST.** Frank chose "Submit all 9 now" over holding them until the pxrd array is done.
+  The commands are exactly those in todo section 5:
+  - 7O 22137510, 7C 22137516, 7M 22137517;
+  - 7S 22137518, 7Sd 22137519, 7Ed 22137520;
+  - 7E0 22137521, 7E1 22137522, 7E2 22137523, each `--dependency=afterok:22137510,singleton`.
+  - Six are PENDING (Priority) and three (Dependency). The IDs are also in `$SCRATCH/n3_ops/step7_submitted.txt`.
