@@ -732,3 +732,13 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   of 1000 and reached 120/1000 at 254 s, about 2.1 s per crystal. That matches the 5b rate (300 in 11.3 min).
 - The other 8 were still PENDING at 10:59. Estimated starts: 7C 11-11 18:53, 7M 11-13 12:40, 7S 11-17 01:00. 7Sd
   and 7Ed had no estimate; 7E0-7E2 wait on 7O.
+- **7O 22137510 COMPLETED 11-11 12:16:52 EST**, exit 0:0, elapsed 01:23:26 (1.39 GPU-h; the estimate was ~1.5).
+  - ours/testB 15:54-16:28Z: 0 of 1000 done at the start; wrote `ours_s{0,1,2}_testB.pt`, with 0 arm failures and 0
+    deterministic energy failures each.
+  - ours_n2/testB 16:28-17:03Z: wrote `ours_n2_s{0,1,2}_testB.pt`, 0 / 0 failures each.
+  - p1-ours/testB/s0, s1, s2 17:03-17:16Z: 1000 each; wrote `p1-ours_s{0,1,2}_testB.pt`.
+  - `job 7O complete: 5 runs, 9 output files checksummed`. `STEP7_7O_DONE` written. No error or traceback lines.
+    No job stop, so failure rule A was not used.
+- 7O's `afterok` cleared, and 7E0-7E2 moved from Dependency to Priority. Estimated starts at 12:19: 7C 11-11 12:34,
+  7M 11-12 17:25, 7S 11-16 05:00, 7Sd 11-17 12:35; 7Ed and 7E0-7E2 N/A.
+- GPU balance 1,405.7 of 1,485 GPU-h.

@@ -123,6 +123,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
   - **11-11 10:53 EST: 7O started** (g001). The first real-job prelude reported `STEP7_VERIFY_PASS`, and
     ours/testB is sampling at about 2.1 s per crystal. The other 8 are pending (7C est. 11-11 18:53). See the REC
     section "Step-7 runs".
+  - [x] **7O COMPLETED 11-11 12:16 EST** (1 h 23 min): 5 runs, 9 outputs checksummed, 0 arm or energy failures.
+    7E0-7E2 are now eligible (Priority).
+  - [ ] 7C, 7M, 7S, 7Sd, 7Ed, 7E0, 7E1, 7E2.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```
