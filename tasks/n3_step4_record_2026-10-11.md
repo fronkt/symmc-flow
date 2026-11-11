@@ -715,3 +715,20 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   - 7S 22137518, 7Sd 22137519, 7Ed 22137520;
   - 7E0 22137521, 7E1 22137522, 7E2 22137523, each `--dependency=afterok:22137510,singleton`.
   - Six are PENDING (Priority) and three (Dependency). The IDs are also in `$SCRATCH/n3_ops/step7_submitted.txt`.
+
+## Step-7 runs (2026-11-11 onward)
+
+- **7O 22137510 started 11-11 10:53:26 EST** on g001 (A100-SXM4-40GB, driver 615.71.09). That was 22 h after
+  submission.
+- The first real-job prelude passed, at 15:53:49-15:54:04Z:
+  - image sha `386af7e8…`, inner `step7_7O.sh` `150da7be…`, wrapper `cddd51da…`, prelude `79ee2187…`, verify
+    `6c182630…`, driver `scripts/n3_step7.py` `fa45c7d0…`, SEL `553f1dc9…`;
+  - verify step7: 25 files, 0 missing, 0 hash mismatches. Verify step5: 207 files, 0 missing, 0 mismatches, 0
+    forbidden;
+  - re-shipped and judged by the step-7 manifest: `scripts/n3_mcf_run.py`, `tasks/n3_protocol.md`;
+  - all 29 `step7_inputs` checked; 0 symlinks, 0 TEST-B / DEV-TEST match, anchor, report, label or diagnostic files;
+  - result: `STEP7_VERIFY_PASS`.
+- 7O lists 5 runs, as in the dry run: ours/testB, ours_n2/testB, p1-ours/testB/s0-s2. ours/testB started from 0
+  of 1000 and reached 120/1000 at 254 s, about 2.1 s per crystal. That matches the 5b rate (300 in 11.3 min).
+- The other 8 were still PENDING at 10:59. Estimated starts: 7C 11-11 18:53, 7M 11-13 12:40, 7S 11-17 01:00. 7Sd
+  and 7Ed had no estimate; 7E0-7E2 wait on 7O.

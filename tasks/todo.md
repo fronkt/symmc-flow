@@ -120,6 +120,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
 - **SUBMITTED 11-10 ~12:50 EST (Frank: "Submit all 9 now", chosen over holding for pxrd):** 7O 22137510, 7C
   22137516, 7M 22137517, 7S 22137518, 7Sd 22137519, 7Ed 22137520, and 7E0/7E1/7E2 22137521/22137522/22137523
   (afterok:22137510, singleton). All are PENDING; the IDs are also in `$SCRATCH/n3_ops/step7_submitted.txt`.
+  - **11-11 10:53 EST: 7O started** (g001). The first real-job prelude reported `STEP7_VERIFY_PASS`, and
+    ours/testB is sampling at about 2.1 s per crystal. The other 8 are pending (7C est. 11-11 18:53). See the REC
+    section "Step-7 runs".
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```
@@ -236,8 +239,8 @@ OOM) count as a "box death"? Options, to record as a dated §9 clarification bef
 
 ## Verification
 
-- [ ] `pack --step 7` deployable; upload sha OK; unpack + verify PASS (receipt on the laptop).
-- [ ] The step-7 prelude passes on the box and fails on the planted controls (a fake `match/zz_testB.jsonl`,
+- [x] `pack --step 7` deployable; upload sha OK; unpack + verify PASS (receipt on the laptop). (11-10)
+- [ ] The step-7 prelude passes on the box (11-11: yes, 7O 22137510 real-job prelude PASS) and fails on the planted controls (a fake `match/zz_testB.jsonl`,
       a changed SEL).
 - [ ] Every job log carries the inner, driver and SEL sha256 values; every listed output exists with a checksum.
 - [ ] No match, anchor, report or diagnostic (b)-(d) output on TEST-B / DEV-TEST exists on the box at step 8.
