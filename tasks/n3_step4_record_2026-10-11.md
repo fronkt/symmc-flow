@@ -742,3 +742,19 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - 7O's `afterok` cleared, and 7E0-7E2 moved from Dependency to Priority. Estimated starts at 12:19: 7C 11-11 12:34,
   7M 11-12 17:25, 7S 11-16 05:00, 7Sd 11-17 12:35; 7Ed and 7E0-7E2 N/A.
 - GPU balance 1,405.7 of 1,485 GPU-h.
+- **7C 22137516 COMPLETED 11-11 13:49:36 EST.** It started 12:19:51; elapsed 01:29:45 (1.50 GPU-h; the estimate was
+  ~2). The prelude was the same as 7O's: `STEP7_VERIFY_PASS`, 25 + 207 files, 0 mismatches, 29 inputs.
+  - 27 runs, `43 output files checksummed`, `STEP7_7C_DONE`. 25 runs executed, 17:20-18:49Z:
+    - TEST-B: iii-u b0-b2, fftruth, p1ref, iv-P s0-s2, iv-S s0-s2;
+    - DEV-TEST: iii-u b0-b2, fftruth, p1ref, p1-ours s0-s2, iv-P s0-s2, iv-S s0-s2.
+  - The other 2 are the DEV-TEST conversions already uploaded.
+  - The `[restart]` / `[resume]` labels are each run's mode, not real restarts. They match the dry run exactly: 12
+    restart (iv-P, iv-S), 13 resume, 2 uploaded.
+  - All 6 iv-P runs: 0 failed draws, 0 invalid. Both fftruth runs: 0 FF* runs with no minimum, 0 stopped early, 0
+    crystals, 0 evaluations retried. The log has no error, traceback, refusal or NaN lines.
+  - iv-P printed `note: data/csd_testB/n3_asym_pool.pt absent; testB items sha256 dc5e6328…`, and the same for
+    devtest (`61ddef9e…`). That is the designed path for a box without the source caches (`n3_old_symmc.py:296`).
+    Both prefixes match the step-7 manifest entries `results/n3/private/old/items_{testB,devtest}.pt` (group
+    `ivp_items_7`), which the prelude verified. The devtest note also appears in the 5I, 5I2 and 5VC logs.
+  - No job stop, so failure rule A was not used.
+- Estimated starts at 13:50: 7M 11-12 15:28, 7S 11-15 20:05, 7Sd 11-16 21:25, 7Ed 11-17 18:30; 7E0-7E2 N/A.
