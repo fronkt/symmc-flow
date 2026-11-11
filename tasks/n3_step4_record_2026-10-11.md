@@ -758,3 +758,20 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     `ivp_items_7`), which the prelude verified. The devtest note also appears in the 5I, 5I2 and 5VC logs.
   - No job stop, so failure rule A was not used.
 - Estimated starts at 13:50: 7M 11-12 15:28, 7S 11-15 20:05, 7Sd 11-16 21:25, 7Ed 11-17 18:30; 7E0-7E2 N/A.
+- **7M 22137517 COMPLETED 11-11 17:56:37 EST.** It started 14:10:18, a day ahead of the estimate; elapsed 03:46:19
+  (3.77 GPU-h; the estimate was ~5, worst case ~8). The prelude was the same as 7O's: `STEP7_VERIFY_PASS`, 29 inputs.
+  - 30 runs, all `[restart]`, as in the dry run. `230 output files checksummed`, `STEP7_7M_DONE`.
+    - For each of TEST-B and DEV-TEST, s0-s2: MCF-R, MCF-R+G, ii-S, MCF-A, MCF-A-floor.
+  - **Health counts only.** The per-bundle LJ outcome counts, the gauge `picked_*` counts and the ii-S spreads stay
+    in the box log for step 9; they are not inspected or used here.
+    - The 14 MCF inference calls (MCF-R 6, MCF-A 6, plus the 2 extra +G checkpoint infers at s0) all have
+      `check_pass: true`, 0 non-finite draws and finite residuals.
+    - `branch_cut_draws` is 0 in 13 of them and 1 in MCF-R/testB/s0 (`ep1331`, 1 of 16,000 draws). The same draw
+      shows as `resid_branch_cut_draws: 1` in that seed's +G bundle. The check passed.
+    - All 24 LJ bundles (MCF-R/A/floor): `valid` = n x 16, `det_fail` 0, `nonfinite` 0.
+    - 6 gauge bundles: `member_failures` 0, `identity_lj_differs_from_source` 0.
+    - 6 ii-S bundles: `arm_failures` 0, `valid` = n x 16.
+    - The log has no error, traceback, refusal, OOM or NaN lines.
+  - No job stop, so failure rule A was not used.
+- At 17:59 the remaining 6 (7S, 7Sd, 7Ed, 7E0-7E2) were PENDING (Priority), all with N/A estimated starts. Total for
+  7O + 7C + 7M: 6.66 GPU-h.

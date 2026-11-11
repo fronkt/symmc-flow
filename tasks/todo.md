@@ -127,7 +127,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
     7E0-7E2 are now eligible (Priority).
   - [x] **7C COMPLETED 11-11 13:49 EST** (1 h 30 min): 27 runs (25 executed + 2 uploaded), 43 outputs checksummed,
     0 failed or invalid draws, 0 FF* failures.
-  - [ ] 7M, 7S, 7Sd, 7Ed, 7E0, 7E1, 7E2.
+  - [x] **7M COMPLETED 11-11 17:56 EST** (3 h 46 min): 30 runs, 230 outputs checksummed, all 14 MCF checks pass,
+    0 det/nonfinite/member/arm failures.
+  - [ ] The FF* jobs: 7S, 7Sd, 7Ed, 7E0, 7E1, 7E2.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```
