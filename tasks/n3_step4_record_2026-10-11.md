@@ -775,3 +775,25 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   - No job stop, so failure rule A was not used.
 - At 17:59 the remaining 6 (7S, 7Sd, 7Ed, 7E0-7E2) were PENDING (Priority), all with N/A estimated starts. Total for
   7O + 7C + 7M: 6.66 GPU-h.
+- **11-12:** 7S 22137518 started 08:39 on g007, 7Sd 22137519 at 12:00 on g004, 7Ed 22137520 at 14:52 on g014, 7E0
+  22137521 at 16:40 on g014. Each prelude reported `STEP7_VERIFY_PASS`.
+- **7Sd 22137519 COMPLETED 11-12 17:47:50 EST.** Elapsed 05:47:36 (5.79 GPU-h; the estimate was ~5, worst case ~38).
+  - 1 run, iii-s/devtest: screen 200 in 941 s, then search 200 in 19,876 s. That is 99 s per crystal; 5b VAL
+    measured 87.
+  - `1 output files checksummed`, `STEP7_7Sd_DONE`. MISS (no finite minimum) 0. `deterministic FF* failures: 0 runs
+    with no minimum, 0 stopped early, 0 crystals`.
+  - **`structure evaluations retried 568, deterministic 0`** is the first non-zero retry count; 5T, 5VS, the smoke
+    runs and 7C all had 0.
+    - `ff_logs/iii-s_devtest/ff_retries.jsonl`: all 568 are `RuntimeError` CUDA out-of-memory in batched calls of
+      59-64 structures. Torch had 27-35 GiB allocated and 4-8 GiB reserved but unallocated, on the 40 GB A100.
+    - They came in 14 events between 17:05 and 17:29 (box local time), late in the search. The slow 180 -> 190
+      step (2,542 s) is when they happened.
+    - The §3.3 rule in `n3_ffstar.py` handled them as frozen: the failed process is never reused, and each
+      structure of the failed call is retried once alone in a fresh process. All 568 have `retry_ok: true`, so 0
+      are deterministic.
+    - The outputs are protocol-valid. No script was changed.
+  - 7S (iii-s/testB) logs the same thing: 256 retries in 8 events, 11:50-12:36, all `retry_ok`. At 17:56 it was at
+    310/1000 searched at 30,369 s (98 s per crystal). Projected total ~28 h, inside the 48 h limit.
+- At 17:56: 7Ed had finished 2 of 6 runs (i-E+basin-ours/devtest/s0 in 1 h 39 min, basin-ours_n2/devtest/s0 in
+  6 min). 7E0 was at i-E-ours/testB/s0 140/1000 at 4,384 s. 7E1 was estimated to start 11-15 20:50, 7E2 11-17
+  05:05. Done so far: 12.45 GPU-h.
