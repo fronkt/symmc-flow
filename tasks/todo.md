@@ -133,7 +133,9 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
     retries (CUDA OOM in 64-structure batches), all OK on the fresh single-structure retry (REC).
   - [x] **7Ed COMPLETED 11-12 20:12 EST** (5 h 20 min): 6 runs, 9 outputs, MISS 0, no-minimum 0, 0 retries.
   - [x] **7E0 COMPLETED 11-13 01:15 EST** (8 h 35 min): 2 runs, 3 outputs, MISS 0, no-minimum 0, 0 retries.
-  - [ ] 7S (running, ends ~11-13 11:00), 7E1 (est. 11-13 15:22), 7E2 (est. 11-15 12:55).
+  - [x] **7S COMPLETED 11-13 11:59 EST** (27 h 21 min): MISS 0, 0 deterministic. It logged 640 §3.3 OOM retries,
+    all OK (REC).
+  - [ ] 7E1 (running since 11-13 10:15), 7E2 (est. 11-13 13:46). Then step 8.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

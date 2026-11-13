@@ -817,3 +817,17 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - At 01:18: 7S was at 600/1000 searched at 56,630 s (87 s per crystal over the last 140), projected to end about
   11-13 11:00. The 7S retry log was still at 256, all `retry_ok`. Estimated starts: 7E1 11-13 15:22, 7E2 11-15
   12:55. Done so far: 26.36 GPU-h.
+- **7S 22137518 COMPLETED 11-13 11:59:48 EST.** Elapsed 1-03:20:36 (27.34 GPU-h; the estimate was ~25, worst case
+  ~190; the limit was 48 h).
+  - 1 run, iii-s/testB: screen 1000 in 2,958 s, then search 1000 in 95,431 s. That is 95 s per crystal; 7Sd had
+    99, 5b VAL 87.
+  - `1 output files checksummed`, `STEP7_7S_DONE`. MISS 0. `deterministic FF* failures: 0 runs with no minimum, 0
+    stopped early, 0 crystals`.
+  - **`structure evaluations retried 640, deterministic 0`.** `ff_logs/iii-s_testB/ff_retries.jsonl` has 640 rows,
+    all `RuntimeError` CUDA out-of-memory in batches of 64. All 640 have `retry_ok: true`.
+    - By hour (box local time): 11-12 11:00 64, 12:00 192; 11-13 01:00 153, 02:00 231.
+    - Handled by the frozen §3.3 rule, as in 7Sd. The outputs are protocol-valid. No script was changed.
+  - The log has no error, traceback, refusal or NaN lines outside the retry records.
+- **7E1 22137522 started 11-13 10:15:02 EST** on g001, ahead of its 15:22 estimate. Prelude `STEP7_VERIFY_PASS`. At
+  12:00, i-E-ours/testB/s1 was at 180/1000 at 6,039 s (34 s per crystal). 7E2 was estimated to start 11-13 13:46.
+- Done so far: 53.70 GPU-h. pxrd array 22019698: 24/120 completed (task 23 done), 96 pending.
