@@ -807,3 +807,13 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - At 20:17: 7S was at 400/1000 searched at 38,724 s (93 s per crystal over the last 90), projected to end about
   11-13 12:00. 7E0 i-E-ours/testB/s0 was at 420/1000 at 12,666 s (30 s per crystal). Estimated starts: 7E1 11-14
   21:35, 7E2 11-16 00:15. Done so far: 17.78 GPU-h.
+- **7E0 22137521 COMPLETED 11-13 01:15:18 EST.** Elapsed 08:35:00 (8.58 GPU-h; the estimate was ~6.5, worst case ~50).
+  - 2 runs: i-E+basin-ours/testB/s0 21:40Z-05:50Z (8 h 10 min; i-E at about 28-30 s per crystal), and
+    basin-ours_n2/testB/s0 05:50Z-06:15Z (24.5 min).
+  - `3 output files checksummed`, `STEP7_7E0_DONE`: `i-E-ours_s0_testB.pt`, `basin-ours_s0_testB.pt` (from_ie),
+    `basin-ours_n2_s0_testB.pt` (direct).
+  - i-E MISS 0. Basin picks with no minimum: 0 in both. All 3 FF* summaries show 0 runs with no minimum, 0 stopped
+    early, 0 crystals, 0 evaluations retried, 0 deterministic. No error or OOM lines.
+- At 01:18: 7S was at 600/1000 searched at 56,630 s (87 s per crystal over the last 140), projected to end about
+  11-13 11:00. The 7S retry log was still at 256, all `retry_ok`. Estimated starts: 7E1 11-13 15:22, 7E2 11-15
+  12:55. Done so far: 26.36 GPU-h.
