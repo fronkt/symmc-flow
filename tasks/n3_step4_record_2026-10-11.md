@@ -797,3 +797,13 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - At 17:56: 7Ed had finished 2 of 6 runs (i-E+basin-ours/devtest/s0 in 1 h 39 min, basin-ours_n2/devtest/s0 in
   6 min). 7E0 was at i-E-ours/testB/s0 140/1000 at 4,384 s. 7E1 was estimated to start 11-15 20:50, 7E2 11-17
   05:05. Done so far: 12.45 GPU-h.
+- **7Ed 22137520 COMPLETED 11-12 20:12:06 EST.** Elapsed 05:19:30 (5.33 GPU-h; the estimate was ~4, worst case ~30).
+  - 6 runs, 19:52Z-01:12Z: i-E+basin-ours/devtest s0-s2 (1 h 39 min, 1 h 45 min, 1 h 38 min) and
+    basin-ours_n2/devtest s0-s2 (about 6 min each).
+  - `9 output files checksummed`, `STEP7_7Ed_DONE`: `i-E-ours_s{0,1,2}_devtest.pt`, `basin-ours_s{0,1,2}_devtest.pt`
+    (from_ie) and `basin-ours_n2_s{0,1,2}_devtest.pt` (direct).
+  - i-E MISS 0 in all 3. Basin picks with no minimum: 0 in all 6. All 9 FF* summaries show 0 runs with no minimum,
+    0 stopped early, 0 crystals, 0 evaluations retried, 0 deterministic. No error or OOM lines.
+- At 20:17: 7S was at 400/1000 searched at 38,724 s (93 s per crystal over the last 90), projected to end about
+  11-13 12:00. 7E0 i-E-ours/testB/s0 was at 420/1000 at 12,666 s (30 s per crystal). Estimated starts: 7E1 11-14
+  21:35, 7E2 11-16 00:15. Done so far: 17.78 GPU-h.
