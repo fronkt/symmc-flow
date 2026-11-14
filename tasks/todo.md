@@ -140,7 +140,10 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
   - [x] **STEP 7 COMPLETE 11-13 20:31 EST.** 9/9 jobs exit 0:0; 76/76 runs `[done]` (read-only `plan` check);
     302 outputs checksummed. The prelude still passes. events = 74 start + 74 done only, so rule A was never used.
     71.38 GPU-h (REC "Step 7 complete").
-  - [ ] **Step 8 (Frank, manual mode)**: section 6.
+  - [x] **Step 8 pullback 11-14** (Frank "Go ahead"): 630 files / 3.2 GB, sha `2aedd4e2…`. Laptop unpack PASS,
+    receipt back on Anvil. Cleanup preflight OK (REC "Step 8").
+  - [ ] **Step 8 cleanup**: delete `$SCRATCH/n3_box` + `$SCRATCH/n3_upload`, then the verification search. Waiting
+    for Frank's OK on where to run it.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

@@ -874,3 +874,35 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - **Not inspected:** no TEST-B / DEV-TEST output was matched, scored or read beyond the job logs' health lines. The
   outcome-like log values (LJ counts, gauge picks, ii-S spreads) are left for step 9.
 - **Next: step 8**, the pullback and box cleanup (todo section 6). It needs Frank in manual-approval mode.
+
+## Step 8 (2026-11-14, Frank: "Go ahead")
+
+- **Box side** (`$OPS/pullback_step7.sh`, log `$OPS/pullback_step7.log`; login node, in the image, as step 6).
+  - The step-7 prelude was re-run right before packing, 23:47Z: `STEP7_VERIFY_PASS`, still 0 TEST-B / DEV-TEST
+    match, anchor, report, label or diagnostic files.
+  - Then `n3_box_manifest.py pullback --label step7` (the box's verified `scripts/` copy `75101ffe…`; it differs
+    from the upload copy only in the step-7 pack-group line), N3_MANIFEST_DIR = `$SCRATCH/n3_manifests`.
+  - Result: **630 files, 3,213.5 MB** in `$SCRATCH/n3_upload/return/n3_pullback_step7.tar`, sha256
+    `2aedd4e2260348d1…5502b9`. No in-root symlinks.
+  - Files from the step-6 pullback and the uploads with unchanged hashes are left out by the tool, because every
+    manifest in `.n3_box/manifests` is loaded. The tar holds only what is new since 11-08.
+- **Transfer (manual mode):** scp 18:48:35-18:53:45 EST (5 min 10 s) to `results/n3/private/returns/`. Laptop
+  `sha256sum -c`: OK.
+- **Laptop unpack:** `unpack --no-overwrite --root .` gave 633 members (630 + 3 manifest files) and 0 clashing
+  files. `verify pullback_step7: 630 files, missing 0, hash mismatch 0` **PASS**.
+  - Receipt `C:/Users/frank/n3_manifests/pullback_step7.unpack_receipt.json` (`verified: true`, sha256
+    `56338e92…7135`). It was copied back to `$SCRATCH/n3_manifests/`; the hashes match, and its `tar_sha256` equals
+    the box's `pullback_step7.archive_sha256`.
+  - All 630 pulled paths are gitignored and none are tracked (`git check-ignore`). By directory:
+    `results/n3/private` 388, `n3_mcf/infer/mcfR` 122, `mcfA` 78, `mcfA_floor` 42.
+- **Cleanup preflight (nothing deleted).**
+  - `N3_CLEANUP_PLAN_ONLY=1` with the box's `n3_box_cleanup.sh` (`52b20050…`) validated targets
+    `$SCRATCH/n3_box` and `$SCRATCH/n3_upload` only. Labels: pullback_step4anvil, pullback_step5b, pullback_step7,
+    step5, step7.
+  - `cleanup-plan` with the receipt (no `--discard-outputs`) gave `RECEIPT_CHECK_OK`.
+  - **Inventory coverage.** Every CSD entry of the box-root manifests is in the retained inventory except one:
+    `tasks/n3_sets/sel_refcodes.txt` (2,160 bytes, from the 10-11 `step4` timing upload, whose manifest has no
+    sidecars and stays only in the root).
+    - A read-only search of every 2,160-byte file under `$HOME`, `$SCRATCH` and `$PROJECT` (23 files) found the
+      hash only at the box-root copy, which the cleanup deletes.
+- **Waiting for Frank:** the cleanup run itself (deletion, then the verification search).
