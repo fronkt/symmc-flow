@@ -136,7 +136,11 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
   - [x] **7S COMPLETED 11-13 11:59 EST** (27 h 21 min): MISS 0, 0 deterministic. It logged 640 §3.3 OOM retries,
     all OK (REC).
   - [x] **7E1 COMPLETED 11-13 19:29 EST** (9 h 15 min): 2 runs, 3 outputs, MISS 0, no-minimum 0, 0 retries.
-  - [ ] 7E2 (running since 11-13 12:05, ends ~20:45). Then step 8.
+  - [x] **7E2 COMPLETED 11-13 20:31 EST** (8 h 26 min): 2 runs, 3 outputs, MISS 0, no-minimum 0, 0 retries.
+  - [x] **STEP 7 COMPLETE 11-13 20:31 EST.** 9/9 jobs exit 0:0; 76/76 runs `[done]` (read-only `plan` check);
+    302 outputs checksummed. The prelude still passes. events = 74 start + 74 done only, so rule A was never used.
+    71.38 GPU-h (REC "Step 7 complete").
+  - [ ] **Step 8 (Frank, manual mode)**: section 6.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```
@@ -256,8 +260,10 @@ OOM) count as a "box death"? Options, to record as a dated §9 clarification bef
 - [x] `pack --step 7` deployable; upload sha OK; unpack + verify PASS (receipt on the laptop). (11-10)
 - [ ] The step-7 prelude passes on the box (11-11: yes, 7O 22137510 real-job prelude PASS) and fails on the planted controls (a fake `match/zz_testB.jsonl`,
       a changed SEL).
-- [ ] Every job log carries the inner, driver and SEL sha256 values; every listed output exists with a checksum.
+- [x] Every job log carries the inner, driver and SEL sha256 values; every listed output exists with a checksum.
+      (11-13: all 9 logs. Inner + driver match the upload list; 76/76 records; 302 checksummed outputs.)
 - [ ] No match, anchor, report or diagnostic (b)-(d) output on TEST-B / DEV-TEST exists on the box at step 8.
+      (11-13 20:33: prelude count 0. Re-check right before the pullback.)
 
 ---
 

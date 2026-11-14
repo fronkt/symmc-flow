@@ -840,3 +840,37 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     early, 0 crystals, 0 evaluations retried, 0 deterministic. No error or OOM lines.
 - At 19:32: 7E2 i-E-ours/testB/s2 was at 920/1000 at 26,515 s, projected to end about 20:45. Done so far: 62.94
   GPU-h.
+- **7E2 22137523 COMPLETED 11-13 20:31:18 EST.** Elapsed 08:26:18 (8.44 GPU-h).
+  - 2 runs: i-E+basin-ours/testB/s2, then basin-ours_n2/testB/s2 (about 24 min).
+  - `3 output files checksummed`, `STEP7_7E2_DONE`. i-E MISS 0, basin picks with no minimum 0, all FF* summaries
+    0 / 0 / 0, 0 retries.
+
+## Step 7 complete (2026-11-13 20:31 EST)
+
+- **All 9 jobs COMPLETED with exit 0:0.** Submitted 11-10 ~12:50, last finish 11-13 20:31, about 3.3 days.
+  - Step 7 used **71.38 GPU-h** (sacct elapsed x 1 GPU). The build estimate was 60-120 likely, point ~62, worst
+    ~475.
+  - Steps 5-7 together: about 99.1 of the 700 GPU-h cap.
+- **Read-only completeness check, 20:33** (`$OPS/step7_final_plan_20261113T203339.txt`; script
+  `step7_final_check.sh`): the step-7 prelude, then `n3_step7.py plan --job X` for all 9 jobs, in the image on the
+  login node.
+  - Prelude: `STEP7_VERIFY_PASS`.
+    - verify step7: 25 files, 0 missing, 0 mismatches. verify step5: 207 files, 0 / 0, 0 forbidden.
+    - All 29 `step7_inputs` OK. 0 symlinks, 0 TEST-B / DEV-TEST match, anchor, report, label or diagnostic files.
+  - `plan`, rc 0 for all 9: **76 of 76 runs `[done]`** (7O 5, 7C 27, 7M 30, 7S 1, 7Sd 1, 7E0-7E2 2 each, 7Ed 6).
+    0 would start, 0 commands.
+  - `results/n3/private/step7/events.jsonl`: 148 rows, `start` 74 and `done` 74 only. The 2 uploaded DEV-TEST
+    conversions get a record without events.
+    - 0 `attempt_failed`, `retry_in_job`, `command_failed`, `deleted_partial`, `resume` or `restart` events.
+    - **No job stopped and no run was restarted, so failure rule A was never used.**
+  - Per-job `<job>_checksums.tsv`: 7O 9, 7C 43, 7M 230, 7S 1, 7Sd 1, 7E0 3, 7E1 3, 7E2 3, 7Ed 9, for **302 output
+    files**. All 9 `STEP7_<job>_DONE` markers are present.
+  - Every job log carries the inner, driver and selection hashes.
+    - The 9 inner `step7_7*.sh` and the driver `fa45c7d0…` match the 11-10 upload sha256 list.
+    - The selection matches the freeze `553f1dc9…`.
+- **FF* §3.3 retries:** 1,208 in total, only in iii-s: 7S 640, 7Sd 568. All were CUDA OOM in 64-structure batches,
+  and all were `retry_ok`. 0 deterministic FF* failures in any run. MISS 0 in iii-s and all i-E runs; basin picks
+  with no minimum 0 everywhere.
+- **Not inspected:** no TEST-B / DEV-TEST output was matched, scored or read beyond the job logs' health lines. The
+  outcome-like log values (LJ counts, gauge picks, ii-S spreads) are left for step 9.
+- **Next: step 8**, the pullback and box cleanup (todo section 6). It needs Frank in manual-approval mode.
