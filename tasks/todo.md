@@ -135,7 +135,8 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
   - [x] **7E0 COMPLETED 11-13 01:15 EST** (8 h 35 min): 2 runs, 3 outputs, MISS 0, no-minimum 0, 0 retries.
   - [x] **7S COMPLETED 11-13 11:59 EST** (27 h 21 min): MISS 0, 0 deterministic. It logged 640 §3.3 OOM retries,
     all OK (REC).
-  - [ ] 7E1 (running since 11-13 10:15), 7E2 (est. 11-13 13:46). Then step 8.
+  - [x] **7E1 COMPLETED 11-13 19:29 EST** (9 h 15 min): 2 runs, 3 outputs, MISS 0, no-minimum 0, 0 retries.
+  - [ ] 7E2 (running since 11-13 12:05, ends ~20:45). Then step 8.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

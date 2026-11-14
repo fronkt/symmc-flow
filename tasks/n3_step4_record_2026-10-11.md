@@ -831,3 +831,12 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - **7E1 22137522 started 11-13 10:15:02 EST** on g001, ahead of its 15:22 estimate. Prelude `STEP7_VERIFY_PASS`. At
   12:00, i-E-ours/testB/s1 was at 180/1000 at 6,039 s (34 s per crystal). 7E2 was estimated to start 11-13 13:46.
 - Done so far: 53.70 GPU-h. pxrd array 22019698: 24/120 completed (task 23 done), 96 pending.
+- **7E2 22137523 started 11-13 12:05:00 EST** on g007. Prelude `STEP7_VERIFY_PASS`.
+- **7E1 22137522 COMPLETED 11-13 19:29:42 EST.** Elapsed 09:14:40 (9.24 GPU-h; the estimate was ~6.5, worst case ~50).
+  - 2 runs: i-E+basin-ours/testB/s1 15:15Z-00:03Z (8 h 49 min), and basin-ours_n2/testB/s1 00:03Z-00:29Z (26 min).
+  - `3 output files checksummed`, `STEP7_7E1_DONE`: `i-E-ours_s1_testB.pt`, `basin-ours_s1_testB.pt` (from_ie),
+    `basin-ours_n2_s1_testB.pt` (direct).
+  - i-E MISS 0. Basin picks with no minimum: 0 in both. All 3 FF* summaries show 0 runs with no minimum, 0 stopped
+    early, 0 crystals, 0 evaluations retried, 0 deterministic. No error or OOM lines.
+- At 19:32: 7E2 i-E-ours/testB/s2 was at 920/1000 at 26,515 s, projected to end about 20:45. Done so far: 62.94
+  GPU-h.
