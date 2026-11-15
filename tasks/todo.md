@@ -142,8 +142,11 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
     71.38 GPU-h (REC "Step 7 complete").
   - [x] **Step 8 pullback 11-14** (Frank "Go ahead"): 630 files / 3.2 GB, sha `2aedd4e2…`. Laptop unpack PASS,
     receipt back on Anvil. Cleanup preflight OK (REC "Step 8").
-  - [ ] **Step 8 cleanup**: delete `$SCRATCH/n3_box` + `$SCRATCH/n3_upload`, then the verification search. Waiting
-    for Frank's OK on where to run it. 11-14: Frank chose the GPU job; submitted as 22219727.
+  - [x] **Step 8 cleanup 11-15** (job 22219727, Frank: "GPU job, delete now"): both targets deleted. Search: 393,497
+    files, name hits 0, errors 0, hash hits 53. All 53 are stock git files in other repos (they match the Gate C-b
+    clone's `.git/` in the step-5b pullback inventory), so they are false positives. The receipt is retained (REC).
+  - [ ] **Step 9 (laptop)**: build a driver for the 16 `runs.step9` + 2 `runs.step9_scoring`. It unblinds, so
+    plan first and get Frank's OK.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

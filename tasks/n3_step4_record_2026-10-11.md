@@ -913,3 +913,29 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   - Settings: N3_YES=1 (Frank's OK), the receipt above, N3_FIND_ROOTS = `/home/x-fcai3`, `$SCRATCH`, `$PROJECT`
     (the A3 platform note). The script adds `/dev/shm`.
   - **Submitted 11-14 ~19:05 EST as job 22219727.**
+- **Cleanup ran 11-15 06:35:03-06:37:39 EST** on g006 (2 min 36 s, about 0.04 GPU-h).
+  - Sacct state FAILED: the script exits 1 on a FAIL receipt.
+  - The job log has the image `386af7e8…`, cleanup `52b20050…`, manifest tool `75101ffe…` and wrapper `4ea07ab1…`
+    hashes, and "no other N3 job queued or running".
+  - The plan was validated with the receipt (`discard_outputs: false`).
+  - **`deleted /anvil/scratch/x-fcai3/n3_box` and `deleted /anvil/scratch/x-fcai3/n3_upload`.** Both paths are
+    gone. `$SCRATCH` keeps `n3_manifests` (receipts) and `n3_ops` (logs, scripts).
+  - Search: `searched 393497 files; hashed 21882; name hits 0; hash hits 53; errors 0`. That is 2,885 manifest
+    hashes, against 1 empty inventory entry skipped.
+    - Receipt `$SCRATCH/n3_manifests/cleanup_receipt_20261115T113738949051Z.json` (`pass: false`, sha256
+      `8e99fcd2…`), also copied to `C:/Users/frank/n3_manifests/` with the hash matching.
+  - **Classification of the 53 hash hits: all false positives, no N3 file remains.**
+    - Every hit is in another project's `.git/`: pxrd-diff 14, `sts_pa_catalyst_2026-10-03` 13,
+      `sts_pa_catalyst_retest_2026-10-04` 13, `sts_pa_probe_2026-10-03` 13.
+    - They are 11 stock hook samples, `info/exclude`, `description`, and pxrd-diff's `refs/remotes/origin/HEAD`.
+    - All 53 match one inventory source only: `pullback_step5b` entries under `n3_mcf/_gateC/mcf_unpatched/.git/`,
+      the git clone of the unpatched MCF release used by Gate C-b. The pullback marks every packed file csd=True,
+      so that clone's boilerplate entered the inventory.
+    - 52 of 53 are byte-identical to git 2.43.7's `/usr/share/git-core/templates` files. The 53rd is the 30-byte
+      generic `ref: refs/remotes/origin/main`.
+    - The receipt is kept as written (FAIL); this classification is the record. A future pullback should skip
+      `.git/` under PULL_ROOTS (not changed now).
+- **Step 8 complete (11-15).** The box root and upload directory are deleted, and every step-7 output is on the
+  laptop (verified). No FF* call can run after this point (P step 7).
+- **Next: step 9** on the laptop. The 16 `runs.step9` and the 2 `runs.step9_scoring` are frozen in SEL; no driver
+  is built yet. It needs Frank's OK: it unblinds TEST-B / DEV-TEST.
