@@ -905,4 +905,11 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     sidecars and stays only in the root).
     - A read-only search of every 2,160-byte file under `$HOME`, `$SCRATCH` and `$PROJECT` (23 files) found the
       hash only at the box-root copy, which the cleanup deletes.
-- **Waiting for Frank:** the cleanup run itself (deletion, then the verification search).
+- **Cleanup: Frank chose "GPU job, delete now"** over the login node or holding.
+  - `$OPS/step8_cleanup.sbatch` (`4ea07ab1…`): 1 A100 (unused), 8 cores, 32 GB, 4 h. It refuses if any other
+    `n3-*` job is queued.
+  - It runs the box's `n3_box_cleanup.sh` in the image under `apptainer --pid`, so the script's `ps` busy check
+    sees only the container, not other users' `train.py` on a shared node.
+  - Settings: N3_YES=1 (Frank's OK), the receipt above, N3_FIND_ROOTS = `/home/x-fcai3`, `$SCRATCH`, `$PROJECT`
+    (the A3 platform note). The script adds `/dev/shm`.
+  - **Submitted 11-14 ~19:05 EST as job 22219727.**

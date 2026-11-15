@@ -143,7 +143,7 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
   - [x] **Step 8 pullback 11-14** (Frank "Go ahead"): 630 files / 3.2 GB, sha `2aedd4e2…`. Laptop unpack PASS,
     receipt back on Anvil. Cleanup preflight OK (REC "Step 8").
   - [ ] **Step 8 cleanup**: delete `$SCRATCH/n3_box` + `$SCRATCH/n3_upload`, then the verification search. Waiting
-    for Frank's OK on where to run it.
+    for Frank's OK on where to run it. 11-14: Frank chose the GPU job; submitted as 22219727.
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```
