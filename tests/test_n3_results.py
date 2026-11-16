@@ -25,13 +25,18 @@ def put(root, rel, obj):
         json.dump(obj, open(p, "w"))
 
 
-def tree(tmp_path, monkeypatch, report_extra=None):
+REPORT = {"table1": {"OURS": {"picked1_mean_pct": 1.0}}, "selection": {"sha256": R.FREEZE_SHA256},
+          "missing_arms": {}, "family_primary": {"complete": True}, "family_n2": {"complete": True}}
+
+
+def tree(tmp_path, monkeypatch, report_extra=None, skip_tsv=()):
     root = str(tmp_path)
     os.makedirs(os.path.join(root, "results/n3"), exist_ok=True)
     shutil.copyfile(os.path.join(REPO, R.SELECTION), os.path.join(root, R.SELECTION))
     for st in R.SETS:
-        put(root, f"results/n3/report_{st}.out.json", {"set": st, "table1": {"OURS": {"picked1_mean_pct": 1.0}},
-                                                       **(report_extra or {})})
+        put(root, f"results/n3/report_{st}.out.json", {"set": st, **REPORT, **(report_extra or {})})
+        put(root, f"{R.P}/classical/anchor_{st}.json", {"summary": {"n": 2, "anchoring": 1.0, "ff_state": "x"},
+                                                        "rows": [{"refcode": "A"}]})
         put(root, f"{R.P}/mcf/diag_b_{st}.json", {"diagnostic": "b", "summary": {"primary": {}}, "per_crystal": {}})
         put(root, f"{R.P}/mcf/diag_c_{st}.json", {"diagnostic": "c", "z_MCF = 1": {"n": 3}, "matchers": {},
                                                   "selector": "lj"})
@@ -43,7 +48,11 @@ def tree(tmp_path, monkeypatch, report_extra=None):
         put(root, f"{R.P}/step9/events_{st}.jsonl",
             "\n".join(json.dumps({"event": e, "unit": "-", "command": None, "time": "t", "slurm_job": "1"})
                       for e in ("first_start", "start", "done", "set_done")) + "\n")
-        put(root, f"{R.P}/step9/{st}_checksums.tsv", "a\tx\nb\ty\n")
+        outs = [f"results/n3/report_{st}.out.json", f"{R.P}/classical/anchor_{st}.json",
+                f"{R.P}/mcf/diag_b_{st}.json", f"{R.P}/mcf/diag_c_{st}.json", f"{R.P}/mcf/haar_floor_{st}.json"] + \
+            [f"{R.P}/mcf/diag_d_{st}_{m}.json" for m in R.MATCHERS_BD]
+        put(root, f"{R.P}/step9/{st}_checksums.tsv",
+            "".join(f"{R.sha256(os.path.join(root, o))}\t{o}\n" for o in outs if o not in skip_tsv))
     monkeypatch.setattr(R, "REPO", root)
     return root
 
@@ -56,14 +65,20 @@ def test_assemble(tmp_path, monkeypatch):
     t, d = res["sets"]["testB"], res["sets"]["devtest"]
     assert t["role"].startswith("confirmatory") and d["role"] == R.DEV_LABEL
     assert t["report"]["table1"]["OURS"]["picked1_mean_pct"] == 1.0
-    assert t["haar_floor"]["crystals"] == 2 and t["provenance"]["output_files"] == 2
-    assert "per_crystal" not in json.dumps(t["mcf_diagnostics"])
-    assert t["mcf_diagnostics"]["d_consistent_all"] is True
+    assert t["haar_floor"]["crystals"] == 2 and t["provenance"]["output_files"] == 8
+    assert "per_crystal" not in json.dumps(t["mcf_diagnostics"]) and '"rows"' not in json.dumps(t["ff_truth_anchoring"])
+    m = t["mcf_diagnostics"]
+    assert m["d_consistent_all"] is True and m["approximate"] is True and "approximate" in m["c"]["label"]
+    assert t["ff_truth_anchoring"]["anchoring"] == 1.0 and "ff_state" not in t["ff_truth_anchoring"]
 
 
 @pytest.mark.parametrize("extra", [{"x": {"cart": [1.0]}},
                                    {"x": "data_ABC\n_cell_length_a 5.0"},
-                                   {"x": [[0.1, 0.2, 0.3]] * 4}])
+                                   {"x": [[0.1, 0.2, 0.3]] * 4},
+                                   {"x": [[0.1, 0.2, 0.3], [1, 2, 3]]},
+                                   {"x": {"Lattice_1": [5.0, 6.0]}},
+                                   {"x": {"gt_coords": []}},
+                                   {"x": "C 0.10 0.20 0.30\nH 1.10 0.20 0.30\nH 0.10 1.20 0.30\n"}])
 def test_hygiene_stops(tmp_path, monkeypatch, extra):
     tree(tmp_path, monkeypatch, extra)
     with pytest.raises(SystemExit, match="hygiene"):
@@ -91,5 +106,43 @@ def test_dry_run_report_refused(tmp_path, monkeypatch):
         R.assemble()
 
 
+def test_hygiene_allows_statistics():
+    assert R.hygiene({"R": 6e-7, "lattice": 1e-13, "h": [[1.0, 0.0, 1.0], [0.0, 0.0, 1.0]],
+                      "per_seed": [12.5, 33.3, 50.0], "ci95": [[0.1, 0.2], [0.3, 0.4]],
+                      "det_fail_list": [["ABCDEF", 0, 3]]}) == []
+
+
 def test_diag_a_failed_withholds_b_to_d():
-    assert R.mcf_block("testB", False)["reported"] is False
+    assert R.mcf_block("testB", {"verdict": "FAILED"}, {})["reported"] is False
+
+
+@pytest.mark.parametrize("extra,match", [({"missing_arms": {"iv-P": "no rows"}}, "missing arms"),
+                                         ({"family_primary": {"complete": False}}, "not complete"),
+                                         ({"selection": {"sha256": "0" * 64}}, "another freeze")])
+def test_incomplete_or_foreign_report_stops(tmp_path, monkeypatch, extra, match):
+    tree(tmp_path, monkeypatch, extra)
+    with pytest.raises(SystemExit, match=match):
+        R.assemble()
+
+
+def test_file_not_in_the_box_checksums_stops(tmp_path, monkeypatch):
+    tree(tmp_path, monkeypatch, skip_tsv=(f"{R.P}/mcf/diag_c_testB.json",))
+    with pytest.raises(SystemExit, match="checksum list"):
+        R.assemble()
+
+
+def test_changed_after_the_box_stops(tmp_path, monkeypatch):
+    root = tree(tmp_path, monkeypatch)
+    put(root, "results/n3/report_devtest.out.json", {"set": "devtest", **REPORT, "edited": True})
+    with pytest.raises(SystemExit, match="checksum list"):
+        R.assemble()
+
+
+def test_restarts_are_listed(tmp_path, monkeypatch):
+    root = tree(tmp_path, monkeypatch)
+    put(root, f"{R.P}/step9/events_testB.jsonl", "\n".join(json.dumps(
+        {"event": e, "unit": "u", "command": 0, "time": "t", "slurm_job": j})
+        for e, j in (("first_start", "1"), ("start", "1"), ("restart", "2"), ("resume", "2"), ("done", "2"),
+                     ("set_done", "2"))) + "\n")
+    p = R.assemble()["sets"]["testB"]["provenance"]
+    assert [x["event"] for x in p["stops"]] == ["restart", "resume"] and p["slurm_jobs"] == ["1", "2"]

@@ -968,3 +968,22 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     `n3_mcf_run.py`.
 - **Pack (`list --step 9`, 11-15):** 196 files, 2.43 GB. 116 of 120 data files match an earlier upload / pullback
   receipt; the 4 others are the VAL cache and the 2 label files, made locally. 0 blinded outputs packed.
+- **Independent code review (11-15, subagent, before anything went to Anvil).** Fixed, each with a test:
+  1. **Concurrent sets.** 9T and 9D running at once would record each other's files, and a vanishing `.tmp`
+     could crash the driver after a command succeeded. Now the snapshot, hashes and records cover only files that
+     name the job's own set, skip `*.tmp`, and tolerate a file vanishing.
+  2. **Resume.** Files a stopped attempt wrote and the resumed one left alone (a match `.meta.json`, finished
+     rows) fell out of the record. Now the pre-command snapshot is kept from the first attempt. The set's checksum
+     list is every own-set file that is new or changed since the set's first start.
+  3. **Failure text.** It could copy an earlier attempt's outcome lines into the Slurm log. Now only the last
+     attempt's traceback is shown; a kill shows the rc and the log path only.
+  4. **n3_results:**
+     - (b)-(d) are labelled "approximate" (A2 item 3; the freeze has `approximate: true`);
+     - diagnostic (a) uses the freeze's verdict rule;
+     - an incomplete report, missing arms or another freeze stops it;
+     - every file it reads must match the box's checksum list;
+     - the set's FF*-truth anchoring summary is included;
+     - restarts are listed;
+     - the hygiene check is stricter. It has no false positive on the 3 VAL dry-run reports or the freeze blocks.
+  5. **Stale records.** A first start refuses stale done records or logs of its set.
+  - No issue was found in the argv rewrites, the blinding globs, the (c) summary, the pack, or the job scripts.

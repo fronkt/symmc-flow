@@ -78,6 +78,7 @@ WATCH = ("results/n3/private/match", "results/n3/private/basin", "results/n3/pri
          "results/n3/private/classical", "results/n3/private/draws", "n3_mcf/infer")   # (c) writes LJ rows there
 WATCH_TOP = "results/n3"                                             # its own files only (the report outputs)
 DELETABLE = "results/n3/private/draws/mcfRoal_"                      # diagnostic (c) bundles, the only deletions
+OWN_SET = {s: re.compile(rf"(?:^|[/_~]){s}(?:[._/~]|$)") for s in ("testB", "devtest")}
 SET_TOKEN = re.compile(r"_(testB|devtest)\.(?:pt|json)$|/(testB|devtest)/|^(testB|devtest)$|report_(testB|devtest)\.json$")
 
 
@@ -297,23 +298,43 @@ class Runner:
             return subprocess.run([str(a) for a in argv], cwd=self.root, stdout=fh, stderr=subprocess.STDOUT,
                                   env=env).returncode
 
+    def mine(self, rel):
+        """A file of this set: every step-9 output path names its set (so 9T and 9D, running at once, never see each
+        other's files); temporaries of an atomic write are not outputs."""
+        return OWN_SET[self.set].search(rel) is not None and not rel.endswith(".tmp")
+
     def snapshot(self):
+        """{path: [size, mtime_ns]} of this set's files under the watched trees; a file that vanishes mid-walk (another
+        process's temporary) is skipped."""
         snap = {}
+        cands = []
         for top in WATCH:
             for d, dirs, fs in os.walk(self.p(top)):
                 dirs.sort()
-                for f in fs:
-                    q = os.path.join(d, f)
-                    st = os.stat(q)
-                    snap[os.path.relpath(q, self.root).replace(os.sep, "/")] = (st.st_size, st.st_mtime_ns)
+                cands += [os.path.join(d, f) for f in fs]
         top = self.p(WATCH_TOP)
         if os.path.isdir(top):
-            for f in os.listdir(top):
-                q = os.path.join(top, f)
-                if os.path.isfile(q):
-                    st = os.stat(q)
-                    snap[f"{WATCH_TOP}/{f}"] = (st.st_size, st.st_mtime_ns)
+            cands += [os.path.join(top, f) for f in os.listdir(top)]
+        for q in cands:
+            rel = os.path.relpath(q, self.root).replace(os.sep, "/")
+            if not self.mine(rel):
+                continue
+            try:
+                st = os.stat(q)
+            except FileNotFoundError:
+                continue
+            if os.path.isfile(q):
+                snap[rel] = [st.st_size, st.st_mtime_ns]
         return snap
+
+    def hashes(self, rels):
+        out = {}
+        for r in rels:
+            try:
+                out[r] = sha256(self.p(r))
+            except FileNotFoundError:
+                continue
+        return out
 
     def record(self, uid, k):
         path = self.rec_path(uid, k)
@@ -336,7 +357,7 @@ class Runner:
         if os.path.isdir(d):
             for f in os.listdir(d):
                 if f.endswith(".json"):
-                    out |= set(json.load(open(os.path.join(d, f))).get("files", {}))
+                    out |= {r for r in json.load(open(os.path.join(d, f))).get("files", {}) if self.mine(r)}
         return out
 
     # ------------------------------------------------------------------ preflight
@@ -396,6 +417,12 @@ class Runner:
             die(f"{len(missing)} input(s) missing: {missing[:5]}")
         first = not os.path.exists(self.started_path())
         if first:
+            stale = [q for q in glob.glob(self.p(f"{STATE}/done/*")) + glob.glob(self.p(f"{STATE}/snap/*"))
+                     if OWN_SET[self.set].search(os.path.basename(q).replace("__", "/"))]
+            stale += glob.glob(self.p(f"{STATE}/logs/{self.set}/*"))
+            if stale:
+                die(f"{len(stale)} {self.set} step-9 record(s) / log(s) exist before the first start: "
+                    f"{[os.path.relpath(q, self.root) for q in stale[:5]]}")
             early = sorted({m for g in blinded_globs(self.set) for m in glob.glob(self.p(g))})
             if early:
                 rels = [os.path.relpath(m, self.root).replace(os.sep, "/") for m in early]
@@ -433,12 +460,23 @@ class Runner:
         return [o for o, u in self.producer.items() if u == uid]
 
     def error_tail(self, log):
+        """The traceback of the LAST attempt only (lines after its `### ` header, from `Traceback` on): a command may
+        print outcomes before it fails, and an earlier attempt may have printed them before a stop. No traceback
+        (e.g. a kill) -> nothing; the message then names the log, which is read only after unblinding."""
         try:
             lines = open(log, errors="replace").read().splitlines()
         except OSError:
             return []
-        last = max((i for i, x in enumerate(lines) if x.startswith("Traceback (most recent call last)")), default=None)
-        return lines[last:][-25:] if last is not None else lines[-3:]
+        head = max((i for i, x in enumerate(lines) if x.startswith("### ")), default=-1)
+        lines = lines[head + 1:]
+        tb = max((i for i, x in enumerate(lines) if x.startswith("Traceback (most recent call last)")), default=None)
+        return lines[tb:][-25:] if tb is not None else []
+
+    def snap_path(self, uid, k):
+        return self.p(f"{STATE}/snap/{self.safe(uid, k)}.json")
+
+    def baseline_path(self):
+        return self.p(f"{STATE}/baseline_{self.set}.json")
 
     def run_command(self, uid, k, cmd):
         if self.record(uid, k) is not None:
@@ -454,19 +492,28 @@ class Runner:
             self.delete_remade(uid, k, t)
         if self.dry:
             return
+        # the snapshot before the FIRST attempt is kept, so files a stopped attempt wrote (and the resumed one leaves
+        # alone, e.g. a match .meta.json or rows finished before the stop) still enter this command's record
+        sp = self.snap_path(uid, k)
+        if os.path.exists(sp):
+            before = json.load(open(sp))
+        else:
+            before = self.snapshot()
+            self.atomic_json(before, sp)
         self.event(uid, k, "resume" if tried else "start",
                    {"mode": "continue" if (script, sub) in CONTINUES else "whole"})
-        before = self.snapshot()
         t0 = time.time()
         rc = self.call(a, log)
         wall = round(time.time() - t0, 1)
         if rc:
             self.event(uid, k, "command_failed", {"rc": rc, "wall_s": wall})
             tail = self.error_tail(log)
-            die(f"{uid} #{k}: rc {rc} from `{cmd}`" + ("\n" + "\n".join(tail) if tail else ""))
+            rl = os.path.relpath(log, self.root).replace(os.sep, "/")
+            die(f"{uid} #{k}: rc {rc} from `{cmd}`; its private log is {rl}"
+                + ("\n" + "\n".join(tail) if tail else " (no traceback: not shown)"))
         after = self.snapshot()
         changed = sorted(r for r, v in after.items() if before.get(r) != v)
-        files = {r: sha256(self.p(r)) for r in changed}
+        files = self.hashes(changed)
         rec = {"unit": uid, "k": k, "command": cmd, "executed": [str(x) for x in a], "rc": rc, "wall_s": wall,
                "selection_sha256": self.sel_sha, "driver_sha256": self.driver_sha, "files": files,
                "slurm_job": os.environ.get("SLURM_JOB_ID"), "finished": time.strftime("%Y-%m-%d %H:%M:%S")}
@@ -480,6 +527,7 @@ class Runner:
         stage(f"preflight OK ({'first start' if first else 'resume'}); environment {env}")
         if not self.dry:
             if first:
+                self.atomic_json(self.snapshot(), self.baseline_path())     # this set's files before any command
                 self.atomic_json({"set": self.set, "first_start": time.strftime("%Y-%m-%d %H:%M:%S"),
                                   "slurm_job": os.environ.get("SLURM_JOB_ID"), "host": socket.gethostname(),
                                   "platform": platform.platform(), "environment": env,
@@ -507,12 +555,15 @@ class Runner:
                 die(f"{uid}: finished without its listed output(s) {lost}")
         if self.dry:
             return
-        rows = {}
-        for uid, cmds, _ in self.units:
-            for k in range(len(cmds)):
-                for r, h in self.record(uid, k)["files"].items():
-                    rows[r] = h
-        final = {r: sha256(self.p(r)) for r in rows if os.path.isfile(self.p(r))}
+        # every file of this set that is new or changed since the set's first start (independent of the per-command
+        # records, so no stop can drop one); each recorded file must be among them
+        base = json.load(open(self.baseline_path()))
+        now = self.snapshot()
+        final = self.hashes(sorted(r for r, v in now.items() if base.get(r) != v))
+        recorded = {r for uid, cmds, _ in self.units for k in range(len(cmds)) for r in self.record(uid, k)["files"]}
+        lost = sorted(recorded - set(final))
+        if lost:
+            die(f"recorded output(s) vanished before the end of the set: {lost[:5]}")
         with open(self.p(f"{STATE}/{self.set}_checksums.tsv"), "w") as fh:
             fh.write("".join(f"{h}\t{r}\n" for r, h in sorted(final.items())))
         self.event("-", None, "set_done", {"files": len(final)})

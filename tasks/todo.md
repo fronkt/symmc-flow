@@ -101,7 +101,8 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
         changed bundle sha;
       - the step-9 pack: closure complete, forbidden outputs refused;
       - n3_results on synthetic reports, including the hygiene check.
-      Then run the whole N3 suite and a review pass (11-15: independent review running).
+      Then run the whole N3 suite and a review pass. 11-15: an independent review found 3 driver bugs and
+      results gaps; all fixed with tests (REC "Step 9", review).
 
 ## 4. On Anvil (each step after Frank's OK)
 

@@ -399,3 +399,93 @@ def test_output_dirs_created(tmp_path):
     X, _ = runner(root, sel)
     X.run()
     assert all(os.path.isdir(os.path.join(root, d)) for d in S9.WATCH)
+
+
+# ------------------------------------------------------------------ review findings (11-15)
+def test_other_set_files_never_enter_records(tmp_path):
+    """9T and 9D run at once: the other job's files (and its vanishing temporaries) are not this set's."""
+    root, sel = make_root(tmp_path)
+    X, fake = runner(root, sel)
+    orig = fake.__call__
+
+    def busy_neighbour(argv, log):
+        rc = orig(argv, log)
+        fake.write("results/n3/private/match/ours_s0_devtest__primary.jsonl", "row devtest\n", "a")
+        fake.write("results/n3/private/draws/mcfRoal_last_u5_s0_devtest.pt.tmp", "tmp")
+        fake.write("results/n3/private/draws/mcfRoal_last_u5_s0_testB.pt.tmp", "own tmp")
+        return rc
+    X._call = busy_neighbour
+    real_hash = X.hashes
+
+    def vanishing(rels):                     # a temporary disappears between the walk and the hash
+        for r in rels:
+            if r.endswith(".tmp") and os.path.exists(os.path.join(root, r)):
+                os.remove(os.path.join(root, r))
+        return real_hash(rels)
+    X.hashes = vanishing
+    X.run()
+    tsv = open(os.path.join(root, S9.STATE, "testB_checksums.tsv")).read()
+    assert "devtest" not in tsv and ".tmp" not in tsv
+    for f in os.listdir(os.path.join(root, S9.STATE, "done")):
+        rec = json.load(open(os.path.join(root, S9.STATE, "done", f)))
+        assert not any("devtest" in r or r.endswith(".tmp") for r in rec["files"])
+
+
+def test_files_of_a_stopped_attempt_stay_recorded(tmp_path):
+    root, sel = make_root(tmp_path)
+    X, fake = runner(root, sel)
+    orig = fake.__call__
+    meta = "results/n3/private/match/ours_s0_testB__primary.meta.json"
+
+    def meta_once(argv, log):
+        if "ours_s0_testB.pt" in " ".join(argv) and "primary" in argv and not os.path.exists(os.path.join(root, meta)):
+            fake.write(meta, "{}")           # n3_score writes a rows file's meta once, on the first attempt
+        return orig(argv, log)
+    X._call = meta_once
+    fake.fail[("scoring/testB/00", 0)] = 1
+    with pytest.raises(S9.Stop):
+        X.run()
+    Y, fake2 = runner(root, sel)
+    orig2 = fake2.__call__
+    Y._call = lambda a, log: orig2(a, log)
+    Y.run()
+    rec = json.load(open(Y.rec_path("scoring/testB/00", 0)))
+    assert meta in rec["files"]
+    assert meta in open(os.path.join(root, S9.STATE, "testB_checksums.tsv")).read()
+
+
+def test_error_tail_shows_only_the_last_attempts_traceback(tmp_path):
+    root, sel = make_root(tmp_path)
+    X, _ = runner(root, sel)
+    log = str(tmp_path / "x.log")
+    open(log, "w").write("### attempt 1\nOURS: picked@1 42.00%\nTraceback (most recent call last)\n  old\n"
+                         "### attempt 2\nOURS: picked@1 42.00%\n  delta 3.1 pp\n")
+    assert X.error_tail(log) == []
+    open(log, "a").write("Traceback (most recent call last)\n  File x\nValueError: boom\n")
+    assert X.error_tail(log) == ["Traceback (most recent call last)", "  File x", "ValueError: boom"]
+
+
+def test_killed_command_message_has_no_output(tmp_path):
+    root, sel = make_root(tmp_path)
+    X, fake = runner(root, sel)
+
+    def killed(argv, log):
+        os.makedirs(os.path.dirname(log), exist_ok=True)
+        open(log, "a").write("### attempt\nOURS: picked@1 42.00%\n")
+        return -9
+    X._call = killed
+    with pytest.raises(S9.Stop) as e:
+        X.run()
+    assert "42" not in str(e.value) and "no traceback" in str(e.value) and "rc -9" in str(e.value)
+
+
+def test_stale_records_refused_on_first_start(tmp_path):
+    root, sel = make_root(tmp_path)
+    X, _ = runner(root, sel)
+    stale = X.rec_path("scoring/testB/00", 0)
+    os.makedirs(os.path.dirname(stale), exist_ok=True)
+    open(stale, "w").write("{}")
+    with pytest.raises(S9.Stop, match="before the first start"):
+        X.run()
+    Y, _ = runner(root, sel, "devtest")     # the other set's first start is not blocked by a testB record
+    assert Y.preflight()[0] is True
