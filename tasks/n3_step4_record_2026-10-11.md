@@ -939,3 +939,32 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   laptop (verified). No FF* call can run after this point (P step 7).
 - **Next: step 9** on the laptop. The 16 `runs.step9` and the 2 `runs.step9_scoring` are frozen in SEL; no driver
   is built yet. It needs Frank's OK: it unblinds TEST-B / DEV-TEST.
+- **Pullback `.git/` (11-15):** `PULL_SKIP` now includes `.git` (`n3_box_manifest.py`, commit f45d80a), so the
+  step-9 pullback cannot repeat the 53 false hash hits.
+
+## Step 9 (2026-11-15 onward; Frank 11-15: "Go ahead" for the plan, then Anvil GPU job, resume rule)
+
+- **Decisions (AskUserQuestion, 11-15):**
+  - Where: an Anvil GPU job on its 32 cores, not the laptop.
+  - Stops: resume.
+  - Updates pause: approved, but moot on Anvil (the laptop only transfers), so skipped.
+- **Plan:** `tasks/todo.md` "N3 step 9 plan" (b7c50ea laptop version, archived; 2bc5795 Anvil version).
+  **Clarification:** `tasks/n3_step9_clarification_2026-11-15.md` (f45d80a), committed before any step-9 command.
+- **Scoring environment:** `$PROJECT/n3_conda/envs/symmc` in the step-4 image: Python 3.12.15, torch 2.11.0+cu128,
+  pymatgen 2026.5.4, scipy 1.17.1, numpy 2.3.5. All 109 VALSEL match metas record the same libraries.
+- **Input closure audit (read-only subagent, 11-15):** no command needs a later command's output. Found:
+  - anchor loads the VAL set cache and writes into `results/n3/private/classical/` without creating it (the driver
+    now creates its output dirs);
+  - diagnostic (b) imports 4 fork files from `external/mcf/data-preprocess/`;
+  - n3_mcf_diag c and n3_classical anchor take no `--selection-sha256`;
+  - the floor arm's mcf10 block in `report` will read "missing" (iii-u is matched under mcf10 only at its LJ
+    picks). No run is added; recorded in the clarification.
+- **No frozen command aggregates diagnostic (c)**, which P §3.2 asks to report per z_MCF and matcher.
+  `scripts/n3_step9_summary.py c` does that from the scorer's rows, as each set's last unit (clarification
+  section 3).
+- **Laptop state before the pack:**
+  - 0 TEST-B / DEV-TEST step-9 outputs exist (driver `plan` preflight, both sets).
+  - The scoring code equals 772a36e. The only post-freeze change in the shipped closure is code_fix_7 in
+    `n3_mcf_run.py`.
+- **Pack (`list --step 9`, 11-15):** 196 files, 2.43 GB. 116 of 120 data files match an earlier upload / pullback
+  receipt; the 4 others are the VAL cache and the 2 label files, made locally. 0 blinded outputs packed.
