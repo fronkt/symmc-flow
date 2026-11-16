@@ -987,3 +987,17 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
      - the hygiene check is stricter. It has no false positive on the 3 VAL dry-run reports or the freeze blocks.
   5. **Stale records.** A first start refuses stale done records or logs of its set.
   - No issue was found in the argv rewrites, the blinding globs, the (c) summary, the pack, or the job scripts.
+- **Upload (11-16, Frank: "go", manual-approval mode).**
+  - Pack: 196 files, 2,435 MB, sha256 `e730b3fc…48055a` (dcb3520).
+  - scp to `$SCRATCH/n3_upload` took 00:00:51-00:18:50 EST; `sha256sum -c` OK.
+  - Unpacked in the image with `$PY_SYMMC` (the login node's python3 is 3.6.8): 199 members, verify PASS (196 files,
+    0 missing, 0 mismatches). Receipt `step9.unpack_receipt.json` is in `$SCRATCH/n3_manifests` and on the laptop.
+  - Job scripts copied to `$SCRATCH/n3_ops`, hashes equal: sbatch `cfba565b…`, prelude `84faa028…`, 9T
+    `45f9467e…`, 9D `4cd804ed…`.
+- **Dry run (`n3_step9.py plan`, inside the image with the prelude, login06, 00:19 EST).** Both sets:
+  - 93 commands, manifest verify PASS, preflight OK (first start);
+  - environment Python 3.12.15, torch 2.11.0+cu128, pymatgen 2026.5.4, scipy 1.17.1, numpy 2.3.5;
+  - nothing written. Plans are in `$SCRATCH/n3_ops/step9_plan_<set>_20261116T*.txt`.
+- **Submitted 11-16 ~00:21 EST:** `n3-s9T` **22247583** (-t 24:00:00) and `n3-s9D` **22247584** (-t 12:00:00), both
+  PENDING (Priority). GPU balance 1,291.3. Watcher: `watch9.sh --start` (sacct, stage lines and done-event counts
+  only).
