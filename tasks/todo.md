@@ -1,94 +1,137 @@
-# N3 step 9 plan — 2026-11-15 (Frank 11-15: "Go ahead" = write this plan; nothing built or run yet; awaits his OK)
+# N3 step 9 plan — 2026-11-15 (Frank 11-15: run on Anvil; resume rule; build now, ask before upload and sbatch)
 
-Step 9 unblinds TEST-B (1000 crystals) and DEV-TEST (200). P §7 step 9: "Score TEST-B and DEV-TEST once ... Write
-`results/n3/n3_results.json`. Commit and push." Abbreviations as in the step-7 plan below.
+Step 9 unblinds TEST-B (1000 crystals) and DEV-TEST (200). P §7 step 9: "Score TEST-B and DEV-TEST once (CPU
+matching may run locally or on a CPU box under the same hygiene). Write `results/n3/n3_results.json`. Commit and
+push." Abbreviations as in the step-7 plan below. The laptop version of this plan (b7c50ea) is archived in
+`tasks/archive/n3_step9_plan_laptop-archive-2026-11-15.md`.
+
+**Frank's decisions (11-15, AskUserQuestion):**
+1. Where: **an Anvil GPU job on its 32 cores** (not the laptop). Anvil CPU SU are STS-only, so it is a GPU job and
+   the GPU stays idle. Bonus: VALSEL was scored in the same image environment (all 109 VALSEL match metas: torch
+   2.11.0+cu128, pymatgen 2026.5.4, scipy 1.17.1, numpy 2.3.5), so step 9 uses the scoring environment of the
+   freeze. The laptop has torch 2.11.0+cpu.
+2. Stops: **resume** (section 3), recorded in a dated clarification before the first command.
+3. Updates: he approved a pause. It is moot on Anvil (the laptop only transfers files), so it is skipped unless he
+   still wants it.
 
 **State on 11-15:** every input is on the laptop (step-7 pullback verified, 98 TEST-B/DEV-TEST bundles in
 `results/n3/private/draws/`, MCF-R run dirs in `n3_mcf/infer/mcfR/`). There are 0 TEST-B/DEV-TEST match files, so
 nothing has been scored. The scoring code (n3_score, n3_common, n3_set_cache, n3_harness, g2_asym_baselines,
-molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the freeze commit 772a36e.
+molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the freeze commit 772a36e. On Anvil
+`$S/n3_box` is gone (step 8); the image (`$P/n3_images/jammy.sif`) and `$P/n3_conda` are intact. GPU balance
+1,298.5.
 
 ## 1. What runs: the frozen list, verbatim, in SEL order
 
 - `runs.step9`: 16 runs, 42 commands. Per set: MCF diagnostic (c) on the 3 MCF-R seeds, the Haar floor, (b),
-  then (d) for primary / mcf05 / mcf08. TEST-B first, then DEV-TEST.
-- `runs.step9_scoring`: 69 commands per set (61 match, 6 basin, 1 anchor, 1 report), TEST-B then DEV-TEST.
-- **154 commands in all.** Some match commands repeat (iii-u primary/mcf05/mcf08 appear in the Haar-floor run and
-  again in scoring). Match rows resume per fit, so a repeat finds its rows and returns. Run verbatim, no dedupe.
-- Only `{W}` is replaced (W = 6). The report configs are written from `report_configs[set]` to
-  `results/n3/report_<set>.json`, as R says; `frozen_report` refuses any scientific difference.
-- Diagnostics (b)-(d) do not load the MCF fork (only (a) does), so no shim is involved.
-- **Cost:** 164 CPU-h, about 27 h on 6 cores (REC, 10-15 projection). It is unmeasured on these bundles, and a
-  multi-worker run on this laptop has come in 1.3-2x over a projection before, so plan for 27-55 h.
+  then (d) for primary / mcf05 / mcf08.
+- `runs.step9_scoring`: 69 commands per set (61 match, 6 basin, 1 anchor, 1 report).
+- **154 commands in all**, 77 per set. Some match commands repeat (iii-u primary/mcf05/mcf08 appear in the
+  Haar-floor run and again in scoring). Match rows resume per fit, so a repeat finds its rows and returns. Run
+  verbatim, no dedupe.
+- **Changes to a command, all non-scientific:**
+  - `{W}` becomes 28, as in step 7;
+  - `python` becomes `$PY_SYMMC`;
+  - `--selection-sha256 553f1dc9…` is appended to every subcommand that takes it (n3_score match / haar-floor /
+    basin / report, n3_mcf_diag b / d). R "Step 9": "A CPU box without git also requires --selection-sha256 with
+    the laptop-verified published freeze hash."
+- The report configs are written from `report_configs[set]` to `results/n3/report_<set>.json`, as R says.
+  `frozen_report` refuses any scientific difference.
+- Diagnostics (b)-(d) do not load the MCF fork (only (a) does), so no shim is involved. No step-9 command calls
+  FF*, and `CUDA_VISIBLE_DEVICES` is empty in the job, so nothing can use the GPU.
 
-## 2. Driver `scripts/n3_step9.py` (modelled on `n3_step7.py`)
+## 2. Jobs and cost
 
-- [ ] `plan`: read-only. Prints all 154 commands with W filled in and runs the preflight. Executes nothing.
-- [ ] `run --workers 6`: runs the commands in order and stops at the first non-zero exit.
-- [ ] Allowlist: n3_score `match` / `haar-floor` / `basin` / `report` with `--step9`, n3_mcf_diag `b` / `c` / `d`,
-      n3_classical `anchor`. Anything else (sampling, FF*, smoke / oracle / force flags) stops it before anything
-      runs.
-- [ ] Preflight, all before the first command:
-  - SEL is sha `553f1dc9…`, committed, unchanged and pushed (n3_score's guard checks this again per command);
-  - the scoring code above is byte-identical to 772a36e (working tree included), and P is sha `9a483a41…`;
-  - every input named by a command exists, and its sha256 equals its entry in the laptop unpack receipts
-    (`C:/Users/frank/n3_manifests/*.unpack_receipt.json`) where it has one;
-  - on the first start, 0 TEST-B/DEV-TEST match, basin, anchor, report or diagnostic (b)-(d) outputs exist. On a
-    resume, only the ones the driver's own events recorded;
-  - the environment is recorded: Python 3.12.10 (`Python312/python.exe`), pymatgen 2026.5.4, scipy 1.17.1, numpy
-    2.3.5, torch 2.11.0+cpu. On a resume, a different environment stops the driver (R: one CPU environment for
-    the whole of step 9);
-  - AC power is online and at least 50 GB is free (279 GB today).
-- [ ] Events go to `results/n3/private/step9/events.jsonl`: start, done (exit code, wall time, sha256 of each
-      output), stop and resume for every command. The log holds exit codes, row counts and harness / deterministic
-      failure counts. It never holds hit rates or picked values.
-- [ ] Windows: it clears power throttling (SetProcessInformation) for itself and every descendant every 30 s,
-      retries its status writes (WinError 5), and is launched detached, so a Claude Code shell reap can't kill it.
-- [ ] **Resume after a stop** (reboot, kill, crash): restart at the first command without a done record.
-      - Match commands continue from their per-fit rows; n3_score trims a cut-off final line itself.
-      - basin, anchor, haar-floor, report and diagnostics (b) / (d) re-run whole. They are deterministic (bootstrap
-        seed 0), so the result is the same.
-      - Diagnostic (c) deletes its partial bundle and re-runs.
-      - Nothing scored is discarded, no setting changes, and every stop is listed in REC.
-      - Recorded before the first command in `tasks/n3_step9_clarification_2026-11-15.md`. P is not edited.
-- [ ] Tests `tests/test_n3_step9.py`, on stub commands and a synthetic tree (no TEST data is read). They cover:
+- Two jobs from one box root (`$S/n3_box`), each with 1 A100 (idle) and 32 cores, W = 28:
+  - **9T**: TEST-B (8 diagnostic runs, then 69 scoring commands). Limit 24 h.
+  - **9D**: DEV-TEST (the same, 200 crystals). Limit 12 h.
+  - Their outputs are disjoint (every path names its set), so both may run at once. Fixed `-J` names with
+    `--dependency=singleton`, as in step 7.
+- **Cost:** the projection is 164 laptop CPU-h. An Anvil EPYC core is slower than a laptop P-core, so call it
+  200-330 core-h (a guess, and a multi-worker run has come in 1.3-2x over before). 9T about 6-12 h, 9D about
+  1-3 h: roughly 8-15 GPU-h charged. That is outside the steps 5-7 cap (700; 99.1 used).
+- The 12-GPU per-user cap is shared with pxrd array 22019698 (%8; tasks 46-48 running on 11-15).
+
+## 3. Build (laptop; nothing is uploaded or submitted without Frank)
+
+- [ ] **Input closure audit** (read-only): every file each step-9 subcommand opens (bundles, set caches, MCF
+      exports and sidecars, MCF-R run dirs, labels, references, earlier rows), from the code. The result is
+      the step-9 file list.
+- [ ] `n3_box_manifest.py --step 9`: code closure + `symmc_flow` + `pyproject.toml` + P + box shell (`env.sh`),
+      SEL and the frozen lists, gate F testB/devtest, the TEST-B/DEV-TEST set caches, MCF exports and iv-P items,
+      the stored DEV-TEST OURS draws and picks, and every step-7 output step 9 reads (from the audit). Every
+      file is checked against its laptop receipt sha256. `pack` refuses any TEST-B/DEV-TEST match, basin,
+      anchor, report or diagnostic (b)-(d) file. `verify` and `pullback --label step9` work as for step 7.
+- [ ] `scripts/n3_step9.py` (modelled on `n3_step7.py`):
+  - `plan --set testB|devtest`: read-only. Prints the commands as they will run and runs the preflight.
+  - `run --set testB|devtest --workers 28`: runs the set's commands in SEL order and stops at the first
+    non-zero exit.
+  - Allowlist: n3_score `match` / `haar-floor` / `basin` / `report` with `--step9`, n3_mcf_diag `b` / `c` / `d`,
+    n3_classical `anchor`. Anything else (sampling, FF*, smoke / oracle / force flags) stops it before anything
+    runs.
+  - Preflight, before the first command:
+    - SEL is sha `553f1dc9…` (n3_score's guard checks it again per command);
+    - the scoring code is the step-9 manifest's (byte-identical to 772a36e, checked on the laptop at pack time),
+      and P is sha `9a483a41…`;
+    - every input a command names exists with its manifest sha256;
+    - on the first start, 0 match, basin, anchor, report or diagnostic (b)-(d) outputs of that set exist. On a
+      resume, only the ones the driver's own events recorded;
+    - the environment is recorded (Python and torch / pymatgen / scipy / numpy versions). On a resume, a
+      different environment stops the driver (R: one CPU environment for the whole of step 9).
+  - Events go to `results/n3/private/step9/events_<set>.jsonl`: start, done (exit code, wall time, sha256 of each
+    output), stop and resume per command. The log holds exit codes, row counts and harness / deterministic
+    failure counts. It never holds hit rates or picked values.
+  - **Resume after a stop** (timeout, node failure, kill): restart at the first command without a done record.
+    - Match commands continue from their per-fit rows; n3_score trims a cut-off final line itself.
+    - basin, anchor, haar-floor, report and diagnostics (b) / (d) re-run whole. They are deterministic
+      (bootstrap seed 0), so the result is the same.
+    - Diagnostic (c) deletes its partial bundle and re-runs.
+    - Nothing scored is discarded, no setting changes, and every stop is listed in REC.
+    - Recorded before the first command in `tasks/n3_step9_clarification_2026-11-15.md`. P is not edited.
+- [ ] `anvil_step9.sbatch`, `anvil_step9_prelude.sh`, inner `step9_9T.sh` / `step9_9D.sh` on the step-7 pattern:
+      log the image, wrapper, prelude, inner, driver and SEL sha256, verify the step-9 manifest, then run the
+      driver. Each inner script refuses any job name but its own.
+- [ ] `scripts/n3_results.py`: assembles `results/n3/n3_results.json` (section 5).
+- [ ] Tests `tests/test_n3_step9.py` on stub commands and a synthetic root (no TEST data is read). They cover:
       - the order, a stop on failure, and a resume that skips done commands;
-      - the allowlist refusals and an environment change;
+      - the allowlist refusals, the `--selection-sha256` rewrite, and an environment change;
       - preflight FAIL on planted controls: a fake `match/zz_testB.jsonl`, a changed SEL, a changed scorer, and a
-        changed bundle sha.
-      Then run the whole N3 suite.
+        changed bundle sha;
+      - the step-9 pack: closure complete, forbidden outputs refused;
+      - n3_results on synthetic reports, including the hygiene check.
+      Then run the whole N3 suite and a review pass.
 
-## 3. Unblinding and results
+## 4. On Anvil (each step after Frank's OK)
 
-- Nothing is read until the last command (the DEV-TEST report) finishes. Progress is followed by row counts only.
-- [ ] `scripts/n3_results.py` assembles `results/n3/n3_results.json` from:
+- [ ] **Upload, Frank in manual-approval mode:** pack on the laptop, scp to `$S/n3_upload`, unpack into
+      `$S/n3_box`, `verify --step 9`, receipt back to the laptop.
+- [ ] Dry run: `n3_step9.py plan` for both sets inside the image (read-only, on a login node, no matching).
+- [ ] Clarification committed and pushed, then **sbatch 9T and 9D after Frank's OK**. A sacct watcher follows.
+- [ ] **Pullback, Frank in manual-approval mode:** `pullback --label step9`, scp, laptop `unpack --no-overwrite`
+      + verify, receipt back to Anvil.
+- [ ] **Cleanup GPU job** as in step 8: delete `$S/n3_box` and `$S/n3_upload`, run the search, keep the receipt.
+      The pullback skips `.git/` this time (the 53 false hash hits of step 8).
+
+## 5. Unblinding and results
+
+- Nothing is read until both reports and all diagnostics exist. Progress is followed by row counts only.
+- [ ] `n3_results.py` writes `results/n3/n3_results.json` from:
       - both report outputs (the `report_<set>.out.json` files are committed as well);
       - the diagnostic (b) / (c) / (d) summaries per z_MCF stratum and the Haar-floor summary;
       - the Gate C, diagnostic (a), degrade and H2 FORM (EXACT) records from SEL;
-      - step-9 provenance: driver, code and SEL sha256, the environment, an events summary and any stops.
+      - step-9 provenance: driver, code and SEL sha256, the environment, the job ids, an events summary and
+        any stops.
 - [ ] Hygiene check on every committed JSON: numbers, labels and refcodes only. No coordinates, cells or CIF text.
 - [ ] Commit and push `n3_results.json`, `report_<set>.json` and `report_<set>.out.json` right away, before any
       interpretation. Then report to Frank: H1-H3 outcomes with Δ and CI, worded by P §6's abstract rules.
 - Later and separate: the manuscript rebuild (R "Step 9") and the Tier-2 (§8) decision.
 
-## 4. Laptop conditions (memory: Windows background compute)
+## 6. Timeline
 
-- For 1-2 days: AC in, lid open, don't touch the power button. Modern Standby freezes the run.
-- Windows Update: a 7-day pause plus `NoAutoRebootWithLoggedOnUsers` needs one UAC prompt from Frank. Without it,
-  a ~04:30 restart costs only the fits in flight, and the run resumes after his sign-in.
-- No other heavy local job at the same time (the Claude Code memory reaper).
-
-## 5. Timeline
-
-Build and tests take about half a day after the OK. The run takes 27-55 h. Results land about 11-17 to 11-19.
-
-## 6. Decisions for Frank (recommended first)
-
-1. Where: **the laptop, W = 6** / an Anvil GPU job on its 32 cores. Anvil needs a new CSD upload in manual mode
-   and a second cleanup.
-2. Stops: **resume as in section 2, recorded in a dated clarification before the first command** / strict: any
-   stop discards every step-9 row and scoring restarts from zero.
-3. Updates: **approve one UAC prompt for a 7-day pause and no auto-reboot** / leave updates on.
+- Build, tests and review: about 1 day.
+- Upload: one manual-mode session. Queue waits have run 9-25 h. 9T runs about 6-12 h.
+- Pullback and cleanup: about half a day.
+- Results land about 11-18 to 11-20.
 
 ---
 
