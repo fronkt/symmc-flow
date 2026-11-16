@@ -1001,3 +1001,11 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - **Submitted 11-16 ~00:21 EST:** `n3-s9T` **22247583** (-t 24:00:00) and `n3-s9D` **22247584** (-t 12:00:00), both
   PENDING (Priority). GPU balance 1,291.3. Watcher: `watch9.sh --start` (sacct, stage lines and done-event counts
   only).
+- **9D (DEV-TEST) COMPLETE, 11-16.** Job 22247584 on g006 (32 cores): started 11:02:52 EST, ended 12:16:38
+  EST, elapsed 01:13:46, State COMPLETED, ExitCode 0:0.
+  - Prelude: `verify --step 9` PASS (196 files, 0 missing, 0 mismatches). Driver: preflight OK (first start), the
+    dry run's environment (Python 3.12.15, torch 2.11.0+cu128, pymatgen 2026.5.4, scipy 1.17.1, numpy 2.3.5).
+  - Events: 93 done, 0 `command_failed`, no stop or restart. Driver's last lines: "step 9 devtest complete: 78
+    units, 551 output files checksummed" and "done". Marker `STEP9_9D_DONE` in `$SCRATCH/n3_ops`.
+  - Only sacct, the Slurm job log's stage lines and event counts were read. No output and no private log.
+  - 9T (22247583) is still PENDING (Priority). GPU balance 1,276.3 (other jobs of the allocation also ran).

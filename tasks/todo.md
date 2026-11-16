@@ -110,6 +110,7 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
       `$S/n3_box`, `verify --step 9`, receipt back to the laptop.
 - [x] Dry run (11-16: both sets 93 commands, preflight OK, VALSEL's environment): `n3_step9.py plan` for both sets inside the image (read-only, on a login node, no matching).
 - [x] Clarification committed and pushed (f45d80a), then **sbatch 9T and 9D after Frank's OK** (11-16: 22247583 / 22247584). A sacct watcher follows.
+      - 9D COMPLETE 11-16 12:16 EST (01:13:46, 93/93 done, 0 failed, no restart). 9T PENDING. Pullback waits for 9T.
 - [ ] **Pullback, Frank in manual-approval mode:** `pullback --label step9`, scp, laptop `unpack --no-overwrite`
       + verify, receipt back to Anvil.
 - [ ] **Cleanup GPU job** as in step 8: delete `$S/n3_box` and `$S/n3_upload`, run the search, keep the receipt.
