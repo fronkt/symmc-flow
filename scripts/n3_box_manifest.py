@@ -81,7 +81,7 @@ def validate_manifest(man, root, deployable=True):
     label = man.get("label", "")
     if not isinstance(label, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", label):
         raise ValueError("unsafe manifest label")
-    if man.get("step") not in (4, 5, 7, 8):
+    if man.get("step") not in (4, 5, 7, 8, 9):
         raise ValueError("invalid manifest step")
     if deployable and (man.get("deployable") is not True or man.get("problems") or man.get("missing")
                        or man.get("groups_filter")):
@@ -106,11 +106,14 @@ def validate_manifest(man, root, deployable=True):
         forbidden = {f["sha256"] for f in man.get("forbidden", [])}
         if not forbidden or any(f["sha256"] in forbidden for f in files):
             raise ValueError("step-5 forbidden-hash inventory absent or violated")
-    if man["step"] == 7 and not (man.get("checks", {}).get("n3_selection_complete") is True
-                                and man["checks"].get("n3_selection_tracked") is True
-                                and man["checks"].get("n3_selection_unchanged") is True
-                                and man["checks"].get("head_on_remote") is True):
-        raise ValueError("step-7 manifest lacks a complete committed/pushed selection gate")
+    if man["step"] in (7, 9) and not (man.get("checks", {}).get("n3_selection_complete") is True
+                                     and man["checks"].get("n3_selection_tracked") is True
+                                     and man["checks"].get("n3_selection_unchanged") is True
+                                     and man["checks"].get("head_on_remote") is True):
+        raise ValueError(f"step-{man['step']} manifest lacks a complete committed/pushed selection gate")
+    if man["step"] == 9 and not (man["checks"].get("scoring_code_as_frozen") is True
+                                 and man["checks"].get("blinded_outputs_packed") == []):
+        raise ValueError("step-9 manifest lacks its frozen-code and blinding gates")
     return man
 
 # repo-relative entry scripts that run on the box; their local-import closure is shipped
@@ -213,6 +216,8 @@ def groups(step, new_box=False):
     code, _ = code_closure()
     sym = sorted(rel(os.path.join(d, f)) for d, _, fs in os.walk(os.path.join(REPO, "symmc_flow"))
                  for f in fs if f.endswith(".py"))
+    if step == 9:
+        return step9_groups(P, S, code, sym)
     g5 = [
         ("code", False, True, code + sym + ["pyproject.toml", "patches/mcf_n3.patch", "tasks/n3_protocol.md"] + BOX_SHELL),
         ("frozen_lists", False, True, ["tasks/n3_sets/sel_refcodes.txt", "results/n2_selection.json"]),
@@ -297,6 +302,112 @@ def groups(step, new_box=False):
     return g5 + g7 + [("step5_carryover", True, True, sorted(set(carry)))]
 
 
+# ------------------------------------------------------------------------------------------ step 9
+FREEZE_COMMIT = "772a36e"
+# the step-9 code paths (input-closure audit 2026-11-15): byte-for-byte the freeze's, except n3_mcf_run.py, whose only
+# post-freeze change is the code_fix_7 run_check_floor fix (tasks/n3_step7_codefix_2026-11-09.md), not on a step-9 path
+STEP9_SCORING_CODE = ["scripts/n3_score.py", "scripts/n3_common.py", "scripts/n3_set_cache.py", "scripts/n3_harness.py",
+                      "scripts/n3_stats.py", "scripts/g2_asym_baselines.py", "scripts/n3_mcf_diag.py",
+                      "scripts/n3_mcf_lib.py", "scripts/n3_mcf_export.py", "scripts/n3_classical.py",
+                      "tasks/n3_protocol.md"]
+STEP9_CODE_FIXED_AFTER_FREEZE = {"scripts/n3_mcf_run.py"}
+STEP9_NEW = ["scripts/n3_step9.py", "scripts/n3_step9_summary.py"]
+
+
+def step9_inputs():
+    """Every file the frozen step-9 commands read that no step-9 command makes: the commands' path arguments (parsed
+    by the step-9 driver itself), the report arms' bundles and label files; MCF-R run dirs -> the two files (c) reads."""
+    sys.path.insert(0, os.path.join(REPO, "scripts"))
+    import n3_step9 as S9
+    sel, _ = S9.load_selection(REPO, S9.FREEZE_SHA256)
+    files, run_dirs = set(), set()
+    for st in S9.SETS:
+        X = S9.Runner(REPO, sel, S9.FREEZE_SHA256, st, "$W", "$PY_SYMMC", dry=True)
+        made = set(X.producer)
+        for _, cmds, _ in X.units:
+            for c in cmds:
+                t = X.parse_c(c)[0]
+                for flag in S9.PATH_FLAGS:
+                    if flag == "--out":
+                        continue
+                    for r in S9.values(t, flag):
+                        if r not in made:
+                            (run_dirs if flag == "--run_dir" else files).add(r)
+        cfg = sel["report_configs"][st]
+        for arm in cfg["arms"].values():
+            files |= set(arm["bundles"])
+        files |= set(cfg.get("labels") or [])
+    runs = []
+    for d in sorted(run_dirs):
+        if not d.startswith("n3_mcf/infer/mcfR/"):
+            raise SystemExit(f"step 9: unexpected run dir {d}")
+        man = json.load(open(os.path.join(REPO, d, "n3_run.json")))
+        runs += [f"{d}/n3_run.json", f"{d}/out/predictions_{int(man['num_samples'])}.pt"]
+    return sorted(files), runs
+
+
+def step9_groups(P, S, code, sym):
+    files, runs = step9_inputs()
+    fork9 = [f for f in fork_files() if f.startswith("external/mcf/data-preprocess/")]
+    return [
+        ("code_9", False, True, sorted(set(code + STEP9_NEW + ["scripts/n3_box_manifest.py"])) + sym
+         + ["pyproject.toml", "tasks/n3_protocol.md"] + BOX_SHELL),
+        # n3_mcf_export's entry_cells imports the fork's data-preprocess modules (diagnostic (b) only)
+        ("fork_9", False, True, fork9),
+        ("frozen_lists_9", False, True, ["results/n3/n3_selection.json", "tasks/n3_sets/testB_refcodes.txt"]),
+        # anchor loads the VAL set as well (n3_classical.py cmd_anchor)
+        ("set_caches_9", True, True, [f"{S}/{s}.{e}" for s in ("testB", "devtest", "val") for e in ("pt", "json")]),
+        ("mcf_exports_9", True, True, [f"n3_mcf/{d}/{f}" for d in ("test", "devtest")
+                                       for f in ("test_molcrystal_normalized.pkl.gz", "test_sidecar.json")]),
+        ("mcfR_runs_9", True, True, runs),
+        ("inputs_9", True, True, files),
+    ]
+
+
+def step9_checks(files):
+    """Problems and checks of a step-9 pack: scoring code as frozen and committed, nothing blinded packed, and every
+    packed file that an earlier N3 manifest lists (upload or pull-back receipts) unchanged since."""
+    sys.path.insert(0, os.path.join(REPO, "scripts"))
+    import fnmatch
+    import n3_step9 as S9
+    problems, checks = [], {}
+    sym = [f["path"] for f in files if f["path"].startswith("symmc_flow/")]
+    differ = [p for p in STEP9_SCORING_CODE + sym if git("diff", "--quiet", FREEZE_COMMIT, "--", p)[0] != 0]
+    fixed = [p for p in STEP9_CODE_FIXED_AFTER_FREEZE if git("diff", "--quiet", FREEZE_COMMIT, "--", p)[0] != 0]
+    dirty = git("status", "--porcelain", "--", *STEP9_SCORING_CODE, *STEP9_NEW, *STEP9_CODE_FIXED_AFTER_FREEZE,
+                "scripts/n3_box_manifest.py", "symmc_flow")[1]
+    checks.update(scoring_code_as_frozen=not differ and not dirty, scoring_code_differs=differ,
+                  fixed_after_freeze=fixed, code_uncommitted=dirty.splitlines())
+    if differ:
+        problems.append(f"step-9 scoring code differs from the freeze {FREEZE_COMMIT}: {differ}")
+    if dirty:
+        problems.append(f"step-9 code is not committed: {dirty.splitlines()[:5]}")
+    pats = [g for st in S9.SETS for g in S9.blinded_globs(st)]
+    blinded = [f["path"] for f in files if any(fnmatch.fnmatchcase(f["path"], g) for g in pats)]
+    blinded += [f["path"] for f in files if "/private/match/" in f["path"] or "/private/step9/" in f["path"]]
+    checks["blinded_outputs_packed"] = sorted(set(blinded))
+    if blinded:
+        problems.append(f"step-9 outputs or match rows would be packed: {sorted(set(blinded))[:5]}")
+    known, receipts = {}, []
+    mdir = os.path.realpath(os.path.expanduser(os.environ.get("N3_MANIFEST_DIR", "~/n3_manifests")))
+    if os.path.isdir(mdir):
+        for name in sorted(os.listdir(mdir)):
+            if name.endswith(".manifest.json") and not name.startswith("step9"):
+                receipts.append(name)
+                for f in json.load(open(os.path.join(mdir, name))).get("files", []):
+                    known.setdefault(f["path"], set()).add(f["sha256"])
+    data = [f for f in files if f["csd"]]
+    changed = [f["path"] for f in data if f["path"] in known and f["sha256"] not in known[f["path"]]]
+    checks.update(receipts_read=receipts, csd_files_in_receipts=sum(f["path"] in known for f in data),
+                  csd_files_not_in_receipts=sorted(f["path"] for f in data if f["path"] not in known),
+                  csd_files_changed_since_receipt=changed)
+    if not receipts:
+        problems.append(f"no earlier N3 manifests in {mdir} to check the step-9 inputs against")
+    if changed:
+        problems.append(f"step-9 inputs differ from their upload / pull-back receipts: {changed[:5]}")
+    return problems, checks
+
+
 # ------------------------------------------------------------------------------------------ forbidden (step 5)
 def forbidden_files(step=5):
     """Files whose content must never reach a step-5 box (DEV-TEST / TEST-B inputs and the full caches)."""
@@ -354,7 +465,7 @@ def build(step, new_box=False, only_groups=None, allow_missing=False, allow_unpa
     label = f"step{step}" + ("_newbox" if new_box else "")
     files, missing, seen = [], [], set()
     problems = []
-    if step not in (4, 5, 7) or new_box and step != 7:
+    if step not in (4, 5, 7, 9) or new_box and step != 7:
         raise ValueError("--new-box is valid only for step 7")
     if only_groups or allow_missing or allow_unpatched or not scan:
         problems.append("diagnostic overrides are not deployable; production pack requires all groups/checks")
@@ -416,7 +527,11 @@ def build(step, new_box=False, only_groups=None, allow_missing=False, allow_unpa
                 problems.append(f"DEV-TEST / TEST-B refcodes found in step-5 data files: {data_hits}")
     rc_head = git("rev-parse", "HEAD")[1]
     dirty = git("status", "--porcelain", "--", "scripts", "symmc_flow", "patches", "pyproject.toml")[1]
-    if step == 7:
+    if step == 9:
+        p9, c9 = step9_checks(files)
+        problems += p9
+        checks.update(c9)
+    if step in (7, 9):
         sel = "results/n3/n3_selection.json"
         selected = json.load(open(os.path.join(REPO, sel))) if os.path.isfile(os.path.join(REPO, sel)) else {}
         complete = selected.get("complete") is True and selected.get("schema_version") == 1
@@ -426,7 +541,8 @@ def build(step, new_box=False, only_groups=None, allow_missing=False, allow_unpa
         checks.update(n3_selection_complete=complete, n3_selection_tracked=tracked, n3_selection_unchanged=clean,
                       head_on_remote=pushed)
         if not (complete and tracked and clean and pushed):
-            problems.append("results/n3/n3_selection.json must be committed, unchanged and pushed before step 7 (§7 step 6)")
+            problems.append(f"results/n3/n3_selection.json must be committed, unchanged and pushed before step {step} "
+                            "(§7 step 6)")
     man = {"format": FORMAT, "label": label, "step": step, "new_box": new_box, "created": time.strftime("%Y-%m-%d %H:%M:%S"),
            "git_head": rc_head, "code_dirty": dirty.splitlines(), "n3_common_setcache": patched,
            "groups_filter": only_groups, "files": files, "missing": missing, "forbidden": forb, "checks": checks,
@@ -665,7 +781,9 @@ def cmd_verify(args):
 # the box-side output trees pulled back at step 8 (everything CSD-derived the runs wrote)
 PULL_ROOTS = ["results/n3", "n3_mcf/runs", "n3_mcf/infer", "n3_mcf/_gateC", "n3_mcf/_timing", "n3_mcf/_smoke",
               "external/mcf/outputs"]
-PULL_SKIP = ("__pycache__",)
+# .git: a cloned repo's stock git files are not CSD-derived; packing them as csd=1 put 53 false hash hits in the
+# step-8 cleanup search (template files shared by every clone on the cluster)
+PULL_SKIP = ("__pycache__", ".git")
 
 
 def pull_link(p, root):
@@ -962,7 +1080,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     for name in ("list", "pack"):
         p = sub.add_parser(name)
-        p.add_argument("--step", type=int, required=True, choices=[4, 5, 7])
+        p.add_argument("--step", type=int, required=True, choices=[4, 5, 7, 9])
         p.add_argument("--new-box", action="store_true", help="step 7 on a new box: + the step-5 set and carry-over")
         p.add_argument("--groups", nargs="+", default=None, help="test only: restrict to these groups (not deployable)")
         if name == "list":
@@ -977,7 +1095,7 @@ def main():
     p.add_argument("--root", required=True)
     p.add_argument("--no-overwrite", action="store_true")
     p = sub.add_parser("verify")
-    p.add_argument("--step", type=int, choices=[4, 5, 7], default=5)
+    p.add_argument("--step", type=int, choices=[4, 5, 7, 9], default=5)
     p.add_argument("--label", default=None, help="manifest label (default step<N>)")
     p.add_argument("--root", required=True)
     p = sub.add_parser("pullback")

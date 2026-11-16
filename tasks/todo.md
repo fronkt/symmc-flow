@@ -23,10 +23,10 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
 
 ## 1. What runs: the frozen list, verbatim, in SEL order
 
-- `runs.step9`: 16 runs, 42 commands. Per set: MCF diagnostic (c) on the 3 MCF-R seeds, the Haar floor, (b),
+- `runs.step9`: 16 runs, 46 commands (23 per set). Per set: MCF diagnostic (c) on the 3 MCF-R seeds, the Haar floor, (b),
   then (d) for primary / mcf05 / mcf08.
 - `runs.step9_scoring`: 69 commands per set (61 match, 6 basin, 1 anchor, 1 report).
-- **154 commands in all**, 77 per set. Some match commands repeat (iii-u primary/mcf05/mcf08 appear in the
+- **184 commands in all**, 92 per set, then the driver's (c) summary unit (clarification section 3). Some match commands repeat (iii-u primary/mcf05/mcf08 appear in the
   Haar-floor run and again in scoring). Match rows resume per fit, so a repeat finds its rows and returns. Run
   verbatim, no dedupe.
 - **Changes to a command, all non-scientific:**
@@ -54,15 +54,16 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
 
 ## 3. Build (laptop; nothing is uploaded or submitted without Frank)
 
-- [ ] **Input closure audit** (read-only): every file each step-9 subcommand opens (bundles, set caches, MCF
+- [x] **Input closure audit** (read-only; 11-15, subagent; no ordering bug; anchor needs the VAL cache and a
+      `classical/` dir it doesn't create; diagnostic (b) needs 4 fork files; floor @mcf10 will read "missing"): every file each step-9 subcommand opens (bundles, set caches, MCF
       exports and sidecars, MCF-R run dirs, labels, references, earlier rows), from the code. The result is
       the step-9 file list.
-- [ ] `n3_box_manifest.py --step 9`: code closure + `symmc_flow` + `pyproject.toml` + P + box shell (`env.sh`),
+- [x] `n3_box_manifest.py --step 9` (11-15: 196 files, 2.43 GB; 116/120 data files match a receipt): code closure + `symmc_flow` + `pyproject.toml` + P + box shell (`env.sh`),
       SEL and the frozen lists, gate F testB/devtest, the TEST-B/DEV-TEST set caches, MCF exports and iv-P items,
       the stored DEV-TEST OURS draws and picks, and every step-7 output step 9 reads (from the audit). Every
       file is checked against its laptop receipt sha256. `pack` refuses any TEST-B/DEV-TEST match, basin,
       anchor, report or diagnostic (b)-(d) file. `verify` and `pullback --label step9` work as for step 7.
-- [ ] `scripts/n3_step9.py` (modelled on `n3_step7.py`):
+- [x] `scripts/n3_step9.py` (modelled on `n3_step7.py`):
   - `plan --set testB|devtest`: read-only. Prints the commands as they will run and runs the preflight.
   - `run --set testB|devtest --workers 28`: runs the set's commands in SEL order and stops at the first
     non-zero exit.
@@ -88,18 +89,19 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
     - Diagnostic (c) deletes its partial bundle and re-runs.
     - Nothing scored is discarded, no setting changes, and every stop is listed in REC.
     - Recorded before the first command in `tasks/n3_step9_clarification_2026-11-15.md`. P is not edited.
-- [ ] `anvil_step9.sbatch`, `anvil_step9_prelude.sh`, inner `step9_9T.sh` / `step9_9D.sh` on the step-7 pattern:
+- [x] `anvil_step9.sbatch`, `anvil_step9_prelude.sh`, inner `step9_9T.sh` / `step9_9D.sh` on the step-7 pattern:
       log the image, wrapper, prelude, inner, driver and SEL sha256, verify the step-9 manifest, then run the
       driver. Each inner script refuses any job name but its own.
-- [ ] `scripts/n3_results.py`: assembles `results/n3/n3_results.json` (section 5).
-- [ ] Tests `tests/test_n3_step9.py` on stub commands and a synthetic root (no TEST data is read). They cover:
+- [x] `scripts/n3_step9_summary.py c`: the P §3.2 (c) summary no frozen command makes (clarification section 3).
+- [x] `scripts/n3_results.py`: assembles `results/n3/n3_results.json` (section 5).
+- [x] Tests (11-15: `test_n3_step9`, `_summary`, `_pack`, `test_n3_results`; whole N3 suite passes) on stub commands and a synthetic root (no TEST data is read). They cover:
       - the order, a stop on failure, and a resume that skips done commands;
       - the allowlist refusals, the `--selection-sha256` rewrite, and an environment change;
       - preflight FAIL on planted controls: a fake `match/zz_testB.jsonl`, a changed SEL, a changed scorer, and a
         changed bundle sha;
       - the step-9 pack: closure complete, forbidden outputs refused;
       - n3_results on synthetic reports, including the hygiene check.
-      Then run the whole N3 suite and a review pass.
+      Then run the whole N3 suite and a review pass (11-15: independent review running).
 
 ## 4. On Anvil (each step after Frank's OK)
 
