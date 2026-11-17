@@ -1012,3 +1012,9 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
 - **9T (TEST-B) STARTED 11-16 21:03:33 EST** (job 22247583). Prelude `verify --step 9` PASS. Driver
   `4ec4ca39…`, inner `45f9467e…`, summary `17170d58…`, selection `553f1dc9…`. Preflight OK (first start), the same
   environment as 9D. 78 units, 93 commands; 7 done, 0 failed at 21:12 EST. Watcher on 22247583 until an end state.
+- **9T (TEST-B) COMPLETE, 11-17.** Job 22247583: started 11-16 21:03:33 EST, ended 11-17 01:00:53 EST, elapsed
+  03:57:20, State COMPLETED. Events: 93 done, 0 `command_failed`, no stop or restart. Driver's last lines: "step 9
+  testB complete: 78 units, 551 output files checksummed" and "done". Marker `STEP9_9T_DONE` in `$SCRATCH/n3_ops`.
+  - Only sacct, the Slurm job log's stage lines and event counts were read. No output and no private log.
+  - **Both sets are complete. The two jobs ran 5.2 h in all (9D 01:13:46 + 9T 03:57:20; ExitCode 0:0 both), under
+    the 8-15 GPU-h guess.** Next: pullback `--label step9` with Frank in manual-approval mode.
