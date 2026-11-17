@@ -15,7 +15,7 @@ The benchmark, N3, asks for orientation completion of $Z'=1$ molecular crystals
 whose molecule sits on a general position. Each arm was given the experimental
 lattice $L$ (cell vectors as rows); the $K$ space-group operations $(W_k,t_k)$ in
 the crystal's own CSD setting, from pymatgen's SpacegroupAnalyzer (symprec
-0.1)\cite{ong2013pymatgen}\CITEME{spglib} run on the experimental structure; the
+0.1)\cite{ong2013pymatgen,togo2024spglib} run on the experimental structure; the
 fractional centroid $c_0$ of the asymmetric-unit molecule; and its rigid
 experimental conformer as centred coordinates $l_a$. It predicted one rotation,
 the asymmetric-unit orientation $R_{\mathrm{asym}}\in\mathrm{SO}(3)$, and exact
@@ -60,7 +60,7 @@ the stored centroids one to one and that expanding the true orientation reproduc
 the experimental structure under StructureMatcher (1,157 removed, nearly all not
 $Z'=1$ general position); removal of crystals sharing a six-letter refcode family
 with the development corpus or a molecular Weisfeiler--Lehman graph
-hash\CITEME{Weisfeiler--Lehman graph hash; NetworkX} with its 1,987 molecules (22
+hash\cite{shervashidze2011wl,hagberg2008networkx} with its 1,987 molecules (22
 removed); and, after a seeded permutation (seed 20261001), one crystal per refcode
 family (2,448 kept). SEL is the first 300 and TEST-B the next 1,000 (679
 centrosymmetric, 270 Sohncke and 51 other crystals). Both refcode lists were
@@ -127,8 +127,7 @@ is given in the Supporting Information. Crystals were exported through MCF's own
 preprocessing and feature code, centred cells in their primitive cell. An export gate checked atom-by-atom round trips and matches to the
 truth on every set. Before any MCF training, a second gate checked that our
 harness reproduces MCF's published results with its released Thurlemann
-checkpoint\CITEME{MolCrystalFlow Zenodo record 19673190; Thurlemann et al.\ 2023
-data} (within $\pm5$ percentage points of its Fig.~3a at stol 0.9 and 1.0), that
+checkpoint\cite{zeng2026molcrystalflowdata,thurlemann2023regularized} (within $\pm5$ percentage points of its Fig.~3a at stol 0.9 and 1.0), that
 the patches leave the computation unchanged, and that the clamp is exact; it passed
 after the corrections of amendment A4.
 % src: tasks/n3_protocol.md:372-393,402-433,438-505,1431-1506; results/n3/n3_selection.json:"gate_c"
@@ -153,20 +152,19 @@ $R_{\mathrm{asym}}$. iii-u drew 16 Haar-random rotations per crystal under three
 seed bases; with the RANDOM selector these draws are the random floor. iii-p
 applied the development steric press (80 Adam steps on the orientation) to them.
 iii-s, the physics search, expanded the 4,608 orientations of an incremental Hopf
-grid (about 15$^\circ$ apart)\CITEME{Yershova et al.\ incremental Hopf grid;
-HEALPix}, kept the 64 with the lowest unrelaxed steric energy, and minimised each
+grid (about 15$^\circ$ apart)\cite{yershova2010hopf,gorski2005healpix}, kept the 64 with the lowest unrelaxed steric energy, and minimised each
 over orientation with the machine-learned potential UMA s-1p1 (OMC
-task)\CITEME{UMA s-1p1 and fairchem}, which the MCF authors use for their own
-rigid-body relaxation; we call it FF*. Minimisation used L-BFGS\CITEME{L-BFGS}
+task)\cite{wood2025uma,fairchem2026core}, which the MCF authors use for their own
+rigid-body relaxation; we call it FF*. Minimisation used L-BFGS\cite{liu1989lbfgs}
 (at most 100 energy-and-gradient evaluations; converged when the orientation
 gradient per molecule fell below 0.01~eV\,rad$^{-1}$), minima within 2$^\circ$
 were merged, and the lowest-energy minimum was the pick. FF* ran in float32 with
 the same settings in every job. For FF* evaluations the X--H bonds were set to the
 CSD neutron-normalised lengths (C--H 1.089, N--H 1.015, O--H
-0.993~\AA)\CITEME{CSD X--H normalisation lengths}; the returned orientation was
+0.993~\AA)\cite{allen2010xh}; the returned orientation was
 applied to the original conformer, so every scored structure keeps the
 experimental hydrogen positions. Because UMA's training set, OMC25, derives from
-CSD molecules\CITEME{OMC25; OE62}, H2 is also reported on the TEST-B crystals whose
+CSD molecules\cite{gharakhanyan2026omc25,stuke2020oe62}, H2 is also reported on the TEST-B crystals whose
 refcode family is absent from it.
 % src: tasks/n3_protocol.md:656-726,1378-1386
 
@@ -183,7 +181,7 @@ steps) from $K$ independent Haar priors, without symmetrization.
 
 Three ablations are descriptive. ii-S placed MCF's orientations inside our exact
 expansion: each MCF-R+G copy was pulled back to an asymmetric-unit estimate by
-Kabsch alignment\CITEME{Kabsch}, each estimate was expanded, and the
+Kabsch alignment\cite{kabsch1976solution,kabsch1978discussion}, each estimate was expanded, and the
 lowest-energy expansion was kept. iv-S expanded iv-P's identity-copy orientation.
 i-E minimised all 16 OURS draws under FF* and picked the lowest FF* energy, which
 separates the learned proposal from the energy model.
@@ -227,14 +225,14 @@ crystal averaged over three seeds (one run for iii-s); draw@1, any@16 and
 $d_i=h_i^{\mathrm{OURS}}-h_i^{A}$, with $h_i$ the seed-mean outcome, and $\Delta$
 is the mean of $d_i$. Contrasts used a two-sided paired sign-flip test on
 $\sum_i d_i$, computed exactly. The preregistered hypotheses, one family tested on
-TEST-B with Holm's step-down procedure\CITEME{Holm 1979} at family-wise
+TEST-B with Holm's step-down procedure\cite{holm1979simple} at family-wise
 $\alpha=0.05$, were: H1, OURS against MCF-R and against MCF-R+G as an
 intersection-union test ($p=\max(p_R,p_G)$, $\Delta_{\mathrm{H1}}=\min(\Delta_R,
 \Delta_G)$, supported only if both differences are positive); H2, OURS against
 iii-s; and H3, OURS against iv-P. A verdict names a better arm only at adjusted
 $p<0.05$; otherwise the difference is ``not resolved'', never a tie. $\Delta$ is
 given in percentage points with a paired crystal-bootstrap BCa 95\%
-interval\CITEME{Efron 1987, BCa bootstrap} (10,000 resamples). A two-stage
+interval\cite{efron1987better} (10,000 resamples). A two-stage
 bootstrap over seeds and then crystals (10,000 replicates) measured training-seed
 sensitivity; a supported hypothesis whose interval contains zero is worded ``not
 shown to exceed seed-to-seed training variation''. H1--H3 were repeated with
@@ -286,7 +284,7 @@ the listed runs were made, their outputs were pulled back with checksums, the
 CSD-derived files on the cluster were deleted, and both sets were scored once. The
 results were committed and pushed (commit f1c713a) before they were interpreted.
 The N3 training (MCF and iv-P), sampling and FF* jobs ran on NVIDIA A100 nodes of
-the Purdue Anvil cluster\CITEME{Anvil; ACCESS} in one container image, and scoring
+the Purdue Anvil cluster\cite{song2022anvil,boerner2023access} in one container image, and scoring
 used the cluster's CPU cores; the OURS and OURS-N2 checkpoints had been trained on
 CPU before N3.
 % src: tasks/n3_protocol.md:1-17,967-1015,1367-1377; results/n3/n3_selection.json:1-4; tasks/n3_step9_clarification_2026-11-15.md:11-27; tasks/n3_step4_record_2026-10-11.md:878-944,1043-1045; git log 8f7e494, 772a36e, f1c713a
