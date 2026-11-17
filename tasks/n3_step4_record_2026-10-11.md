@@ -1009,3 +1009,6 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
     units, 551 output files checksummed" and "done". Marker `STEP9_9D_DONE` in `$SCRATCH/n3_ops`.
   - Only sacct, the Slurm job log's stage lines and event counts were read. No output and no private log.
   - 9T (22247583) is still PENDING (Priority). GPU balance 1,276.3 (other jobs of the allocation also ran).
+- **9T (TEST-B) STARTED 11-16 21:03:33 EST** (job 22247583). Prelude `verify --step 9` PASS. Driver
+  `4ec4ca39…`, inner `45f9467e…`, summary `17170d58…`, selection `553f1dc9…`. Preflight OK (first start), the same
+  environment as 9D. 78 units, 93 commands; 7 done, 0 failed at 21:12 EST. Watcher on 22247583 until an end state.
