@@ -92,11 +92,11 @@ the operation, and an improper operation ($\det W_k=-1$) also mirrors the confor
 orientation, that of the asymmetric unit, $R_{\text{asym}}$, therefore fixes all $K$.
 Current rigid-body molecular-crystal generators do not use this.
 MolCrystalFlow\cite{zeng2026molcrystalflow} generates an orientation for every molecule
-and imposes no space-group constraint, and MOFFlow\cite{kim2025mofflow} relies on
-framework connectivity rather than a symmetry prior. Space-group-conditioned generation
-has been developed for inorganic crystals, whose atoms are placed on Wyckoff
-positions\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025,puny2025sgfm,mu2026nextcrystal};
-none of these places rigid molecules.
+and imposes no space-group constraint, and MOFFlow\cite{kim2025mofflow} generates the poses
+of rigid building blocks of metal--organic frameworks. Space-group symmetry has been built into
+generators of inorganic crystals, through Wyckoff positions or space-group-constrained
+coordinates\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025,puny2025sgfm,mu2026nextcrystal};
+none of these generates rigid molecules.
 
 We ask whether this redundancy matters for learned models, in a benchmark built so that
 the use of symmetry is what differs between the learned arms. Every arm receives
@@ -144,8 +144,9 @@ $k$, and copy 1 (the identity) is the asymmetric-unit molecule itself.
 \item[Orientation and $R_{\text{asym}}$.] An orientation is a rotation in $\mathrm{SO}(3)$
 that places the conformer in the cell; $R_{\text{asym}}$ is the orientation of the
 asymmetric-unit molecule.
-\item[Handedness.] An improper operation turns the conformer into its mirror image, so a
-copy made by one has the opposite handedness to the asymmetric-unit molecule.
+\item[Handedness.] An improper operation turns the conformer into its mirror image. For a
+chiral conformer this is the opposite enantiomer, so the copy has the opposite handedness to
+the asymmetric-unit molecule.
 \item[Exact expansion.] Building all $K$ copies from $c_0$, $R_{\text{asym}}$ and the
 conformer by applying each operation to the atoms (eq~\ref{eq:expand} in Methods). Because
 the operation acts on atoms, an improper operation produces the mirrored copy directly; no
@@ -176,16 +177,19 @@ mirrored ones.}
 \label{fig:worked}
 \end{figure}
 
-\paragraph{Terms from the earlier version of this work.} Our earlier architecture (arm
-iv-P here) chose one copy as the \emph{reference copy}, \emph{re-gauged} the crystal by
-expressing the other copies' orientations in that copy's own coordinate frame (its
-\emph{body frame}; the choice of reference is the \emph{gauge}), and conditioned the model on
-a \emph{coset label} that identified the operation generating each copy. For a proper
-operation that relative orientation is fixed analytically by the operation: it is $C_k$ in
-eq~\ref{eq:expand}, so it never needed to be learned. For an improper operation it is not a
-rotation of the same conformer. The present design removes both issues: it learns only
-$R_{\text{asym}}$, and the operations supply everything else exactly. H3 compares the two
-designs directly.
+\paragraph{Terms from the earlier version of this work.} Each molecule's conformer is
+stored in its own coordinate frame, its \emph{body frame}, and which orientation counts as
+the identity is a free choice, the \emph{gauge}. Our earlier manuscript chose one copy as
+the \emph{reference copy} and \emph{re-gauged} the crystal, expressing each copy's
+orientation $R_k$ relative to the reference as $R_kR_0^{\top}$. It also conditioned the
+model on a \emph{coset label} that identified the operation generating each copy. For a
+proper operation $R_kR_0^{\top}=C_k$ (eq~\ref{eq:expand}), so that relative orientation is
+fixed analytically by the operation and never needed to be learned. For an improper
+operation, it is not a rotation of the same conformer. The present design learns only
+$R_{\text{asym}}$ and lets the operations supply everything else exactly. The comparison arm
+iv-P (H3) is the earlier architecture retrained on this task: it receives per-copy operation
+labels and mirrored conformers and predicts every copy's absolute orientation. The earlier
+manuscript's relative-target experiment itself was not rerun.
 
 % =====================================================================
 \section{Results and Discussion}
@@ -341,9 +345,12 @@ structures (MCF-R) and \nMcfRGPick\% with the symmetry scan (MCF-R+G). OURS exce
 MCF-R+G, so H1 is supported with $\Delta_{\text{H1}}=$~\nHOneDelta{} pp \nHOneCI{} (Holm
 $p=$~\nHOneP). Both two-stage seed intervals exclude zero. H1 measures a bundle: explicit,
 enforced symmetry together with our learner, since MCF-R is not given the operations
-(although they are recoverable from its inputs; Methods). Before the benchmark, our harness
-reproduced MolCrystalFlow's published match rates on its own benchmark with its released
-checkpoint (Methods), so the comparator was not mis-run in a way that test detects.
+(although they are recoverable from its inputs; Methods). Before the benchmark, we ran
+MolCrystalFlow's released checkpoint on its released test split and scored it with
+MolCrystalFlow's own scorer. The five-run median any-of-10 match rates were 29.73\% and
+66.53\% at stol 0.9 and 1.0, against the published $\approx$30\% and $\approx$66\%
+(Methods; Gate C), so our harness runs the comparator as its authors do.
+% src: results/n3/gateC.json (5-run medians mcf09 29.733, mcf10 66.533; MCF's scorer); tasks/n3_protocol.md A4 table (lines 1440-1446)
 
 The ablation ii-S separates the two parts. It takes MolCrystalFlow's own sampled
 orientations, maps each copy back to an asymmetric-unit orientation, and expands that
@@ -377,8 +384,9 @@ not compete with it on accuracy. The protocol registered no compute comparison, 
 \TODO{decide whether to report the search's cost descriptively, once sourced}.
 
 \subsection{H3: the previous architecture}
-Our previous architecture predicted all $K$ orientations from per-copy operation labels and
-reproduced no test structure in any seed (\nIvPPick\%); OURS exceeds it by \nHThreeDelta{} pp
+Our previous architecture, retrained on this task with per-copy operation labels, mirrored
+conformers and absolute orientation targets (iv-P), reproduced no test structure in any seed
+(\nIvPPick\%); OURS exceeds it by \nHThreeDelta{} pp
 \nHThreeCI{} (Holm $p=$~\nHThreeP), and H3 is supported. Taking the identity copy's predicted
 orientation as $R_{\text{asym}}$ and expanding it exactly (iv-S, descriptive) gives
 \nIvSPick\%.
@@ -425,7 +433,9 @@ on an exported primitive cell, so H1 compares a bundle of enforced symmetry and 
 rather than learners alone. The interatomic potential's training data overlap with organic
 crystals. The diagnostics of MolCrystalFlow's invariances are approximate, and DEV-TEST is not
 confirmatory. The protocol's optional second-tier diagnostics, which would have measured
-sensitivity to noisy centroids among other things, were not run.
+sensitivity to noisy centroids among other things, were not run. The learned arms select
+among their unrelaxed candidates with a steric Lennard-Jones energy; we did not test whether
+that selection is robust to other potentials such as OPLS, GAFF or UFF.
 
 % =====================================================================
 \section{Conclusions}
