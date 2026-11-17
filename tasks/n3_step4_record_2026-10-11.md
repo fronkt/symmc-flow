@@ -1018,3 +1018,46 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   - Only sacct, the Slurm job log's stage lines and event counts were read. No output and no private log.
   - **Both sets are complete. The two jobs ran 5.2 h in all (9D 01:13:46 + 9T 03:57:20; ExitCode 0:0 both), under
     the 8-15 GPU-h guess.** Next: pullback `--label step9` with Frank in manual-approval mode.
+- **Pullback (11-17; Frank: "ok go", then "No. Go in auto": run in auto mode at his instruction).**
+  - Box side: `$OPS/pullback_step9.sh` (`a880067a…`), login01, in the image. Both done markers present; the step-9
+    prelude re-ran `verify --step 9`: PASS (196 files, 0 missing, 0 mismatches).
+  - `pullback --label step9`: **1,668 files, 743.3 MB**, tar sha256 `846ca5bb50f6af3d…f2a673e5`.
+  - scp 15:28:28-15:31:44 EST to `results/n3/private/returns/`; laptop `sha256sum -c` OK.
+  - Laptop `unpack --no-overwrite --root .`: 1,671 members, no clash; `verify pullback_step9: 1668 files, missing 0,
+    hash mismatch 0` **PASS**. Receipt `C:/Users/frank/n3_manifests/pullback_step9.unpack_receipt.json`
+    (`verified: true`, sha256 `eca5e045…`) copied to `$SCRATCH/n3_manifests/`, hashes equal; its `tar_sha256` equals
+    the box's `pullback_step9.archive_sha256`.
+  - Of the 1,668 paths, 4 are not gitignored: `results/n3/report_{testB,devtest}.json` and `.out.json` (committed by
+    plan). None is tracked.
+- **Cleanup preflight (nothing deleted):** `step9_cleanup_plan.sh` on login01, in the image. Plan-only validated the
+  targets `$SCRATCH/n3_box` and `$SCRATCH/n3_upload` only (labels pullback_step4anvil, pullback_step5b,
+  pullback_step7, pullback_step9, step5, step7, step9). `cleanup-plan` with the step-9 receipt and
+  `discard_outputs: false`: `RECEIPT_CHECK_OK`.
+- **n3_results.py fix, before any number was read.** The first run stopped: "report_devtest.out.json:
+  family_primary is not complete". The frozen `n3_score.py report` makes the H1-H3 families and the wording only
+  for TEST-B or a dry run (`if set_name == "testB" or dry`, n3_score.py:1414). The DEV-TEST report has none, by
+  design (P §1.4: not confirmatory). The assembler wrongly required them on both sets, and its test fixture gave
+  both sets families. Fix: families must be complete on TEST-B; a DEV-TEST report that carries them stops; the
+  DEV-TEST entry says "families: none". Two tests added (21 pass). Only the reports' key structure was looked at
+  (which of H1-H3 are present), no value.
+- **Committed and pushed before interpretation: f1c713a.** `n3_results.json` (698,733 bytes, sha256
+  `e5da01a2…`), `report_{testB,devtest}.json` and `.out.json`, and the fix. Hygiene: 0 problems on each of the 5
+  files (no CIF or xyz text).
+- **Cleanup job submitted 11-17 ~15:40 EST: 22282744** (`$OPS/step9_cleanup.sbatch` `b5dad716…`, the step-8 wrapper
+  with the step-9 receipt; N3_YES=1 per Frank's "ok go"). The step-8 search's 53 `.git/` false hits come from the
+  `pullback_step5b` inventory, which is still retained, so they are expected again.
+- **Step-9 outcome (TEST-B, primary matcher, n = 1,000, H2 FORM EXACT; `report_testB.out.json` at f1c713a).**
+  - OURS picked@1 **8.467 ± 1.35 %** (seed mean ± s.d.; seeds 8.5 / 7.1 / 9.8). OURS-N2 6.467 %.
+  - **H1 supported (OURS better).** Δ_H1 = min(Δ_R, Δ_G) = **+8.33 pp, BCa 95% CI [7.30, 9.40]**, Holm p 5.9e-61.
+    MCF-R 0.0 %, MCF-R+G 0.133 %. Both two-stage seed intervals exclude 0 (no seed caveat). On z_MCF ≥ 3,
+    min(Δ_R, Δ_G) = +8.18 pp > 0, so the "advantage concentrates in z_MCF ≤ 2" clause does not apply. Gate C-a
+    clause not needed (`gate_ca_failed: false`).
+    - ii-S identity: Δ(OURS − ii-S) = +7.50 pp [6.47, 8.65], entirely above 0 ("our learner adds … inside the same
+      exact expansion (ablation estimate)"); Δ(ii-S − MCF-R+G) = +0.83 pp [0.53, 1.20].
+  - **H2 not supported (iii-s better).** Δ(OURS − iii-s) = **−90.93 pp [−92.0, −89.7]**, Holm p 1.4e-298; iii-s
+    99.4 % (lowest FF* minimum vs the unrelaxed truth). No "better than physics-based search" claim. i-E (OURS
+    draws FF*-minimised, descriptive) 58.9 %.
+  - **H3 supported (OURS better).** Δ(OURS − iv-P) = **+8.47 pp [7.47, 9.53]**, Holm p 3.0e-67; iv-P 0.0 %.
+  - OURS-N2 family: H1 +6.33 [5.47, 7.33], H2 −92.93 [−93.9, −91.8], H3 +6.47 [5.60, 7.43]; the same verdicts.
+  - Diagnostic (a) PASS (approximate). FF* truth anchoring on TEST-B 98.3 % (983 ANCHORED / 2 DRIFTED / 15
+    UNRESOLVED). One scoring environment for both sets; no stop or restart.

@@ -111,22 +111,22 @@ molcrystal, n3_mcf_diag, n3_mcf_lib, n3_classical) has not changed since the fre
 - [x] Dry run (11-16: both sets 93 commands, preflight OK, VALSEL's environment): `n3_step9.py plan` for both sets inside the image (read-only, on a login node, no matching).
 - [x] Clarification committed and pushed (f45d80a), then **sbatch 9T and 9D after Frank's OK** (11-16: 22247583 / 22247584). A sacct watcher follows.
       - 9D COMPLETE 11-16 12:16 EST (01:13:46, 93/93 done, 0 failed, no restart). 9T COMPLETE 11-17 01:00 EST (03:57:20, 93/93 done, 0 failed, no restart). Both sets done; next the pullback in manual-approval mode.
-- [ ] **Pullback, Frank in manual-approval mode:** `pullback --label step9`, scp, laptop `unpack --no-overwrite`
+- [x] **Pullback** (11-17, Frank "Go in auto": 1,668 files / 743 MB, laptop verify PASS, receipt back): `pullback --label step9`, scp, laptop `unpack --no-overwrite`
       + verify, receipt back to Anvil.
-- [ ] **Cleanup GPU job** as in step 8: delete `$S/n3_box` and `$S/n3_upload`, run the search, keep the receipt.
+- [ ] **Cleanup GPU job** (11-17: preflight RECEIPT_CHECK_OK, submitted 22282744) as in step 8: delete `$S/n3_box` and `$S/n3_upload`, run the search, keep the receipt.
       The pullback skips `.git/` this time (the 53 false hash hits of step 8).
 
 ## 5. Unblinding and results
 
 - Nothing is read until both reports and all diagnostics exist. Progress is followed by row counts only.
-- [ ] `n3_results.py` writes `results/n3/n3_results.json` from:
+- [x] `n3_results.py` writes `results/n3/n3_results.json` (11-17; families on TEST-B only, fixed first) from:
       - both report outputs (the `report_<set>.out.json` files are committed as well);
       - the diagnostic (b) / (c) / (d) summaries per z_MCF stratum and the Haar-floor summary;
       - the Gate C, diagnostic (a), degrade and H2 FORM (EXACT) records from SEL;
       - step-9 provenance: driver, code and SEL sha256, the environment, the job ids, an events summary and
         any stops.
-- [ ] Hygiene check on every committed JSON: numbers, labels and refcodes only. No coordinates, cells or CIF text.
-- [ ] Commit and push `n3_results.json`, `report_<set>.json` and `report_<set>.out.json` right away, before any
+- [x] Hygiene check on every committed JSON (11-17: 0 problems): numbers, labels and refcodes only. No coordinates, cells or CIF text.
+- [x] (f1c713a) Commit and push `n3_results.json`, `report_<set>.json` and `report_<set>.out.json` right away, before any
       interpretation. Then report to Frank: H1-H3 outcomes with Δ and CI, worded by P §6's abstract rules.
 - Later and separate: the manuscript rebuild (R "Step 9") and the Tier-2 (§8) decision.
 
