@@ -98,8 +98,9 @@ generators of inorganic crystals, through Wyckoff positions or space-group-const
 coordinates\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025,puny2025sgfm,mu2026nextcrystal};
 none of these generates rigid molecules.
 
-We ask whether this redundancy matters for learned models, in a benchmark built so that
-the use of symmetry is what differs between the learned arms. Every arm receives
+We ask whether this redundancy matters for learned models, in a benchmark that compares
+enforced symmetry together with our learner against learned independent-copy models and
+classical searches. Every arm receives
 specified information about each crystal (Table~\ref{tab:info}), every learned comparator
 is retrained on the same training set with its released code, and every arm is scored
 once, on \nN{} held-out crystals from the Cambridge Structural Database
@@ -349,7 +350,8 @@ enforced symmetry together with our learner, since MCF-R is not given the operat
 MolCrystalFlow's released checkpoint on its released test split and scored it with
 MolCrystalFlow's own scorer. The five-run median any-of-10 match rates were 29.73\% and
 66.53\% at stol 0.9 and 1.0, against the published $\approx$30\% and $\approx$66\%
-(Methods; Gate C), so our harness runs the comparator as its authors do.
+(Methods; Gate C), satisfying the preregistered check that our harness reproduces the
+released checkpoint.
 % src: results/n3/gateC.json (5-run medians mcf09 29.733, mcf10 66.533; MCF's scorer); tasks/n3_protocol.md A4 table (lines 1440-1446)
 
 The ablation ii-S separates the two parts. It takes MolCrystalFlow's own sampled
@@ -369,9 +371,10 @@ lowest minimum. It reproduces \nSearchPick\% of the unrelaxed experimental struc
 OURS falls short by \nHTwoDelta{} pp \nHTwoCI{} (Holm $p=$~\nHTwoP). H2 is not supported.
 The comparison was preregistered in its EXACT form, which scores the search's minimised
 structure against the unrelaxed experimental one; this form was fixed on the selection set
-because the potential holds the experimental orientation there. On TEST-B,
-\nAnchPct\% of the experimental structures stay at their pose when minimised with FF$^\ast$
-(\nFFAnchN{} anchored, \nFFDriftN{} drifted, \nFFUnresN{} unresolved), and the shortfall is
+because the potential holds the experimental orientation there. On TEST-B, when the
+experimental structures are minimised over orientation with FF$^\ast$, \nFFAnchN{} converge and
+still match under the primary matcher (\nAnchPct\%), \nFFDriftN{} converge but no longer match,
+and \nFFUnresN{} do not converge; the shortfall is
 the same on the anchored crystals (\nAnchDelta{} pp, \nAnchCI). The potential's training
 data overlap with organic molecular crystals; on the \nOmcN{} test crystals outside that
 overlap the difference is \nOmcDelta{} pp \nOmcCI{} (descriptive).
@@ -380,8 +383,10 @@ Minimising OURS's own draws with the same potential (i-E, descriptive) raises it
 \nIEPick\%, still \nIEvsSearchDelta{} pp \nIEvsSearchCI{} below the search. With the lattice,
 operations and position given, only three rotational degrees of freedom remain, a
 multi-start search with an accurate potential covers them well, and the learned model does
-not compete with it on accuracy. The protocol registered no compute comparison, and we make none here
-\TODO{decide whether to report the search's cost descriptively, once sourced}.
+not compete with it on accuracy. The protocol registered no compute hypothesis, so we make
+no claim about speed; it does require per-arm compute to be reported descriptively, and
+Table~\ref{tab:main} gives what was recorded \TODO{source the comparator compute and
+training GPU-h from the run records}.
 
 \subsection{H3: the previous architecture}
 Our previous architecture, retrained on this task with per-copy operation labels, mirrored
