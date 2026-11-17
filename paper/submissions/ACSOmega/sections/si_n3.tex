@@ -1,0 +1,348 @@
+% =====================================================================
+% si_n3.tex -- Supporting Information: N3 preregistration, amendments and
+% disclosures. P = tasks/n3_protocol.md. The disclosure list reproduces
+% P Section 1.4 (a)-(h) with light copy-editing only. Requires booktabs.
+% Citation placeholders use \CITEME{...}; si.tex must define it as main.tex
+% does.
+% =====================================================================
+\section{Preregistration, amendments and disclosures}\label{si:prereg}
+
+The N3 protocol (\texttt{tasks/n3\_protocol.md}, version 3) was committed and
+pushed to the public repository at github.com/fronkt/symmc-flow on 2026-09-28 at
+01:59 EDT (commit 8f7e494), before any N3 arm was trained, sampled or scored.
+The push is the third-party timestamp. Version 1 had been reviewed from five
+adversarial viewpoints (a MolCrystalFlow author, a statistician, a referee looking
+for weak baselines, an implementing engineer and an ACS Omega referee), which
+raised 48 issues; every blocker and major issue was re-checked against code and
+data. Version 2 adopted the checked fixes, and a second review (38 issues) led to
+version 3. A third pass on version 3, limited to blockers and majors, found four
+major issues, whose checked fixes are part of the frozen text. After the freeze the
+protocol changed only through dated amendments appended to the same file (A1, A2,
+A2a, A3, A4 and the step-5b clarifications), each stating which N3 outputs existed
+when it was made. The step-6 selection freeze records the SHA-256 of the protocol
+file, and the scoring code refuses a freeze whose protocol has changed, so the
+three later execution clarifications were kept in separate dated files.
+Table~\ref{tab:si_timeline} lists the records in order.
+% src: tasks/n3_protocol.md:1-17,968; tasks/n3_step7_clarification_2026-11-08.md:3-5; git log (commit dates)
+
+\begin{table}
+\caption{Preregistration and execution records, in commit order. Times are local
+(EDT before 2026-11-01, EST after).}
+\label{tab:si_timeline}
+\small
+\begin{tabular}{@{}p{5.2cm}p{2.6cm}p{1.5cm}p{6.0cm}@{}}
+\toprule
+record & committed & commit & state when made \\
+\midrule
+protocol version 3 frozen & 2026-09-28 01:59 & 8f7e494 & no N3 arm trained, sampled or scored \\
+A1: SEL and TEST-B frozen & 2026-09-28 02:22 & 05aa3c9 & no arm output on SEL, TEST-B or DEV-TEST \\
+A2: implementation clarifications & 2026-09-28 07:52 & 74f1921 & as A1; CPU smoke runs on VAL and TRAIN only \\
+A2a: deployment packaging & 2026-10-11 01:06 & 783a1ab & as A1 \\
+A3: step-4 settings and approval & 2026-10-19 15:16 & a25a444 & as A1; no VALSEL truth minimised \\
+H2 form published (EXACT) & 2026-10-21 10:24 & 1aff111 & before any candidate was minimised under FF* \\
+A4: Gate C corrections & 2026-11-02 16:32 & b50fb74 & as A1; no MCF arm trained \\
+step-5b clarifications & 2026-11-06 17:22 & 159876d & before any VALSEL candidate score \\
+step-6 selection freeze & 2026-11-08 21:54 & 772a36e & before any TEST-B or DEV-TEST input on the cluster \\
+step-7 clarification & 2026-11-08 22:20 & 8e45e1a & as the freeze \\
+step-7 code fix & 2026-11-09 13:19 & 412555f & as the freeze \\
+step-9 clarification & 2026-11-15 19:32 & f45d80a & before any step-9 (scoring) command \\
+results (\texttt{n3\_results.json}) & 2026-11-17 15:36 & f1c713a & before interpretation \\
+\bottomrule
+\end{tabular}
+\end{table}
+% src: git show -s for each commit; tasks/n3_protocol.md:1085-1087,1131,1328,1363,1425,1520; tasks/n3_step7_clarification_2026-11-08.md:1; tasks/n3_step7_codefix_2026-11-09.md:1; tasks/n3_step9_clarification_2026-11-15.md:1; tasks/n3_step4_record_2026-10-11.md:1043-1045
+
+\subsection{Disclosures}\label{si:disclosures}
+
+The protocol requires the following disclosures (its Section 1.4). DEV-TEST is
+labelled ``used during development, not confirmatory'' wherever it is reported.
+\begin{itemize}
+\item[(a)] DEV-TEST was scored by the G2 baselines, the G2 evaluation, N1 and N2.
+\item[(b)] The N1 idea of ranking draws before relaxing them came from a DEV-TEST
+diagnostic: the relaxed-truth drift, median 14.4$^\circ$.
+\item[(c)] The model of record for OURS was fixed after DEV-TEST had been seen. The
+N2 retrain and the G2 checkpoints tied on VAL picked@1 (7.0 vs 7.0\% per-seed mean;
+9.0 vs 9.0\% pooled). Both were then scored on DEV-TEST: G2 7.5\%, N2 5.0\%
+(crystal-level sign-flip $p=0.023$). G2 was kept. Applied when the protocol was
+written, and labelled post hoc, the rule ``incumbent unless VAL-better; tie
+$\rightarrow$ VAL draw@1'' keeps G2 from VAL alone: draw@1 0.96 vs 0.67\%, higher
+in every seed; any@16 13.3 vs 10.3\%. Applied per seed across the two runs, the
+same rule would replace seed 1 with the N2 checkpoint (VAL 7 vs 4\%), and DEV-TEST
+would be 6.5\% instead of 7.5\%. N2 is carried as a sensitivity family (protocol
+Section 2.4).
+\item[(d)] The DEV-TEST stratum rates of OURS were computed before the strata were
+frozen: mixed-handedness 8.5\%, Sohncke 6.1\%, improper-achiral 3.5\% (per-seed
+means). The frozen refined chirality definition moves the mixed-handedness rate of
+OURS from 8.2\% (35/429, capped definition, 143 crystals) to 8.5\% (35/411, 137
+crystals), because OURS picks 0 of 18 on the 6 reclassified crystals.
+\item[(e)] During protocol review, DEV-TEST (and VAL) were also used for:
+loose-tolerance rescoring of stored OURS draws; Haar floors at loose tolerance;
+homochiral-approximant matches (1/131 strict vs 80/131 at stol 0.5, partial run);
+MCF perfect-model orientation ceilings (conventional cells, keyed on $K$); a
+perfect-model orbit-LJ check (4/28 $K=2$ crystals recovered); steric-press drift
+checks; a VAL study of the iii-s screen (a start within 12.5$^\circ$ of the truth
+is among the 64 lowest-LJ grid points in 91/98 VAL crystals); and X--H bond-length
+statistics. None of these was used to choose anything in the protocol.
+\item[(f)] The legacy det$+1$ pipeline parsed the TEST-B pool in July 2026, and the
+old paper's scale runs trained on it. No legacy checkpoint is used (protocol
+Section 1.2).
+\item[(g)] Build step 1 (the rigid-molecule parse of the 4,500 pool CIFs) was
+started on 2026-09-28, before the protocol was committed. It is input-side only
+and produced no arm output. Its start time, command line and worker count are
+recorded in amendment A1.
+\item[(h)] H1--H3 are decided on TEST-B only. Everything on DEV-TEST is secondary.
+\end{itemize}
+% src: tasks/n3_protocol.md:164-198
+
+\subsection{Amendments}\label{si:amendments}
+
+Each amendment below states that it changes no hypothesis, comparator, set,
+matcher or statistic; A3, A4 and the step-5b clarifications also state that they
+change no selection menu, seed, endpoint, never-reduced item or
+outcome-to-wording rule.
+% src: tasks/n3_protocol.md:1135-1136,1349,1421,1518,1522-1523
+
+\paragraph{A1 (2026-09-28): SEL and TEST-B frozen.} The SEL and TEST-B refcode lists
+were committed with their SHA-256 hashes before any arm produced output on
+them, together with the build counts given in the Methods and the hashes of the
+parse cache, the UMA s-1p1 weights and element references, and the OMC25
+starting-crystal list. For disclosure (g), it records that build step 1 ran from
+00:14:57 to 01:28 EDT with five workers, ending before the protocol commit at
+01:59:41 EDT. Before that commit, the expansion-check filter was checked on the
+development corpus (VAL 100/100 and DEV-TEST 200/200 pass; TRAIN has the 9
+predicted orbit failures, which stay in TRAIN).
+% src: tasks/n3_protocol.md:1085-1127,1258-1260
+
+\paragraph{A2 (2026-09-28): implementation clarifications.} Made while the only
+outputs were CPU smoke runs on VAL and TRAIN and input-side gates, A2 filled gaps
+and corrected facts found during implementation. The items a reader should know:
+\begin{itemize}
+\item The export gate (Gate F) passed on every set. The design power at
+$n=1{,}000$ (4,000 simulated replicates, exact test; power at $\alpha=0.05$, at
+$\alpha/3$ in parentheses) is 0.83 (0.71) at a 2 percentage-point difference and
+0.97 (0.92) at 2.5 points for a three-seed comparator, 0.61 (0.45) and 0.82 (0.68)
+for the single-run iii-s, and 0.74 (0.57) and 0.93 (0.85) for the H1
+intersection-union test. The H2 comparator is therefore the least powered.
+\item MCF's bond-perception step (RDKit\CITEME{RDKit} DetermineBonds inside MCF's
+fix\_mol\_bonds) ran with a cap of $10^7$ iterations, because uncapped it does not
+terminate on TRAIN crystal ZAYGOY. A capped molecule follows MCF's own fallback.
+Only ZAYGOY (4 copies) hit the cap.
+\item MCF's relative-rotation azimuth feature has a branch cut, and exact
+C$_2$-conjugate copies, which every symmetric-prior draw has at $t=0$, sit on it.
+The equivariance diagnostic (a) is therefore evaluated at a generic state, the
+invariance of MCF's sampled distribution is approximate, and diagnostics (b)--(d)
+are labelled approximate if the 50-step sampler deviation exceeds $10^{-3}$ on any
+selected checkpoint. MCF's sampler runs only in float32.
+\item MCF's own scorer rebuilds each lattice from its six parameters but keeps the
+Cartesian coordinates in the original frame, so for cells not in pymatgen's
+parameter orientation it reads a different structure from the one stored (VAL
+68/100 and DEV-TEST 115/200 of our exports). Gate C-a (i) therefore compares MCF's
+scorer with an emulation of that reading (\texttt{n3\_score.py --mcf-reading}).
+Whether MCF's published numbers are affected is not claimed.
+\item A draw with any non-finite lattice, centroid, rotation or coordinate is an
+arm failure. A failing MCF inference call is retried, then sampled in chunks
+of 25 crystals and then crystal by crystal with derived seeds; a crystal that
+still fails is a miss, listed by refcode.
+\item The MCF residual geodesic is computed in float64 with atan2. The ii-S
+pull-back accuracy quoted in protocol Section 3.2 (``max 0.014$^\circ$'') was a
+float32 floor; the true maxima are $8.1\times10^{-6}$ degrees (VAL, 100/100) and
+$7.3\times10^{-6}$ degrees (DEV-TEST, 200/200).
+\item MCF's cell standardization mirrors the cell when $\det Q=-1$ (VALSEL 142/400,
+TEST-B 378/1,000). Every mapping uses the stored $Q$, and the matchers do not
+distinguish enantiomorphs.
+\item Coset keys unseen in TRAIN, which iv-P maps to a zeroed reserved label: SEL 2
+copies in 1 crystal and TEST-B 27 copies in 6 crystals; none in VAL or DEV-TEST.
+The legacy iv-A arm, which is not run, has 599 TRAIN crystals, not 598.
+\item The FF* configuration is fixed once, at the step-4 timing gate, and is
+identical for the truths, iii-s, i-E and the BASIN jobs on every set; a call that
+returns a different resolved configuration is an environment error, never an FF*
+failure. The finite-difference gradient check passes only if every relative error
+is at most $10^{-4}$ in float64, on 5 VAL crystals at the true pose and one Haar
+pose.
+\item X--H normalisation moves each H bonded to C, N or O along its bond to exactly
+the normalised length, lengthening or shortening it; other H atoms are unchanged.
+\item Disclosure. Local CPU smoke runs minimised a few arm candidates under FF*
+before any H2 form existed (iii-s starts on VAL crystals 26 and 78; i-E on the
+iii-u draws of VAL crystal 26, and BASIN on its pick; in review, TRAIN crystal 57),
+each with UMA s-1p1 in float32, at most 10 evaluations per start and no matching
+of any kind. All of those outputs were deleted. They carry no information about the
+H2 form, which is a fixed threshold on minimised truths.
+\item OMC25's element set, taken as the union of elements over all its molecules,
+is \{B, Br, C, Cl, F, H, I, N, O, P, S, Si\}. Crystals with other elements: DEV-TEST
+1, VAL 2, SEL 5, TEST-B 16 (listed by refcode). FF* runs on them all.
+\item For the stored N1 and N2 draws, the recorded steric energy (3 decimals) and
+residual (5 decimals) are the selector inputs; recomputing the energy on the scored
+structure changes no pick (all 100 near-tie crystal-seed pairs checked). A
+deterministic energy failure gives a non-finite selector input, which ranks last.
+\item For H1, the seed-sensitivity wording applies if either component's two-stage
+interval contains zero. The standard deviation over seeds in Table 1 is the sample
+value (ddof $=1$).
+\item Table R column (c) uses 17 alignment starts (16 listed plus the best
+automorphism rotation); the 16-start-only column is reported beside it.
+\end{itemize}
+% src: tasks/n3_protocol.md:1129-1324 (records 1138-1165; items 1, 3, 4, 7, 8, 9, 13, 18, 19, 20, 21, 27, 28, 29, 30, 31, 33, 34)
+
+\paragraph{A2a (2026-10-11): deployment packaging and integrity.} The FF*
+environment used a CUDA 13.0 PyTorch build, because no CUDA 12.8 wheel exists for
+the pinned torch 2.13.0, so the GPU node needed a CUDA 13.0 or newer driver; the
+MCF and SymMC environments kept CUDA 12.8. Transfers were staged so that TEST-B and
+DEV-TEST inputs could reach the cluster only after the complete step-6 selection
+was committed and pushed, and the selection and scoring tools check the hashes of
+the selected checkpoints, configurations, truths and matcher libraries. No
+scientific item changed.
+% src: tasks/n3_protocol.md:1326-1359
+
+\paragraph{A3 (2026-10-19): step-4 settings, approval and disclosures.} Made after
+the timing gate (TRAIN and VAL crystals, nothing matched) and before any VALSEL
+truth was minimised. The run moved from rented single GPU boxes to Purdue Anvil
+(ACCESS allocation CHE260157, A100 nodes, one Apptainer image) with the author's
+approval of a 700 GPU-h cap for steps 5--7, against a projection of 515--535 GPU-h;
+no degrade item was taken, and on Anvil's persistent file system the step-8 ``destroy
+the box'' became a cleanup script followed by a search of the home, scratch and
+project file systems. FF* was fixed to fairchem's \texttt{batch} settings in
+float32 (the other settings and float64 were measured and did not fit the cap),
+the MCF speed-ups and iv-P's packed encoder were switched on after equivalence
+checks, and a finite MCF draw with a non-finite residual stays valid for every
+other selector and ranks last under RESID (counts are reported). The
+finite-difference gradient check failed at step $h=10^{-4}$ rad on one of ten rows,
+a clash pose whose error scaled as $h^2$ (central-difference truncation, not a
+gradient defect), so the step was changed to $h=10^{-5}$ rad with the same pass
+rule; the check had to pass again on the production GPU before any VALSEL truth was
+minimised, and it did (commit 1aff111). A3 also discloses that one timing upload
+was made in automatic mode on the author's prior approval instead of command by
+command, and that the first timing box was abandoned and its measurements
+discarded.
+% src: tasks/n3_protocol.md:1361-1421,1425-1426; git 1aff111 (message: FD h=1e-5 passes on A100)
+
+\paragraph{A4 (2026-11-02): Gate C corrections.} Gate C had run once
+(2026-10-22) and recorded a failure, so no MCF arm had been trained. Gate C-a
+had been scored against the wrong reading: the protocol (A2) gates check (i) on the
+emulation of MCF's reading and check (ii) on MCF's own scorer, but the gate code had
+never followed that text and gated both on our scorer's own reading. Re-scored from
+the same prediction files, with nothing re-sampled, (i) agreed on every outcome and
+(ii) fell within the $\pm5$ percentage-point window on both the TEST and VAL splits,
+so the H1 harness clause is not triggered; that our scorer's own reading matched
+more often than MCF's scorer on these predictions is reported as an observation,
+not a claim. Gate C-b's GPU half failed under its original rule (the
+patched-versus-unpatched difference was larger than an unpatched-versus-unpatched
+difference for 10 of 24 nondeterministic tensors). Because both sides are single
+draws of GPU nondeterminism, that rule fails an unchanged patch with high
+probability (over 90\% on synthetic noise), so after the failure the author
+replaced it, before re-running, with a noise envelope of one patched and 19
+unpatched runs that fails only if the patched run is the strict maximum of the 20
+(false-failure probability at most 5\%); the GPU half passed under the new rule,
+and the CPU half, which had passed bitwise, remains the exact check. A4 also
+relaxed the cluster prelude's test-path rule for Gate C's own run directories only.
+% src: tasks/n3_protocol.md:1423-1518; results/n3/gateC.json (C-b.cuda: rule A4 item 2 (b), runs 20, pass true)
+
+\paragraph{Step-5b clarifications (2026-11-06).} Recorded before any VALSEL
+candidate was scored.
+\begin{itemize}
+\item The iv-P seed-0 run at learning rate $10^{-3}$ diverged in epoch 1, so its
+validation-loss minimum is non-finite. A non-finite minimum ranks below every
+finite one, as for every non-finite selector input. The choice was unchanged:
+$10^{-4}$ (5.33186, against 5.33210 at $3\times10^{-4}$).
+\item MCF's ``top-3 + last'' checkpoint candidates are read as a set. In all six
+MCF runs the released checkpointer, which rewrites \texttt{last.ckpt} only when it
+saves a top-3 checkpoint, left \texttt{last.ckpt} byte-identical to the
+latest-epoch top-3 checkpoint, so no final-epoch (epoch 1,715) weights exist. Each
+distinct checkpoint was sampled once, and the duplicated one carries the label
+``last'' (Table~\ref{tab:si_mcf_ckpt}).
+\item The iii-s VAL sanity row ran in step 5, where the projection booked it. It
+chooses nothing.
+\item The last MCF-A Stage-1 tie-break is MCF's logged validation loss; MCF-R
+Stage B breaks ties on the fixed-draw VAL loss, as written.
+\end{itemize}
+% src: tasks/n3_protocol.md:1520-1541
+
+\subsection{Execution clarifications after the selection freeze}\label{si:clarifications}
+
+\paragraph{Step 7 (2026-11-08): stops on the cluster.} The protocol was written for
+a single rented box: if the box dies during step 7, every partial TEST output is
+discarded unscored and the full run list is repeated. On Anvil, step 7 ran as
+several Slurm jobs. The clarification defines one job ending early (timeout, node
+failure, preemption, out of memory) as not a box death: finished, checksummed runs
+stay, resumable runs continue from their complete per-crystal records under a
+configuration check, single-call runs restart from scratch with their committed
+seeds, and every stop is logged. Loss or corruption of the box root, a failed
+verification, a scratch purge, loss of the allocation or a stop forced by the cap
+still mean the full discard and re-run. In the event, no step-7 job stopped and no
+run was restarted.
+% src: tasks/n3_step7_clarification_2026-11-08.md:1-35; tasks/n3_step4_record_2026-10-11.md:850-865
+
+\paragraph{Step 7 (2026-11-09): code fix.} A smoke test on VAL and VALSEL inputs,
+run before the upload, showed that every MCF-A prior-floor run would crash when its
+outputs were bundled: an A3 change read an \texttt{info} field that the floor's
+check function never returned. The fix makes that function return an empty
+\texttt{info}; it changes no computation, run, seed or command. The fixed
+\texttt{scripts/n3\_mcf\_run.py} (SHA-256 86dfe34d\ldots) was shipped with the
+step-7 inputs and verified on the cluster, with a regression test added.
+% src: tasks/n3_step7_codefix_2026-11-09.md:1-64
+
+\paragraph{Step 9 (2026-11-15): scoring.} Step 9 ran as two Slurm jobs, one per
+set, in Anvil's GPU partition because the allocation's CPU-only units were reserved
+for other work; the GPU was not passed to the container, and no FF* evaluation ran
+after step 8. Scoring used the environment VALSEL was scored in (PyTorch 2.11.0,
+pymatgen 2026.5.4, SciPy 1.17.1, NumPy 2.3.5) and code byte-identical to the
+freeze apart from the step-7 fix, and a driver ran only the frozen commands (92 per
+set, with three permitted rewrites: worker count, interpreter path and freeze hash)
+after checking that no scored output of the set existed. The clarification added
+one aggregation that the protocol asks for (its Section 3.2, diagnostic (c)) but no
+frozen command performed, a summary of the oracle-aligned MCF-R scores labelled an
+oracle item; set a resume rule for stopped jobs (every step-9 command is
+deterministic) and a rule that any code fix is recorded, pushed and disclosed; and
+recorded in advance that the random floor's continuous-RMS block would read
+``missing'', because the frozen list matches iii-u under that rule only at its LJ
+picks. No run was added, and neither job stopped.
+% src: tasks/n3_step9_clarification_2026-11-15.md:1-103; tasks/n3_step4_record_2026-10-11.md:1004-1020
+
+Two step-9 deviations are disclosed. First, the results assembler
+(\texttt{scripts/n3\_results.py}) stopped on its first run because it required the
+H1--H3 families in the DEV-TEST report, which the frozen report code produces only
+for TEST-B, by design. It was fixed (families required on TEST-B only), with two
+tests added, before any number was read; only the reports' key structure was
+inspected. The fix was committed together with the results (commit f1c713a), not
+pushed before the re-run as the clarification's code-fix rule asks. Second, the
+pullback of the step-9 outputs was run in automatic mode at the author's
+instruction, rather than in the manual-approval session the clarification
+specifies; the transferred archive was checksum-verified on both ends.
+% src: tasks/n3_step4_record_2026-10-11.md:1021-1045; tasks/n3_step9_clarification_2026-11-15.md:20-23,88-96
+
+\subsection{MCF checkpoints}\label{si:mcfckpt}
+
+Table~\ref{tab:si_mcf_ckpt} lists the MCF checkpoint used for every seed of every
+MCF arm. Under the step-5b set reading, a checkpoint labelled ``last'' is the
+latest-epoch top-3 checkpoint, not final-epoch weights: MCF-R and MCF-A were
+configured for 1,715 epochs (24,010 steps), and no checkpoint from the end of
+training exists for any seed. ii-S uses the MCF-R+G checkpoints. Because MCF-R+G
+chose a different checkpoint from MCF-R for seed 0, that seed was sampled
+separately for MCF-R+G on TEST-B and DEV-TEST.
+% src: tasks/n3_protocol.md:512-514,1530-1537; results/n3/mcf_designation_valsel.json; results/n3/n3_selection.json:285-404
+
+\begin{table}
+\caption{MCF checkpoints chosen on VALSEL. Epoch and step are as recorded by
+MCF's checkpointer (epoch counted from 0). ``Decided by'' is the first criterion in
+the preregistered order that separated the candidates: for MCF-R and MCF-R+G,
+VALSEL picked@1, then draw@1, then any@16, then the fixed-draw VAL loss; for
+MCF-A, any-of-10 at stol 1.0, then at stol 0.8, then MCF's logged validation
+loss. ``Fixed-draw VAL loss'' therefore means that the candidates tied on the three
+VALSEL criteria before it.}
+\label{tab:si_mcf_ckpt}
+\small
+\begin{tabular}{@{}llllll@{}}
+\toprule
+arm & seed & label & epoch & step & decided by \\
+\midrule
+MCF-R & 0 & last & 1531 & 21,448 & fixed-draw VAL loss \\
+MCF-R & 1 & last & 1563 & 21,896 & fixed-draw VAL loss \\
+MCF-R & 2 & ep1067 & 1067 & 14,952 & VALSEL picked@1 \\
+MCF-R+G & 0 & ep1331 & 1331 & 18,648 & VALSEL picked@1 \\
+MCF-R+G & 1 & last & 1563 & 21,896 & fixed-draw VAL loss \\
+MCF-R+G & 2 & ep1067 & 1067 & 14,952 & VALSEL picked@1 \\
+MCF-A & 0 & ep752 & 752 & 10,542 & any-of-10 at stol 1.0 \\
+MCF-A & 1 & last & 1503 & 21,056 & any-of-10 at stol 1.0 \\
+MCF-A & 2 & ep1195 & 1195 & 16,744 & any-of-10 at stol 1.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_selection.json:285-404 (ckpt_label, decided_by); results/n3/mcf_designation_valsel.json (runs.*.last_identical_to, epoch, global_step)

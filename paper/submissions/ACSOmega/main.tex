@@ -31,7 +31,7 @@
 
 \author{Frank Cai}
 \affiliation{Purdue University, West Lafayette, Indiana 47907, United States}
-\email{frankyc11223@gmail.com}
+\email{cai485@pfw.edu}
 
 % Title: provisional (Frank to confirm). The protocol rules out "structure prediction" (P section 0).
 \title{Exact Space-Group Expansion of a Learned Asymmetric Unit: A Preregistered
@@ -127,9 +127,98 @@ as such.
 \end{itemize}
 
 % =====================================================================
+\section{Definitions and a Worked Example}
+% =====================================================================
+Throughout, a crystal has one molecule in its asymmetric unit ($Z'=1$) on a general
+position, so its unit cell holds $Z=K$ molecules, where $K$ is the number of operations of
+the space group in the crystal's own setting. We use the following terms.
+\begin{description}\itemsep0.1em
+\item[Operation.] A space-group operation $(W_k,t_k)$ maps fractional coordinates
+$c\mapsto W_kc+t_k$. It is \emph{proper} if $\det W_k=+1$ (a rotation or screw axis) and
+\emph{improper} if $\det W_k=-1$ (an inversion, mirror or glide).
+\item[Asymmetric-unit molecule and copies.] The asymmetric-unit molecule is one molecule
+of the cell, with fractional centroid $c_0$ and a rigid conformer (its atom positions
+about the centroid, held at the experimental geometry). The $K$ molecules of the cell are
+its \emph{copies}: copy $k$ is the image of the asymmetric-unit molecule under operation
+$k$, and copy 1 (the identity) is the asymmetric-unit molecule itself.
+\item[Orientation and $R_{\text{asym}}$.] An orientation is a rotation in $\mathrm{SO}(3)$
+that places the conformer in the cell; $R_{\text{asym}}$ is the orientation of the
+asymmetric-unit molecule.
+\item[Handedness.] An improper operation turns the conformer into its mirror image, so a
+copy made by one has the opposite handedness to the asymmetric-unit molecule.
+\item[Exact expansion.] Building all $K$ copies from $c_0$, $R_{\text{asym}}$ and the
+conformer by applying each operation to the atoms (eq~\ref{eq:expand} in Methods). Because
+the operation acts on atoms, an improper operation produces the mirrored copy directly; no
+rotation is assigned to it.
+\item[Orientation flow.] A generative model that turns random rotations into a predicted
+rotation by integrating a learned velocity field on $\mathrm{SO}(3)$. OURS draws
+$R_{\text{asym}}$ this way (Methods).
+\end{description}
+
+\paragraph{Worked example.} Figure~\ref{fig:worked} shows a training-set crystal in
+$P2_1/c$ ($K=4$) \TODO{refcode from the figure script}. Its four operations are the
+identity, a twofold screw axis (proper), an inversion centre and a glide plane (both
+improper). Given $R_{\text{asym}}$, the identity copy is the asymmetric-unit molecule, the
+screw copy is its rotated image, and the inversion and glide copies are its mirror images.
+One rotation, three numbers, therefore fixes the position, orientation and handedness of all
+four molecules. A model that predicts an orientation for every copy must learn these
+relations from data and needs a separate mirrored conformer for each improper copy; a model
+that predicts only $R_{\text{asym}}$ obtains them exactly from the operations.
+
+\begin{figure}
+\centering
+\IfFileExists{figures/fig_n3_worked_example.pdf}{\includegraphics[width=\linewidth]{fig_n3_worked_example}}{\TODO{figure: worked example}}
+\caption{Worked example: one training crystal in $P2_1/c$. (a) The unit cell with its four
+copies, coloured by the operation that generates each; the two copies made by improper
+operations are mirror images. (b) Exact expansion: one asymmetric-unit orientation
+$R_{\text{asym}}$ and the four operations give every copy, with $\det W_k$ marking the
+mirrored ones.}
+\label{fig:worked}
+\end{figure}
+
+\paragraph{Terms from the earlier version of this work.} Our earlier architecture (arm
+iv-P here) chose one copy as the \emph{reference copy}, \emph{re-gauged} the crystal by
+expressing the other copies' orientations in that copy's own coordinate frame (its
+\emph{body frame}; the choice of reference is the \emph{gauge}), and conditioned the model on
+a \emph{coset label} that identified the operation generating each copy. For a proper
+operation that relative orientation is fixed analytically by the operation: it is $C_k$ in
+eq~\ref{eq:expand}, so it never needed to be learned. For an improper operation it is not a
+rotation of the same conformer. The present design removes both issues: it learns only
+$R_{\text{asym}}$, and the operations supply everything else exactly. H3 compares the two
+designs directly.
+
+% =====================================================================
 \section{Results and Discussion}
 % =====================================================================
 \subsection{Benchmark design}
+\begin{table}[t]
+\caption{Information given to each arm. For the MolCrystalFlow (MCF) arms,
+``copies'' means $z_{\mathrm{MCF}}$, the number of molecules in the exported MCF
+cell: $K$ for primitive lattices and $K/\mathrm{mult}$ for centred ones, where
+mult is the centring multiplicity (lattice points per cell). MCF-R is not given the operations, but
+spglib on the true centroids, keeping the operations consistent with each copy's
+handedness, recovers the copy-to-copy rotations uniquely in 198 of 200 DEV-TEST
+crystals (the truth is among the candidates in the other 2). H1 therefore tests
+explicit, enforced symmetry together with our learner; the ii-S ablation
+separates the two.}
+\label{tab:info}
+\small
+\begin{tabular}{@{}p{2.3cm}p{2.9cm}p{2.6cm}p{3.0cm}p{2.5cm}@{}}
+\toprule
+ & OURS and CLASSICAL & iv-P (old architecture) & MCF-R and MCF-R+G & MCF-A (context) \\
+\midrule
+lattice & true & true & true (primitive if centred) & generated \\
+centroids & $c_0$ true; copies from the operations & all $K$ true & all $z_{\mathrm{MCF}}$ true & generated \\
+space-group operations & given, enforced exactly & given as per-copy operation labels & not given (recoverable; see caption) & not given \\
+copy count & $K$, via the operations & $K$ given & $z_{\mathrm{MCF}}$ given & $z_{\mathrm{MCF}}$ given \\
+per-copy handedness & $\det W_k$ & mirrored per-copy conformer & mirrored per-copy conformer and flag $\chi$ & as MCF-R \\
+predicted & $R_{\mathrm{asym}}$ (3 degrees of freedom) & $K$ orientations & $z_{\mathrm{MCF}}$ orientations & lattice, centroids, orientations \\
+copies built by & exact expansion & independent outputs, coupled by attention & independent outputs & independent outputs \\
+\bottomrule
+\end{tabular}
+\end{table}
+% src: tasks/n3_protocol.md:43-64
+
 Table~\ref{tab:info} lists what each arm is given and what it predicts; the Methods give
 each arm in full. OURS is a flow model over $R_{\text{asym}}$ that draws $16$ candidate
 orientations per crystal, expands each one exactly with the given operations, and keeps
@@ -190,7 +279,17 @@ random-orientation floor is \nFloorPick\%, so the task is far from trivial (OURS
 \nFloorDelta{} pp, \nFloorCI). The selection step matters: a randomly chosen OURS draw
 matches \nOursDraw\% of crystals, the LJ-selected draw \nOursPick\%, and at least one of the
 16 draws \nOursAny\%. The selector alone does not produce the result: the same LJ pick over
-16 random orientations (iii-u) reaches \nHaarPick\%.
+16 random orientations (iii-u) reaches \nHaarPick\%. Figure~\ref{fig:forest} summarises every
+contrast.
+
+\begin{figure}
+\centering
+\IfFileExists{figures/fig_n3_forest.pdf}{\includegraphics[width=\linewidth]{fig_n3_forest}}{\TODO{figure: forest plot}}
+\caption{OURS minus each arm on TEST-B (percentage points): paired BCa 95\% CI (thick) and
+two-stage seed interval (thin). H1--H3 mark the preregistered contrasts; ii-S, iv-S and
+i-E are descriptive.}
+\label{fig:forest}
+\end{figure}
 
 \begin{sidewaystable}
 \caption{TEST-B ($n=$~\nN), primary matcher (\texttt{StructureMatcher} defaults against the
@@ -325,7 +424,8 @@ short of physics-based search with the same information. MolCrystalFlow ran in o
 on an exported primitive cell, so H1 compares a bundle of enforced symmetry and learner
 rather than learners alone. The interatomic potential's training data overlap with organic
 crystals. The diagnostics of MolCrystalFlow's invariances are approximate, and DEV-TEST is not
-confirmatory.
+confirmatory. The protocol's optional second-tier diagnostics, which would have measured
+sensitivity to noisy centroids among other things, were not run.
 
 % =====================================================================
 \section{Conclusions}

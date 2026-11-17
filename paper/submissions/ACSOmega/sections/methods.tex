@@ -1,0 +1,292 @@
+% =====================================================================
+% methods.tex -- Methods for the N3 resubmission (ACS Omega places Methods
+% after Conclusions). Procedures only; no N3 result numbers.
+% P = tasks/n3_protocol.md (frozen v3 with amendments A1-A4 and the step-5b
+% clarifications). Citation placeholders use \CITEME{...}, which main.tex
+% already defines. Uses \ref{tab:repr} (Table R, defined in main.tex) and
+% defines \label{tab:info} (Table 0) and \label{eq:expand}. Cross-references to the Supporting Information are by name (amendment,
+% disclosure letter), because the SI is a separate document.
+% =====================================================================
+\section{Methods}
+
+\subsection{Task and inputs}
+
+The benchmark, N3, asks for orientation completion of $Z'=1$ molecular crystals
+whose molecule sits on a general position. Each arm was given the experimental
+lattice $L$ (cell vectors as rows); the $K$ space-group operations $(W_k,t_k)$ in
+the crystal's own CSD setting, from pymatgen's SpacegroupAnalyzer (symprec
+0.1)\cite{ong2013pymatgen}\CITEME{spglib} run on the experimental structure; the
+fractional centroid $c_0$ of the asymmetric-unit molecule; and its rigid
+experimental conformer as centred coordinates $l_a$. It predicted one rotation,
+the asymmetric-unit orientation $R_{\mathrm{asym}}\in\mathrm{SO}(3)$, and exact
+space-group expansion placed atom $a$ of copy $k$ at
+\begin{equation}
+x_{k,a}=L^{\top}c_k+C_kR_{\mathrm{asym}}l_a,\qquad
+c_k=W_kc_0+t_k\ (\mathrm{mod}\ 1),\qquad
+C_k=L^{\top}W_kL^{-\top}.
+\label{eq:expand}
+\end{equation}
+Because $\det C_k=\pm1$, improper operations produce the mirror-image copies
+directly, and the operations fix $Z=K$, $Z'=1$ and the handedness of every copy.
+The reference structure for every arm was the parsed experimental crystal.
+With the lattice, space group, $Z$, $Z'$ and molecular position given, N3 is not
+crystal-structure prediction, and every claim built on it is limited to this task.
+A random-orientation floor was preregistered as the check that the task is not
+trivial.
+Table~\ref{tab:info} lists the information each arm received.
+% src: tasks/n3_protocol.md:26-36,135; scripts/g2_asym_baselines.py:36-50,74-89
+
+% (Table 0, \label{tab:info}, moved into Results: Benchmark design)
+
+
+\subsection{Data and splits}
+
+All crystals came from one seeded random sample of the Cambridge Structural
+Database (CSD)\cite{groom2016csd}, exported with the CSD Python API (organic, not
+organometallic, no disorder, three-dimensional coordinates, not polymeric,
+$R\le7.5\%$, $Z'\le2$, at most 64 atoms in the largest component) and parsed into
+rigid molecules with mirror-image copies allowed. A crystal was eligible when its
+molecules had equal atom counts and numbered $K$. The first 3,500 refcodes (2,852
+parsed, 1,987 eligible) were split with seed 0 into DEV-TEST (200), VAL (100) and
+TRAIN (1,687). DEV-TEST was scored while OURS was developed and is reported only as
+a secondary set (Supporting Information, disclosures a--e).
+% src: scripts/csd_export.py:9-22,62-64; data/csd_mol_scale_big/manifest.csv (maxima: R 7.5, Z' 2.0, 64 atoms); tasks/n3_protocol.md:70-71,92,164-198,895; scripts/g2_asym_baselines.py:53-71
+
+TEST-B (confirmatory) and SEL (selection supplement) came from the next 4,500
+refcodes of the same stream, which no development step had parsed or scored. They
+were built by input-side steps only: the rigid-molecule parse and its rebuild check
+(3,632 kept); an expansion check requiring that the orbit points $W_kc_0+t_k$ match
+the stored centroids one to one and that expanding the true orientation reproduce
+the experimental structure under StructureMatcher (1,157 removed, nearly all not
+$Z'=1$ general position); removal of crystals sharing a six-letter refcode family
+with the development corpus or a molecular Weisfeiler--Lehman graph
+hash\CITEME{Weisfeiler--Lehman graph hash; NetworkX} with its 1,987 molecules (22
+removed); and, after a seeded permutation (seed 20261001), one crystal per refcode
+family (2,448 kept). SEL is the first 300 and TEST-B the next 1,000 (679
+centrosymmetric, 270 Sohncke and 51 other crystals). Both refcode lists were
+committed with SHA-256 hashes before any arm produced output on them, and they,
+not a re-run of the order-dependent parse, define the sets. VALSEL (VAL then SEL,
+400 crystals) served for every choice.
+% src: tasks/n3_protocol.md:72-79,80-126,1098-1110; results/n3/n3_build_testB.json
+
+The CSD is licence-restricted. Only refcodes, code and JSON summaries were
+committed; no coordinates, exported files, trained checkpoints or arm outputs
+were redistributed, and a licensed CSD installation reproduces every set from the
+refcode lists. No arm trained on anything but TRAIN, and MCF's released
+checkpoints were used only in a harness check.
+% src: tasks/n3_protocol.md:137-141,1066-1068; paper/submissions/ACSOmega/main.tex:571-578; .gitignore:10
+
+\subsection{Model}
+
+OURS is a flow-matching model\cite{lipman2023flowmatching,chen2024riemannian} on
+$\mathrm{SO}(3)$ for $R_{\mathrm{asym}}$ alone, with a learned pairwise torque as
+its velocity field. For a trial orientation $R$, each atom $i$ of the
+asymmetric-unit molecule was paired with each atom $j$ of the copies and periodic
+images that eq~\ref{eq:expand} places within reach of an 8~\AA\ cutoff. A
+multilayer perceptron (two hidden layers of 64 units) mapped 16 radial basis
+functions of the distance $d_{ij}$, learned element embeddings of both atoms and
+Fourier features of the flow time $t$ to a scalar $s_{ij}$, damped smoothly to zero
+at 8~\AA, and
+\begin{equation}
+f_i=\sum_j s_{ij}\,\frac{x_i-x_j}{d_{ij}},\qquad
+\omega=\sum_i (x_i-L^{\top}c_0)\times f_i
+\end{equation}
+was read as the angular velocity of the asymmetric unit. Built from interatomic
+vectors only, the field rotates with the crystal, and the symmetry copies, mirror
+images included, enter only through exact expansion. The network has 9,473
+parameters.
+% src: scripts/g2_learned_flow.py:1-14,44-66,69-127; results/vast_g2/eval_s0.pt (parameter count)
+
+Training used conditional flow matching on $\mathrm{SO}(3)$. With $R_0$
+Haar-random, $t$ uniform on $[0,0.98)$ and $R_1$ the experimental orientation, the
+loss was $\lVert\omega_\theta(R_t,t)-u\rVert^2$ at the geodesic point
+$R_t=\exp(t\log(R_1R_0^{\top}))R_0$, with target $u=\log(R_1R_t^{\top})/(1-t)$.
+Each AdamW step (learning rate $10^{-3}$, weight decay $10^{-4}$) used one crystal
+and one draw. Seeds 0, 1 and 2 were trained for eight epochs, and each seed's
+lowest-validation-loss epoch was kept (epochs 1, 8 and 4). These checkpoints
+predate N3, and they were kept as the model of record after DEV-TEST had been seen
+(Supporting Information, disclosure c). Sampling took
+40 Euler steps on $\mathrm{SO}(3)$ from 16 Haar-random starts per crystal, and the
+selector of record, chosen on VAL during development, returned the draw with the
+lowest unrelaxed steric energy. Per-crystal seeds were $80000+i$ on TEST-B and
+$90000+i$ on SEL ($i$, the position in the frozen list); VAL and DEV-TEST reused
+the draws stored during development, re-matched from their rotations. OURS-N2, a
+sensitivity row, is the same network retrained for 30 epochs with eight draws per
+crystal per step, cosine learning-rate decay and fixed validation draws, its
+checkpoints chosen on VAL.
+% src: scripts/g2_learned_flow.py:130-144,184-227; results/vast_g2/eval_s{0,1,2}.pt (hist: epochs 0-7; best 0/7/3, zero-based); scripts/g2_rank.py:44-51; tasks/n3_protocol.md:19-20,156-162,242-244,274-275,362-368; scripts/g2_train_v2.py:1-12; tasks/omega_rebuild_plan.md:67-68,120-141
+
+\subsection{Comparators}
+
+MolCrystalFlow\cite{zeng2026molcrystalflow} (MCF) generates a lattice, centroids
+and one orientation per copy, each copy carrying its own conformer and a handedness
+flag $\chi$. We ran its released code (commit 3c493f8) in a fork limited to six
+patches (four added atom types, a bug fix, a clamp that holds lattice and centroids
+at their inputs, device and seeding fixes, and two verified speed-ups), whose diff
+is given in the Supporting Information. Crystals were exported through MCF's own
+preprocessing and feature code, centred cells in their primitive cell. An export gate checked atom-by-atom round trips and matches to the
+truth on every set. Before any MCF training, a second gate checked that our
+harness reproduces MCF's published results with its released Thurlemann
+checkpoint\CITEME{MolCrystalFlow Zenodo record 19673190; Thurlemann et al.\ 2023
+data} (within $\pm5$ percentage points of its Fig.~3a at stol 0.9 and 1.0), that
+the patches leave the computation unchanged, and that the clamp is exact; it passed
+after the corrections of amendment A4.
+% src: tasks/n3_protocol.md:372-393,402-433,438-505,1431-1506; results/n3/n3_selection.json:"gate_c"
+
+MCF-R held the lattice and all $z_{\mathrm{MCF}}$ centroids at the truth in
+training and sampling, so only orientations were learned and generated. It used
+MCF's released configuration without translation and lattice corruption or losses,
+three seeds, 1,715 epochs (24,010 optimizer steps, close to the 23,700 of MCF's
+own run) and 16 samples per crystal with 50 Euler steps. Because MCF's network sees
+orientations only through relative rotations, its sampled orientations are
+invariant, up to a branch-cut effect (amendment A2), under a group $H$ of common
+rotations set by $z_{\mathrm{MCF}}$ ($\mathrm{SO}(3)$ for $z_{\mathrm{MCF}}=1$,
+O(2) for 2, D$_2$ for 3 or more). MCF-R+G therefore scanned $H$ for each draw
+(both cosets on a 2$^\circ$ grid, or the four D$_2$ elements) and kept the member
+with the lowest steric energy; it uses no truth. MCF-A trained MCF's released joint objective (lattice, centroids and
+orientations generated). It receives less information than OURS, is reported in a
+separate context table and enters no hypothesis.
+% src: tasks/n3_protocol.md:507-531,556-584,598-613
+
+The classical arms received the inputs of OURS and moved only
+$R_{\mathrm{asym}}$. iii-u drew 16 Haar-random rotations per crystal under three
+seed bases; with the RANDOM selector these draws are the random floor. iii-p
+applied the development steric press (80 Adam steps on the orientation) to them.
+iii-s, the physics search, expanded the 4,608 orientations of an incremental Hopf
+grid (about 15$^\circ$ apart)\CITEME{Yershova et al.\ incremental Hopf grid;
+HEALPix}, kept the 64 with the lowest unrelaxed steric energy, and minimised each
+over orientation with the machine-learned potential UMA s-1p1 (OMC
+task)\CITEME{UMA s-1p1 and fairchem}, which the MCF authors use for their own
+rigid-body relaxation; we call it FF*. Minimisation used L-BFGS\CITEME{L-BFGS}
+(at most 100 energy-and-gradient evaluations; converged when the orientation
+gradient per molecule fell below 0.01~eV\,rad$^{-1}$), minima within 2$^\circ$
+were merged, and the lowest-energy minimum was the pick. FF* ran in float32 with
+the same settings in every job. For FF* evaluations the X--H bonds were set to the
+CSD neutron-normalised lengths (C--H 1.089, N--H 1.015, O--H
+0.993~\AA)\CITEME{CSD X--H normalisation lengths}; the returned orientation was
+applied to the original conformer, so every scored structure keeps the
+experimental hydrogen positions. Because UMA's training set, OMC25, derives from
+CSD molecules\CITEME{OMC25; OE62}, H2 is also reported on the TEST-B crystals whose
+refcode family is absent from it.
+% src: tasks/n3_protocol.md:656-726,1378-1386
+
+iv-P ran the superseded SymMC-Flow network\cite{cai2026symmcflow} with its
+published defaults (an E(n)-equivariant conformer encoder\cite{satorras2021egnn}
+and pair-bias attention across molecules) on per-copy items built from the
+asymmetric unit: true centroids for all $K$ copies, a mirrored conformer for
+improper copies, and a coset label (space group, $W_k$) from a table built on
+TRAIN. Only the orientation loss was used (lattice and centroid weights 0, a
+disclosed deviation), for 60 epochs, with seed 0 at three learning rates and seeds
+1 and 2 at the chosen one. Sampling integrated the orientation flow with RK4 (50
+steps) from $K$ independent Haar priors, without symmetrization.
+% src: tasks/n3_protocol.md:762-805; symmc_flow/config.py:6-37
+
+Three ablations are descriptive. ii-S placed MCF's orientations inside our exact
+expansion: each MCF-R+G copy was pulled back to an asymmetric-unit estimate by
+Kabsch alignment\CITEME{Kabsch}, each estimate was expanded, and the
+lowest-energy expansion was kept. iv-S expanded iv-P's identity-copy orientation.
+i-E minimised all 16 OURS draws under FF* and picked the lowest FF* energy, which
+separates the learned proposal from the energy model.
+% src: tasks/n3_protocol.md:586-596,750-754,806-808
+
+\subsection{Selection and matching}
+
+The primary matcher was pymatgen's StructureMatcher\cite{ong2013pymatgen} with
+default settings (ltol 0.2, stol 0.3, angle\_tol 5$^\circ$), computed as
+fit(truth, candidate) on the unrelaxed experimental structure and the candidate as
+emitted. Secondary matchers applied MCF's rule (ltol 0.3, angle\_tol 10$^\circ$, no
+scaling, a match whenever an RMS distance is returned) at stol 0.5 and
+0.8\cite{martirossyan2025matching}. One script scored every arm, and no output
+was matched against the truth before the scoring step. The denominator was always
+the full set: an arm failure counted as a miss, harness crashes were re-run, and
+no crystal was dropped or timed out.
+% src: tasks/n3_protocol.md:143-162,203-217
+
+Each sampling arm drew 16 samples per crystal and seed, and a selector made one
+pick: RANDOM (scored as the exact fraction of matching draws), LJ (lowest steric
+energy, a Lennard-Jones sum over intermolecular atom pairs within 6~\AA\ with
+contact distances 0.90 times the sum of the van der Waals radii), RESID (learned
+arms; lowest residual of one extra forward pass at $t=0.975$) or MODE@$r$ (most
+frequent endpoint within a radius $r$ of 0.25 to 1.5~\AA). OURS kept its
+development selector and iii-s its physics selector. Every other arm chose its
+selector on its own VALSEL draws by seed-summed primary-matcher hits (MCF-A by
+picked@1 under MCF's rule at stol 1.0), with ties going to LJ, RESID, MODE@$r$ and
+RANDOM in that order. The MCF arms also chose rotation-schedule rates (MCF-R and
+MCF-R+G: $s_{uR}\in\{1,2,3,5,10\}$) and one checkpoint per seed, and iv-P its
+learning rate and checkpoints. The frozen choices were LJ for every arm except
+iii-p (MODE@1.0) and iii-s; $s_{uR}=5$ for MCF-R and MCF-R+G; schedule rates
+$(s_{uF},s_{uR})=(9,3)$ for MCF-A; and learning rate $10^{-4}$ for iv-P. The
+checkpoints are listed in the Supporting Information.
+% src: tasks/n3_protocol.md:251-276,545-554,576-582,605-609,792-802; symmc_flow/rigid_press.py:30-36,109-146; results/n3/n3_selection.json:236-470
+
+\subsection{Statistics and hypotheses}
+
+The headline estimand was seed-mean picked@1, the outcome of the single pick per
+crystal averaged over three seeds (one run for iii-s); draw@1, any@16 and
+48-draw ensembles were descriptive. For crystal $i$ and comparator $A$,
+$d_i=h_i^{\mathrm{OURS}}-h_i^{A}$, with $h_i$ the seed-mean outcome, and $\Delta$
+is the mean of $d_i$. Contrasts used a two-sided paired sign-flip test on
+$\sum_i d_i$, computed exactly. The preregistered hypotheses, one family tested on
+TEST-B with Holm's step-down procedure\CITEME{Holm 1979} at family-wise
+$\alpha=0.05$, were: H1, OURS against MCF-R and against MCF-R+G as an
+intersection-union test ($p=\max(p_R,p_G)$, $\Delta_{\mathrm{H1}}=\min(\Delta_R,
+\Delta_G)$, supported only if both differences are positive); H2, OURS against
+iii-s; and H3, OURS against iv-P. A verdict names a better arm only at adjusted
+$p<0.05$; otherwise the difference is ``not resolved'', never a tie. $\Delta$ is
+given in percentage points with a paired crystal-bootstrap BCa 95\%
+interval\CITEME{Efron 1987, BCa bootstrap} (10,000 resamples). A two-stage
+bootstrap over seeds and then crystals (10,000 replicates) measured training-seed
+sensitivity; a supported hypothesis whose interval contains zero is worded ``not
+shown to exceed seed-to-seed training variation''. H1--H3 were repeated with
+OURS-N2 as a separate family. Secondary matchers, MCF-A, ablations, DEV-TEST and
+strata ($K$, $z_{\mathrm{MCF}}$, centrosymmetric, Sohncke or other, mixed
+handedness, formula absent from TRAIN, OMC25 non-overlap) carry 95\% intervals
+only.
+% src: tasks/n3_protocol.md:219-233,278-316,336-357,818-822
+
+The H2 form was fixed on VALSEL before any candidate was minimised. The 400 VALSEL
+truths were minimised under FF*; if at least 50\% converged and still matched the
+experimental structure, H2 would compare unrelaxed outputs (EXACT), and otherwise
+it would compare minimised picks with the minimised truth (BASIN). The form was
+EXACT, committed (commit 1aff111) before any candidate minimisation, so H2 compares
+the unrelaxed OURS pick and iii-s's lowest minimum, each with the unrelaxed
+experimental structure. Because an EXACT-form difference can come from crystals
+whose experimental pose drifts under FF*, every TEST-B truth was also labelled
+ANCHORED, DRIFTED or UNRESOLVED, and ``better than physics-based search'' was
+reserved for an ANCHORED-subset interval entirely above zero. This and every other
+outcome-to-wording rule, including how the ii-S ablation splits the H1 difference,
+were fixed before any arm ran.
+% src: tasks/n3_protocol.md:727-749,840-873; results/n3/n3_selection.json:121-124; git 1aff111
+
+\subsection{Representability}
+
+Table~\ref{tab:repr} (Table R) counts the TEST-B and DEV-TEST crystals whose
+experimental structure each
+representation can emit, computed before any sampling and under every matcher: (a)
+exact expansion, as used by OURS and the classical arms (all of TEST-B by
+construction); (b) MCF's per-copy representation; (c) the information of MCF's
+released structure-prediction driver, one conformer and one $\chi$ for all copies,
+as its best homochiral approximant (each improper copy replaced by the RMSD-optimal
+proper rotation onto its mirror); and (d) the old proper-rotation-only parser. No
+representability claim is made relative to MCF's per-copy representation.
+% src: tasks/n3_protocol.md:876-909
+
+\subsection{Preregistration and execution}
+
+The protocol, revised through three rounds of adversarial review, was committed
+and pushed to the public repository\cite{cai2026symmcflow} on 2026-09-28 (commit
+8f7e494), before any N3 arm was trained, sampled or scored. Later changes were
+dated records (Supporting Information): amendments A1--A4 preceded any output on
+SEL, TEST-B or DEV-TEST, the step-5b clarifications preceded any VALSEL score, the
+step-7 records preceded any TEST-B or DEV-TEST input on the cluster, and the step-9
+clarification preceded any scoring of those sets. All choices, the H2 form and the
+list of permitted TEST-B and DEV-TEST runs with their seeds were committed and pushed (commit
+772a36e) before any TEST-B or DEV-TEST input reached the compute cluster. Exactly
+the listed runs were made, their outputs were pulled back with checksums, the
+CSD-derived files on the cluster were deleted, and both sets were scored once. The
+results were committed and pushed (commit f1c713a) before they were interpreted.
+The N3 training (MCF and iv-P), sampling and FF* jobs ran on NVIDIA A100 nodes of
+the Purdue Anvil cluster\CITEME{Anvil; ACCESS} in one container image, and scoring
+used the cluster's CPU cores; the OURS and OURS-N2 checkpoints had been trained on
+CPU before N3.
+% src: tasks/n3_protocol.md:1-17,967-1015,1367-1377; results/n3/n3_selection.json:1-4; tasks/n3_step9_clarification_2026-11-15.md:11-27; tasks/n3_step4_record_2026-10-11.md:878-944,1043-1045; git log 8f7e494, 772a36e, f1c713a
