@@ -26,15 +26,18 @@ def put(root, rel, obj):
 
 
 REPORT = {"table1": {"OURS": {"picked1_mean_pct": 1.0}}, "selection": {"sha256": R.FREEZE_SHA256},
-          "missing_arms": {}, "family_primary": {"complete": True}, "family_n2": {"complete": True}}
+          "missing_arms": {}}
+# the frozen n3_score.py report makes the H1-H3 families (and the wording) on TEST-B only
+FAMILIES = {"family_primary": {"complete": True}, "family_n2": {"complete": True}, "wording": {}}
 
 
-def tree(tmp_path, monkeypatch, report_extra=None, skip_tsv=()):
+def tree(tmp_path, monkeypatch, report_extra=None, skip_tsv=(), dev_extra=None):
     root = str(tmp_path)
     os.makedirs(os.path.join(root, "results/n3"), exist_ok=True)
     shutil.copyfile(os.path.join(REPO, R.SELECTION), os.path.join(root, R.SELECTION))
     for st in R.SETS:
-        put(root, f"results/n3/report_{st}.out.json", {"set": st, **REPORT, **(report_extra or {})})
+        put(root, f"results/n3/report_{st}.out.json",
+            {"set": st, **REPORT, **(FAMILIES if st == "testB" else (dev_extra or {})), **(report_extra or {})})
         put(root, f"{R.P}/classical/anchor_{st}.json", {"summary": {"n": 2, "anchoring": 1.0, "ff_state": "x"},
                                                         "rows": [{"refcode": "A"}]})
         put(root, f"{R.P}/mcf/diag_b_{st}.json", {"diagnostic": "b", "summary": {"primary": {}}, "per_crystal": {}})
@@ -122,6 +125,18 @@ def test_diag_a_failed_withholds_b_to_d():
 def test_incomplete_or_foreign_report_stops(tmp_path, monkeypatch, extra, match):
     tree(tmp_path, monkeypatch, extra)
     with pytest.raises(SystemExit, match=match):
+        R.assemble()
+
+
+def test_devtest_has_no_families(tmp_path, monkeypatch):
+    tree(tmp_path, monkeypatch)
+    d = R.assemble()["sets"]["devtest"]
+    assert "family_primary" not in d["report"] and d["families"].startswith("none")
+
+
+def test_devtest_report_with_families_stops(tmp_path, monkeypatch):
+    tree(tmp_path, monkeypatch, dev_extra=FAMILIES)
+    with pytest.raises(SystemExit, match="TEST-B only"):
         R.assemble()
 
 

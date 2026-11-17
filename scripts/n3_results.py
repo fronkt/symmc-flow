@@ -30,6 +30,7 @@ P = "results/n3/private"
 SETS = ("testB", "devtest")
 DEV_LABEL = "DEV-TEST: used during development, not confirmatory (P §1.4)"
 MATCHERS_BD = ("primary", "mcf05", "mcf08")
+FAMILIES = ("family_primary", "family_n2")             # H1-H3 families: TEST-B only (n3_score.py report)
 # a key holding an array is structure data if it is one of these (exact) or contains one of the tokens (any case)
 STRUCTURE_KEYS = {"R", "R0", "mol", "matrix", "cell", "cells", "local"}
 STRUCTURE_TOKENS = ("cart", "frac", "coord", "lattice", "rotmat", "position", "species", "atom_type", "xyz", "cif",
@@ -154,15 +155,22 @@ def assemble():
         if rep.get("missing_arms"):
             raise SystemExit(f"report_{st}.out.json has missing arms {sorted(rep['missing_arms'])}: stop and inspect "
                              "(clarification section 5); an incomplete report is not published")
-        for fam in ("family_primary", "family_n2"):
-            if (rep.get(fam) or {}).get("complete") is not True:
-                raise SystemExit(f"report_{st}.out.json: {fam} is not complete: stop and inspect")
+        # The frozen n3_score.py report tests H1-H3 on TEST-B only (`if set_name == "testB" or dry`): a DEV-TEST
+        # report has no families (P §1.4, not confirmatory), and one that has them is not the frozen code's output.
+        if st == "testB":
+            for fam in FAMILIES:
+                if (rep.get(fam) or {}).get("complete") is not True:
+                    raise SystemExit(f"report_{st}.out.json: {fam} is not complete: stop and inspect")
+        elif any(k in rep for k in FAMILIES + ("wording",)):
+            raise SystemExit(f"report_{st}.out.json carries hypothesis families: the frozen report tests H1-H3 on "
+                             "TEST-B only: stop and inspect")
         started, _ = load(f"{P}/step9/started_{st}.json")
         floor, fsha = load(f"{P}/mcf/haar_floor_{st}.json", tsv)
         anchor, ash = load(f"{P}/classical/anchor_{st}.json", tsv)
         a_sum = anchor.get("summary") or {}
         res["sets"][st] = {
             "role": "confirmatory (Table 1 / H1-H3)" if st == "testB" else DEV_LABEL,
+            **({} if st == "testB" else {"families": "none: the frozen report tests H1-H3 on TEST-B only"}),
             "report": rep, "report_sha256": rsha,
             "mcf_diagnostics": mcf_block(st, diag_a, tsv),
             "haar_floor": {"crystals": len(floor) if isinstance(floor, dict) else None, "sha256": fsha},

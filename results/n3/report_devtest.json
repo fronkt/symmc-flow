@@ -1,0 +1,232 @@
+{
+ "set": "devtest",
+ "matcher": "primary",
+ "arms": {
+  "OURS": {
+   "bundles": [
+    "results/n3/private/draws/ours_s0_devtest.pt",
+    "results/n3/private/draws/ours_s1_devtest.pt",
+    "results/n3/private/draws/ours_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "OURS-N2": {
+   "bundles": [
+    "results/n3/private/draws/ours_n2_s0_devtest.pt",
+    "results/n3/private/draws/ours_n2_s1_devtest.pt",
+    "results/n3/private/draws/ours_n2_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "iii-s": {
+   "bundles": [
+    "results/n3/private/draws/iii-s_s-1_devtest.pt"
+   ],
+   "selector": "ff",
+   "kind": "rasym",
+   "seed_ids": [
+    -1
+   ]
+  },
+  "floor": {
+   "bundles": [
+    "results/n3/private/draws/iii-u_s0_devtest.pt",
+    "results/n3/private/draws/iii-u_s1_devtest.pt",
+    "results/n3/private/draws/iii-u_s2_devtest.pt"
+   ],
+   "selector": "random",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "iii-u": {
+   "bundles": [
+    "results/n3/private/draws/iii-u_s0_devtest.pt",
+    "results/n3/private/draws/iii-u_s1_devtest.pt",
+    "results/n3/private/draws/iii-u_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "iii-p": {
+   "bundles": [
+    "results/n3/private/draws/iii-p_s0_devtest.pt",
+    "results/n3/private/draws/iii-p_s1_devtest.pt",
+    "results/n3/private/draws/iii-p_s2_devtest.pt"
+   ],
+   "selector": "mode@1.0",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "i-E": {
+   "bundles": [
+    "results/n3/private/draws/i-E-ours_s0_devtest.pt",
+    "results/n3/private/draws/i-E-ours_s1_devtest.pt",
+    "results/n3/private/draws/i-E-ours_s2_devtest.pt"
+   ],
+   "selector": "ff",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "MCF-R": {
+   "bundles": [
+    "results/n3/private/draws/mcfR_last_u5_s0_devtest.pt",
+    "results/n3/private/draws/mcfR_last_u5_s1_devtest.pt",
+    "results/n3/private/draws/mcfR_ep1067_st14952_u5_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "cells",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "MCF-R+G": {
+   "bundles": [
+    "results/n3/private/draws/mcfRG_ep1331_st18648_u5_s0_devtest.pt",
+    "results/n3/private/draws/mcfRG_last_u5_s1_devtest.pt",
+    "results/n3/private/draws/mcfRG_ep1067_st14952_u5_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "cells",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "ii-S": {
+   "bundles": [
+    "results/n3/private/draws/mcfRS_ep1331_st18648_u5_s0_devtest.pt",
+    "results/n3/private/draws/mcfRS_last_u5_s1_devtest.pt",
+    "results/n3/private/draws/mcfRS_ep1067_st14952_u5_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "iv-P": {
+   "bundles": [
+    "results/n3/private/draws/ivP_s0_devtest.pt",
+    "results/n3/private/draws/ivP_s1_devtest.pt",
+    "results/n3/private/draws/ivP_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "cells",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "iv-S": {
+   "bundles": [
+    "results/n3/private/draws/ivS_s0_devtest.pt",
+    "results/n3/private/draws/ivS_s1_devtest.pt",
+    "results/n3/private/draws/ivS_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "rasym",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "MCF-A": {
+   "bundles": [
+    "results/n3/private/draws/mcfA_ep752_st10542_u3_f9_s0_devtest.pt",
+    "results/n3/private/draws/mcfA_last_u3_f9_s1_devtest.pt",
+    "results/n3/private/draws/mcfA_ep1195_st16744_u3_f9_s2_devtest.pt"
+   ],
+   "selector": "lj",
+   "kind": "cells",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  },
+  "MCF-A-floor": {
+   "bundles": [
+    "results/n3/private/draws/mcfAfloor_s0_devtest.pt",
+    "results/n3/private/draws/mcfAfloor_s1_devtest.pt",
+    "results/n3/private/draws/mcfAfloor_s2_devtest.pt"
+   ],
+   "selector": "random",
+   "kind": "cells",
+   "seed_ids": [
+    0,
+    1,
+    2
+   ]
+  }
+ },
+ "ours": "OURS",
+ "ours_n2": "OURS-N2",
+ "H1": [
+  "MCF-R",
+  "MCF-R+G"
+ ],
+ "H2": "iii-s",
+ "H3": "iv-P",
+ "ii_s": "ii-S",
+ "i_e": "i-E",
+ "h2_form": "EXACT",
+ "h2_basin": {
+  "OURS": "results/n3/private/basin/basin-ours_devtest__fftruth_s-1_devtest_ff.json",
+  "OURS-N2": "results/n3/private/basin/basin-ours_n2_devtest__fftruth_s-1_devtest_ff.json",
+  "iii-s": "results/n3/private/basin/iii-s_devtest__fftruth_s-1_devtest_ff.json",
+  "i-E": "results/n3/private/basin/i-E-ours_devtest__fftruth_s-1_devtest_ff.json"
+ },
+ "steric_basin": {
+  "p1-OURS": "results/n3/private/basin/p1-ours_devtest__p1ref_s-1_devtest_lj.json",
+  "p1-iii-p": "results/n3/private/basin/iii-p_devtest__p1ref_s-1_devtest_lj.json"
+ },
+ "steric_basin_ours": "p1-OURS",
+ "ff_labels": "results/n3/private/classical/ff_labels_devtest.json",
+ "labels": [
+  "results/n3/private/labels_devtest.json"
+ ],
+ "secondary": [
+  "mcf05",
+  "mcf08"
+ ],
+ "rms_matcher": "mcf10",
+ "gate_ca_failed": false,
+ "n_boot": 10000,
+ "out": "results/n3/report_devtest.out.json"
+}
