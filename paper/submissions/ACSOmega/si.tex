@@ -1,196 +1,1446 @@
 % =====================================================================
-% Supporting Information for
-% "Fully Symmetry-Conditioned Rigid-Body Flow Matching for
-%  Molecular-Crystal Structure Prediction"
-% ACS Omega (acsodf).
+% Supporting Information, ACS Omega resubmission (ao-2026-09173w) -- REBUILT AROUND THE N3 BENCHMARK, draft 2026-11-17
 %
-% NOTE: achemso's acsodf configuration declares \acs@type@list{article}
-% ONLY -- unlike jcisd8, which allows {article,suppinfo}. Passing
-% manuscript=suppinfo here does NOT error; achemso silently falls back to
-% `article` with a log warning, losing the "S" prefixes and the SI title.
-% We therefore load manuscript=article and set the S-prefixed counters and
-% the SI title explicitly below, which reproduces suppinfo output exactly
-% and is fully under our control.
+% EVERY NUMBER in this file enters through generated/si_*.tex, written by scripts/n3_si_tables.py from the named
+% evidence records: results/n3/n3_results.json (committed f1c713a, before interpretation), n3_selection.json,
+% table_r_{testB,devtest}.json, gateF.json, gateC.json, omc25_outside_elements_{testB,devtest}.json and, for the
+% run-health counts that no results file holds, tasks/n3_step4_record_2026-10-11.md (each such macro in
+% generated/si_numbers.tex cites the record by file:line). Regenerate with `python scripts/n3_si_tables.py`;
+% `--check` exits 0 when the generated files are current. Each table below carries a `% src:` comment, and each
+% generated file repeats its source keys. Method parameters (seeds, S = 16, stol values, tolerances, the
+% "3-model ensemble, 48 draws" label) are typed and labelled as parameters.
+% CLAIM RULES: tasks/n3_protocol.md Section 2.4 -- no significance language for secondary matchers, draw@1, any@k,
+% ensembles, continuous endpoints, strata, DEV-TEST, MCF-A, ablations or diagnostics (contract assertion 5).
+% Section S1 is sections/si_n3.tex (not edited here). The pre-N3 SI is archived in
+% archive/si-archive-2026-11-17-pre-N3.tex and archive/si-archive-2026-11-17-pre-N3-b.tex.
+%
+% achemso's acsodf configuration declares \acs@type@list{article} only (achemso-acsodf.cfg:25), so
+% manuscript=suppinfo silently falls back to article; we load article and set the S-prefixed counters ourselves.
 % =====================================================================
 \documentclass[journal=acsodf,manuscript=article]{achemso}
 
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{rotating}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \graphicspath{{figures/}{../../figures/}}
 
-% --- reproduce achemso `suppinfo` behaviour under the acsodf config ------
+% --- achemso `suppinfo` behaviour under the acsodf configuration ---------
 \AbstractOff
 \renewcommand{\thesection}{S\arabic{section}}
 \renewcommand{\thesubsection}{S\arabic{section}.\arabic{subsection}}
 \renewcommand{\thetable}{S\arabic{table}}
 \renewcommand{\thefigure}{S\arabic{figure}}
 \renewcommand{\theequation}{S\arabic{equation}}
-% ------------------------------------------------------------------------
+% ---------------------------------------------------------------------------
+
+\input{generated/si_numbers.tex}
+\makeatletter
+\newcommand{\inputrows}[1]{\@@input #1 }
+\makeatother
+\newcounter{todocount}
+\DeclareRobustCommand{\TODO}[1]{\stepcounter{todocount}\textcolor{red}{[TODO: #1]}}
+\DeclareRobustCommand{\CITEME}[1]{\stepcounter{todocount}\textcolor{red}{[CITE: #1]}}
+\AtEndDocument{\typeout{[symmc-flow SI] TODO/CITE markers remaining: \thetodocount}}
+\newcommand{\devlabel}{DEV-TEST ($n=\svNDev$; used during development, not confirmatory)}
+\newcommand{\figorplaceholder}[2]{%
+  \IfFileExists{figures/#1.pdf}{\includegraphics[width=#2,height=0.78\textheight,keepaspectratio]{figures/#1.pdf}}{%
+  \IfFileExists{figures/#1.png}{\includegraphics[width=#2,height=0.78\textheight,keepaspectratio]{figures/#1.png}}{%
+  \fbox{\parbox{0.8\linewidth}{\centering\TODO{figures/#1 is not built yet}}}}}}
 
 \author{Frank Cai}
 \affiliation{Purdue University, West Lafayette, Indiana 47907, United States}
-\email{frankyc11223@gmail.com}
+\email{cai485@pfw.edu}
 
-\title{Supporting Information:
-Fully Symmetry-Conditioned Rigid-Body Flow Matching for
-Molecular-Crystal Structure Prediction}
+% Title: the main text's provisional title (Frank to confirm there first).
+\title{Supporting Information for: Exact Space-Group Expansion of a Learned Asymmetric Unit:
+A Preregistered Benchmark of Molecular-Crystal Orientation Completion}
 
 \begin{document}
 
-% =====================================================================
-\section{Rigid-body factorization, gauge, and manifolds}\label{sisec:method}
-% =====================================================================
-\textbf{Intrinsic gauge.} Each crystal is parsed into rigid blocks by a
-covalent-bond graph with periodic unwrapping; species are keyed by a
-Weisfeiler--Leman hash and share one reference conformer rotated into a
-molecule-intrinsic frame (gyration-tensor principal axes, sign-fixed by an
-element-weighted third moment). Each copy's pose is the Kabsch rotation to that
-frame, which removes the cross-crystal reference that otherwise floors the absolute
-orientation $R_m$. The atom positions reconstruct exactly as
-$\text{cart}_{m,a}=c_mL+R_m\,\text{local}_{m,a}$, so the re-gauge to the relative
-target $R'_m=R_mR_0^{-1}$ (Eq.~1 of the main text) leaves the rebuilt crystal
-unchanged.
-
-\textbf{Manifolds.} The lattice is carried in a $10$-dimensional
-log-volume/unit-determinant-shape parametrization (prior volume matched to the
-corpus mean); centroids on torus geodesics with a minimum-image velocity; and
-orientations on $\mathrm{SO}(3)$ geodesics with body-frame angular-velocity target
-$u_R=\log(R_0^\top R_1)$, advanced by the exponential map. Training uses conditional
-flow matching\cite{lipman2023flowmatching} with optimal-transport
-coupling\cite{pooladian2023multisample}; sampling is RK4 in $50$ steps.
-
-\textbf{Deployable coset recovery.} For a space group with operations
-$\{(W_h,t_h)\}$ (pymatgen), each non-reference copy is assigned
-$\arg\min_h \lVert (c_m-(W_hc_0+t_h))\ \mathrm{mod}\ 1\rVert$ under the minimum
-image, giving the generating-operation index; a deterministic $(\text{sg},h)$
-ordering yields shared integer labels ($238$ total on the diagnostic corpus). This
-uses only centroids and space-group operations, never the observed rotation, so the
-label is leak-free and reproducible from a symmetry template at sampling time.
-
-\textbf{Training.} Adam, learning rate $3\times10^{-4}$, gradient clipping, batch
-$16$; default network width $d{=}128$ with four attention and four encoder layers;
-$800$ steps for the coset runs, and $K{=}4$ prior draws for the
-$\mathrm{SO}(3)$-averaged objective. The template-free predictor reuses the encoder
-and pair-bias trunk over conformer/centroid/lattice/space-group inputs (no
-orientation) and is trained to $39.5\%$ held-out top-1 accuracy.
+\noindent This document reports every output the N3 protocol registers for the Supporting
+Information (its Section~6), on the confirmatory set TEST-B ($n=\svN$) and on DEV-TEST
+($n=\svNDev$), which was used during development and is not confirmatory. Sections:
+\ref{si:prereg}~preregistration, amendments and disclosures;
+\ref{si:secondary}~secondary matchers;
+\ref{si:ensembles}~ensembles, any@48 and continuous endpoints;
+\ref{si:ablations}~ablations and descriptive arms;
+\ref{si:mcfdiag}~the MolCrystalFlow fork, diagnostics and context arms;
+\ref{si:strata}~the strata of main-text Table~5 in full;
+\ref{si:tabler}~representability (Table~R) in full;
+\ref{si:devtest}~DEV-TEST;
+\ref{si:valsel}~the VALSEL selection grids;
+\ref{si:health}~run health and gates;
+\ref{si:compute}~compute;
+\ref{si:dataset}~the data sets;
+\ref{si:examples}~representative examples.
+Every estimate outside the three preregistered hypotheses of the main text (H1--H3, TEST-B) is
+descriptive: it is given with a 95\% interval where the protocol asks for one, and with no
+test. Percentages follow the main text's convention (two decimals below 10\%, one above;
+half-up rounding).
+% src: tasks/n3_protocol.md:2.4 (lines 278-331), 6 (912-965)
 
 % =====================================================================
-\section{The $R_{\text{asym}}$ conditional probe}\label{sisec:probe}
+% S1
 % =====================================================================
-To test whether the gauge-free asymmetric-unit orientation carries any exploitable
-signal beyond its uniform marginal, a supervised probe was trained to predict
-$R_{\text{asym}}$ from the lattice, the centroid arrangement, the conformer shape,
-and the space group. Across three seeds the probe (mean geodesic error
-$125.2^\circ$) does not improve on the best feature-free constant ($122.4^\circ$)
-and sits at the no-information level ($\sim\!-2.4\%$ relative to the constant),
-confirming that the uniform marginal reflects genuine conditional unpredictability
-under this conditioning rather than a masked dependence. The claim is therefore
-operational and scoped: $R_{\text{asym}}$ is not predictable from the conditioning
-used here (rigid, general-position organic crystals), not that it is unlearnable in
-principle.
+\input{sections/si_n3.tex}
 
-% =====================================================================
-\section{Crystal-family lattice mask}\label{sisec:family}
-% =====================================================================
-We parametrize the cell by its metric $G=L^\top L$, which is invariant to the
-arbitrary orientation of $L$, and take the matrix logarithm $S=\log G$, a symmetric
-$3\times3$ matrix with six independent components. Expanding $S$ in an orthonormal
-symmetric basis $\{B_0,\dots,B_5\}$ gives coordinates $k_i=\langle S,B_i\rangle$
-that separate volume from shape:
-\begin{align*}
-B_0 &= \tfrac{1}{\sqrt3}\,I               & k_0 &= \tfrac{1}{\sqrt3}\,\mathrm{tr}\,S = \tfrac{2}{\sqrt3}\log V &&\text{(volume, always free)}\\
-B_1 &= \tfrac{1}{\sqrt6}\,\mathrm{diag}(1,1,-2) & k_1 &&&\text{($c$ vs.\ $a,b$)}\\
-B_2 &= \tfrac{1}{\sqrt2}\,\mathrm{diag}(1,-1,0)  & k_2 &&&\text{($a$ vs.\ $b$)}\\
-B_3 &= \tfrac{1}{\sqrt2}(E_{23}+E_{32})   & k_3 &&&\text{(off-diag.\ $\sim\!\alpha$)}\\
-B_4 &= \tfrac{1}{\sqrt2}(E_{13}+E_{31})   & k_4 &&&\text{(off-diag.\ $\sim\!\beta$)}\\
-B_5 &= \tfrac{1}{\sqrt2}(E_{12}+E_{21})   & k_5 &&&\text{(off-diag.\ $\sim\!\gamma$)}
-\end{align*}
-The cell reconstructs as $G=\exp\big(\sum_i k_i B_i\big)$, $L=\mathrm{chol}(G)$; the
-triangular (canonical-frame) choice is immaterial because the model round-trips the
-lattice through $k$ and \textsc{StructureMatcher} is frame-invariant. The binary
-family mask $m(\mathrm{sg})$ frees only the shape coordinates the crystal family
-permits and freezes the rest to canonical values (Table~\ref{sitab:mask}), applied
-after every sampler step and in the prior. For the hexagonal family,
-$\gamma=120^\circ$ makes the $B_5$ component a fixed \emph{nonzero} constant in
-log-metric space (independent of $a$, since the $a^2$-scaling contributes only to
-the volume coordinate $k_0$); its value is computed numerically and verified in a
-unit test. The mask mechanism follows DiffCSP++\cite{jiao2024diffcsppp}; our
-contribution is transporting it into the molecular rigid-body flow and composing it
-with the orientation coset.
+\subsection{OURS and OURS-N2 checkpoints}\label{si:oursckpt}
 
-\begin{table}[h]\centering
-\caption{Crystal-family lattice mask: free log-metric coordinates per family
-(space-group ranges); all others are frozen to the canonical value in the last
-column. The volume coordinate $k_0$ is always free.}
-\label{sitab:mask}
-\begin{tabular}{lcl}\toprule
-family (SG range) & free $k$-coords & frozen (value) \\\midrule
-triclinic ($1$--$2$)              & $0,1,2,3,4,5$ & --- \\
-monoclinic ($3$--$15$)            & $0,1,2,4$     & $k_3{=}0,\ k_5{=}0$ \\
-orthorhombic ($16$--$74$)         & $0,1,2$       & $k_3{=}k_4{=}k_5{=}0$ \\
-tetragonal ($75$--$142$)          & $0,1$         & $k_2{=}k_3{=}k_4{=}k_5{=}0$ \\
-trigonal/hexagonal ($143$--$194$) & $0,1$         & $k_2{=}k_3{=}k_4{=}0,\ k_5{=}\text{CANON}_{\mathrm{hex}}$ \\
-cubic ($195$--$230$)              & $0$           & $k_1{=}\dots{=}k_5{=}0$ \\\bottomrule
+OURS and OURS-N2 have no VALSEL knob (protocol Section~3.1): each samples with the
+\svOursSel{} selector, \svOursS{} draws per crystal and seed, and \svOursEuler{} Euler steps
+(method parameters, as frozen). Their
+checkpoints, with the first twelve hexadecimal digits of the SHA-256 recorded in the step-6
+selection freeze (\svSelSha, commit \svSelCommit), are listed in Table~\ref{tab:si_ours_ckpt}.
+\TODO{confirm OURS training epochs with Frank: the training script's default is 40 epochs
+(scripts/g2\_learned\_flow.py:155), but the training history stored in
+results/vast\_g2/eval\_s\{0,1,2\}.pt covers 8 epochs, and the kept lowest-validation-loss
+epochs are 1, 8 and 4 (one-based), as the Methods state}
+% src: generated/si_ours_ckpt.tex <- results/n3/n3_selection.json frozen.OURS, frozen.OURS-N2
+% The TODO's numbers are the unresolved ambiguity reported by the methods agent (scripts/g2_learned_flow.py:155;
+% sections/methods.tex:105-106,117); they are flagged, not results.
+
+\begin{table}[htbp]
+\caption{OURS and OURS-N2 checkpoints as frozen at step 6 (selection freeze); SHA-256
+truncated to 12 hexadecimal digits.}
+\label{tab:si_ours_ckpt}
+\centering
+\small
+\begin{tabular}{@{}llll@{}}
+\toprule
+arm & seed & checkpoint & SHA-256 \\
+\midrule
+\inputrows{generated/si_ours_ckpt.tex}
+\bottomrule
 \end{tabular}
 \end{table}
+% src: results/n3/n3_selection.json frozen.OURS.checkpoints, frozen.OURS-N2.checkpoints
 
+\clearpage
 % =====================================================================
-\section{Finishing and self-conditioning}\label{sisec:finish}
+\section{Secondary matchers}\label{si:secondary}
 % =====================================================================
-\textbf{Rigid-press finisher.} Each generated crystal is relaxed under a soft
-Lennard-Jones energy summed over intermolecular atom pairs within a $6\,\text{\AA}$
-neighbor list, with the contact distance set to $0.90\times$ the sum of van der
-Waals radii. The free variables are the asymmetric-unit pose (an $\mathrm{SO}(3)$
-tangent and a fractional shift per rigid block) and the family-masked cell
-coordinates $k$; the intramolecular geometry is frozen (rigid body) and every
-symmetry copy is \emph{regenerated} from the optimized ASU pose via the space-group
-operations at each step, so the relaxation cannot break the imposed symmetry and
-never reads the reference structure. Optimization is Adam (learning rate $0.03$,
-$\sim\!40$--$60$ steps) with the neighbor list refreshed every $15$ steps and a
-light volume-penalty term ($\lambda_{\mathrm{vol}}=0.05$) toward the corpus volume
-per atom.
+The secondary matcher of the protocol is the match rule of
+MolCrystalFlow\cite{zeng2026molcrystalflow}. It uses the structure matcher of
+pymatgen\cite{ong2013pymatgen} (\texttt{StructureMatcher}) with \texttt{ltol=0.3},
+\texttt{angle\_tol=10} and \texttt{scale=False}, under which a
+candidate matches the unrelaxed experimental structure when \texttt{get\_rms\_dist} returns a
+value. It is run at two site tolerances, \texttt{stol} 0.5 and 0.8 (method parameters), each
+as a separate run because \texttt{stol} is a pre-filter rather than a threshold. It scores each
+arm's picks, per seed and for the three-seed ensemble, and the iii-u Haar floor over all draws
+(Table~\ref{tab:si_secondary}). These matchers are looser than the primary one, so every rate
+rises; they are reported for comparability with MolCrystalFlow's published metric and carry no
+test.
 
-\textbf{Self-conditioning.} With probability $0.5$ during training, the model first
-produces a detached prediction with a null self-conditioning token,
-Euler-extrapolates it to $t{=}1$ to form a terminal estimate
-$(\hat L,\hat x,\hat R)$, and re-runs conditioned on that estimate. The
-extrapolation respects each manifold:
-$\hat L=\mathrm{k\_to\_lat}\big(k_t+(1{-}t)\,v_L\big)$,
-$\hat x=\mathrm{wrap}\big(x_t+(1{-}t)\,v_x\big)$ on the torus, and, in the body
-frame (right multiplication),
-$\hat R=R_t\,\exp_{\mathrm{SO}(3)}\!\big((1{-}t)\,v_R\big)$. At sampling time the
-estimate is carried across the RK4 steps (reusing the final velocity evaluation),
-and AlphaFold-style \emph{recycling} re-solves the whole trajectory conditioned on
-the previous pass's output structure. All of these are gated behind configuration
-flags, leaving the default generation path unchanged.
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$), secondary matchers: picked@1 (\%) of each arm's frozen selector per
+seed (s0 / s1 / s2) and for the ensemble (``ens.'': the selector applied over all draws of the
+three seeds, the 3-model ensemble, 48 draws; iii-s is one deterministic run with 16 candidates).
+The random-floor row is the iii-u Haar floor over all draws: the RANDOM selector's exact
+expectation, i.e.\ the fraction of all draws that match. Rows below the rule are the ablations
+and descriptive arms (Section~\ref{si:ablations}) and the MCF-A context arms
+(Section~\ref{si:mcfdiag}). Descriptive; no tests.}
+\label{tab:si_secondary}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{stol 0.5} & \multicolumn{2}{c}{stol 0.8} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+arm & selector & per seed & ens. & per seed & ens. \\
+\midrule
+\inputrows{generated/si_secondary_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.secondary.{mcf05,mcf08}
 
+\clearpage
 % =====================================================================
-\section{Per-seed numbers and tolerance sweep}\label{sisec:numbers}
+\section{Ensembles, any@48 and continuous endpoints}\label{si:ensembles}
 % =====================================================================
-\textbf{Non-reference loss drop, per seed.} Control $29.4/24.4/28.8\%$; deployable
-coset $43.2/37.2/42.9\%$; $+\mathrm{SO}(3)$-averaged $49.2/43.4/50.5\%$. At the
-$2{,}539$-crystal scale corpus: coset $53.5/54.4/55.1\%$; control
-$35.2/36.0/39.1\%$.
+\paragraph{Ensembles.} The ensemble applies an arm's frozen selector to all draws of its three
+trained models (or Haar seed bases) at once. It is labelled with the number of models and
+draws it pools (``3-model ensemble, 48 draws'') and is never a single model's accuracy.
+any@48 is the fraction of crystals with at least one matching draw among the 48
+(Table~\ref{tab:si_ensemble}).
 
-\textbf{Orientation-isolated reconstruction} (coset-conditioned, best-of-$8$),
-\textsc{StructureMatcher} (length, site) tolerance sweep:
-$(0.2,0.2)\!\to\!4.6\%$; $(0.3,0.5)\!\to\!27.5\%$; $(0.5,0.7)\!\to\!37.4\%$; oracle
-$100\%$ throughout; median non-reference orientation error $41.1^\circ$.
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$), primary matcher: ensembles and any-of-all-draws. picked@1 and
+any@16 are seed means (single models); ``ensemble picked@1'' is the selector over all draws of
+the ensemble named in the second column; ``any, all draws'' is any@48 for the three-seed arms
+and any@16 for iii-s. All values in \%. Descriptive; no tests.}
+\label{tab:si_ensemble}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+arm & ensemble & picked@1 & ensemble picked@1 & any@16 & any, all draws \\
+\midrule
+\inputrows{generated/si_ensemble_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.{ensemble_label,ensemble_picked1_pct,any_all_pct}
 
-\textbf{Template-free.} Predicted-coset (top-1) reconstruction: $0\%$ match,
-$64.8^\circ$ error, versus $41.1^\circ$ template-supplied; top-5 marginalization
-$51.2^\circ$.
+\paragraph{Continuous endpoint: RMS of the picked structure.} For each arm's picked structure
+the protocol records the RMS displacement from
+\texttt{StructureMatcher(ltol=0.3, stol=1.0, angle\_tol=10, scale=False).get\_rms\_dist}
+(pymatgen's normalised RMS; no match counts as $+\infty$) and reports its empirical
+distribution function (ECDF) per arm. Table~\ref{tab:si_ecdf} gives the ECDF at six
+displacements and Figure~\ref{fig:si_ecdf} the curves for the main arms; the value at $x=1.0$
+is the fraction of picks that this loosest matcher accepts at all.
 
-\textbf{End-to-end, raw flow} (all manifolds sampled, best-of-$20$, no finisher):
-$0\%$ match; median errors lattice-parameter $0.44$, centroid $0.35$, orientation
-$13.4^\circ$.
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalised RMS displacement, the
+percentage of crystals whose pick has RMS $\le x$, as the mean over seeds of the per-seed ECDF
+(stored on a 0.05 grid). $^{a}$The random floor's continuous block reads ``missing'', as the
+step-9 clarification recorded in advance: the frozen command list matches iii-u under this
+matcher only at its LJ picks. $^{b}$The results file holds no ECDF for the MCF-A prior floor;
+its stol-1.0 picks are in Table~\ref{tab:si_mcfa}. Descriptive; no tests.}
+\label{tab:si_ecdf}
+\centering
+\footnotesize
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+arm & $x=0.1$ & 0.2 & 0.3 & 0.5 & 0.8 & 1.0 \\
+\midrule
+\inputrows{generated/si_ecdf_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.secondary.mcf10.rms_ecdf; tasks/n3_step9_clarification_2026-11-15.md (floor 'missing')
 
-\textbf{End-to-end, fully symmetry-conditioned $+$ finished} (main-text
-Table~7, strict match@$10$): best $6.9\%$ at $\text{stol}\,1.0$ ($95\%$ CI
-$3.66$--$12.54$) / $6.1\%$ at $0.8$; median atom-RMSD $1.02\!\to\!0.77$, cell-volume
-RMAD $33\%\!\to\!21\%$, cell angles within $2^\circ$ of $90^\circ$
-$16\%\!\to\!73.6\%$ (reference $74.0\%$).
+\begin{figure}[htbp]
+\centering
+\input{generated/si_ecdf_fig_testB.tex}
+\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalised RMS displacement
+(\texttt{get\_rms\_dist} at stol 1.0), mean over seeds, drawn through the stored 0.05 grid. A
+curve that ends below 100\% at $x=1$ has picks that this matcher does not accept at all.
+Values are those of Table~\ref{tab:si_ecdf}. Descriptive.}
+\label{fig:si_ecdf}
+\end{figure}
+% src: generated/si_ecdf_fig_testB.tex <- results/n3/n3_results.json sets.testB.report.table1.<arm>.secondary.mcf10.rms_ecdf
+
+\paragraph{Orientation error.} For the arms that output an asymmetric-unit orientation, the
+protocol reports the geodesic angle between the picked $R_{\text{asym}}$ and the experimental
+$R_0$, minimised over the molecule's proper point group (pymatgen's
+\texttt{PointGroupAnalyzer}, tolerance 0.3~\AA; method parameters). Table~\ref{tab:si_geodesic}
+gives its quantiles.
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): geodesic error (degrees) of the picked $R_{\text{asym}}$ to the
+experimental $R_0$, minimised over the molecule's proper point group; quantiles per seed and
+pooled over seeds ($q_{10}$ to $q_{90}$). For i-E and iii-s the picked orientation is the
+FF$^\ast$-minimised one. Descriptive.}
+\label{tab:si_geodesic}
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+arm & seed & $q_{10}$ & $q_{25}$ & median & $q_{75}$ & $q_{90}$ \\
+\midrule
+\inputrows{generated/si_geodesic_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.geodesic_deg
+
+\clearpage
+% =====================================================================
+\section{Ablations and descriptive arms}\label{si:ablations}
+% =====================================================================
+Three arms separate parts of the comparison and are reported without tests
+(Table~\ref{tab:si_ablation}). \emph{ii-S} takes MolCrystalFlow's own sampled orientations from
+the MCF-R+G checkpoints, maps each copy back to an asymmetric-unit orientation, expands each
+exactly and keeps the lowest-LJ candidate, giving one candidate per draw (``MCF orientations
+inside our exact space-group expansion''). \emph{iv-S} takes the identity copy's orientation from
+the previous architecture (iv-P) as $R_{\text{asym}}$ and expands it exactly. \emph{i-E}
+minimises all 16 OURS draws per seed with the universal interatomic potential FF$^\ast$ and picks
+the lowest FF$^\ast$ energy; it separates the learned proposal from the energy model and is
+scored in the H2 form (EXACT).
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$), primary matcher: ablations and descriptive arms. picked@1 (\%) per
+seed and seed mean $\pm$ s.d.; draw@1 and any@16 (\%); $\Delta$ = OURS $-$ arm (percentage
+points), paired over crystals, with BCa 95\% CI and the two-stage interval that also resamples
+seeds. Descriptive; no tests.}
+\label{tab:si_ablation}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+arm & selector & per seed & mean $\pm$ s.d. & draw@1 & any@16 & $\Delta$ [BCa 95\% CI] & two-stage \\
+\midrule
+\inputrows{generated/si_ablation_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.{ii-S,iv-S,i-E}
+
+\paragraph{The ii-S decomposition.} Because ii-S and OURS share the exact expansion, the H1
+component against MCF-R+G splits into two paired differences through the identity
+\begin{equation}
+\Delta(\text{OURS}-\text{MCF-R+G})=\Delta(\text{ii-S}-\text{MCF-R+G})+\Delta(\text{OURS}-\text{ii-S}),
+\end{equation}
+here \svDecTot{} = \svDecExp{} + \svDecLearn{} percentage points (pp), each term with its own
+paired BCa interval (Table~\ref{tab:si_decomp}) and no $p$-value. Since the interval of
+$\Delta(\text{OURS}-\text{ii-S})$ lies entirely above zero, the protocol's wording applies: our
+learner adds \svDecLearn{} pp \svDecLearnCI{} over MolCrystalFlow's orientations inside the same
+exact expansion (ablation estimate). The other term, \svDecExp{} pp \svDecExpCI, is the
+difference made by expanding MolCrystalFlow's own orientations exactly.
+% src: generated/si_decomp_testB.tex; tasks/n3_protocol.md:843-855 (Section 4, ii-S wording)
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): the ii-S decomposition of the H1 component against MCF-R+G.
+$\Delta$ in pp, paired over crystals, with BCa 95\% CI, the two-stage seed interval and the
+number of crystals with a nonzero paired difference. The two lower rows sum to the first.
+Descriptive; no $p$-values.}
+\label{tab:si_decomp}
+\centering
+\small
+\begin{tabular}{@{}p{5.6cm}cccc@{}}
+\toprule
+difference & $\Delta$ (pp) & BCa 95\% CI & two-stage & nonzero \\
+\midrule
+\inputrows{generated/si_decomp_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.MCF-R+G.delta_ours_minus_arm; .wording.ii_S_decomposition
+
+\paragraph{Steric basin.} For continuity with our earlier work, the steric press (80 Adam steps
+on the steric LJ energy; method parameters) is applied to the draws of OURS and of iii-p (P1),
+and a hit is a match of the pressed draw to the pressed experimental structure
+(Table~\ref{tab:si_steric}). The reference press converged for every crystal (unconverged
+references: \svStericRefUnconv). The protocol prints our earlier DEV-TEST result beside it, as
+history (DEV-TEST was used during development): \svGtwoContext.
+% src: results/n3/n3_results.json sets.testB.report.steric_basin; tasks/n3_protocol.md:752-757
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): steric basin (P1). picked@1 (\%) per seed and seed mean of each
+arm's VALSEL-chosen P1 selector; $\Delta$ (pp) paired over crystals with BCa 95\% CI and the
+two-stage interval. Descriptive; no tests.}
+\label{tab:si_steric}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{3.4cm}lcccc@{}}
+\toprule
+ & selector & per seed & mean & $\Delta$ [BCa 95\% CI] & two-stage \\
+\midrule
+\inputrows{generated/si_steric_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.steric_basin
+
+\paragraph{Descriptive contrasts around H2.} H2 was tested in its EXACT form, which scores the
+search's minimised structure against the unrelaxed experimental one. Table~\ref{tab:si_h2desc}
+gives the descriptive contrasts the protocol attaches to it: i-E against iii-s; OURS against
+iii-s on the crystals whose experimental pose FF$^\ast$ holds (anchored), loses (drifted) or does
+not converge (unresolved); on the crystals outside the potential's training data (OMC25
+non-overlap); and in the secondary BASIN form, in which each arm's pick and the experimental
+structure are both FF$^\ast$-minimised before matching. Table~\ref{tab:si_basin} gives the
+BASIN-form rates. \svBasinUnconvN{} BASIN references (the FF$^\ast$-minimised experimental
+structures) did not converge: \svBasinUnconv; none was invalid (\svBasinInvalid).
+% src: results/n3/n3_results.json sets.testB.report.{i_e_vs_h2, wording.H2_by_ff_label, h2_omc25_nonoverlap, h2_basin_reference}, table1.iii-s.h2_basin_delta
+
+\begin{table}[htbp]
+\caption{TEST-B: descriptive contrasts around H2. $\Delta$ (pp) paired over the $n$ crystals of
+each row, with BCa 95\% CI, the two-stage seed interval and the number of nonzero paired
+differences. Rows with $n<30$ are too small to interpret. The H2 test itself is in the main
+text. Descriptive; no tests.}
+\label{tab:si_h2desc}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{5.0cm}lrccr@{}}
+\toprule
+contrast & form & $n$ & $\Delta$ [BCa 95\% CI] & two-stage & nonzero \\
+\midrule
+\inputrows{generated/si_h2desc_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.{i_e_vs_h2, wording.H2_by_ff_label, h2_omc25_nonoverlap}, table1.iii-s.h2_basin_delta
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): picked@1 (\%) in the secondary BASIN form (the pick and the
+experimental structure both FF$^\ast$-minimised before matching), per seed and seed mean, beside
+the EXACT-form seed mean. iii-s is one deterministic run. Descriptive.}
+\label{tab:si_basin}
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+arm & BASIN, per seed & BASIN, mean & EXACT, mean \\
+\midrule
+\inputrows{generated/si_basin_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.h2_basin_picked1_*
+
+\clearpage
+% =====================================================================
+\section{The MolCrystalFlow fork, diagnostics and context arms}\label{si:mcfdiag}
+% =====================================================================
+\subsection{The fork}
+MolCrystalFlow\cite{zeng2026molcrystalflow} (MCF) ran from its released code at commit
+\svMcfBase{} in a fork limited to the patches the protocol permits (Table~\ref{tab:si_fork}).
+The export gate (Gate F, Section~\ref{si:health}) confirmed the patched atom-type maps on every
+exported set (\svForkSets).
+% src: tasks/n3_protocol.md:372-393 (P1-P6), 1400-1403 (A3 item 5: P6 on); results/n3/gateF.json sets.<set>.p1_maps_patched
+
+\begin{table}[htbp]
+\caption{The MolCrystalFlow fork: every change to the released code (commit \svMcfBase), as the
+protocol permits them. File and line references are to the released code.}
+\label{tab:si_fork}
+\centering
+\small
+\begin{tabular}{@{}lp{12.2cm}@{}}
+\toprule
+patch & change \\
+\midrule
+P1 & Four atom types added (Mg, As, Se, Te as indices 12--15) to the three atomic-number maps
+(\texttt{data-preprocess/thurlemann23/common.py}, \texttt{molcrystalflow/data/utils.py},
+\texttt{molcrystalflow/data/dataset.py}); inverses derived from them;
+\texttt{model.bb\_embedder.num\_atom\_types = 16} in our configuration files. \\
+P2 & Bug fix in \texttt{interpolant.corrupt\_batch}: with \texttt{trans.corrupt=False},
+\texttt{b\_trans} is set to zeros (it was unbound). \\
+P3 & MCF-R only: key \texttt{inference.gt\_lattice\_trans}. When on, the lattice and centroids
+start at the truth, are reset to it after every Euler step and are used at final assembly;
+rotations are untouched. \\
+P4 & The GPU-selection calls return device 0. \\
+P5 & \texttt{pl.seed\_everything(experiment.seed)} before the model is constructed. \\
+P6 & Speed-ups: a vectorised symmetric SO(3) prior and a scatter-softmax attention pooling,
+switched on after the equivalence checks on the cluster GPU (prior bit-identical; pooling outputs
+and input gradients within $10^{-5}$ relative). \\
+\bottomrule
+\end{tabular}
+\end{table}
+% src: tasks/n3_protocol.md:372-393 (P1-P6), 1400-1403 (P6 on, A3); method details, no results
+
+\subsection{Diagnostic (a): equivariance (PASS)}
+On every selected MCF-R, MCF-R+G and MCF-A checkpoint, with the model and inputs in float64 on
+the CPU, diagnostic (a) tests whether the network is equivariant to a common left rotation of
+all molecular frames (10 VALSEL crystals $\times$ 3 random rotations; method parameters). The
+tolerances are \svTolQ{} for the rotation-update vector, \svTolLat{} for the lattice output,
+\svTolTr{} for the translation output and \svTolR{} for the predicted rotations; independent
+per-copy rotations serve as controls and must exceed each statistic a hundredfold. The verdict
+is \svDiagAVerdict{} on every checkpoint (Table~\ref{tab:si_diaga}), and the released
+Thurlemann checkpoint, repeated for provenance, passes too.
+% src: results/n3/n3_results.json mcf_diagnostic_a; tasks/n3_protocol.md:616-633
+
+\begin{table}[htbp]
+\caption{MCF diagnostic (a), per selected checkpoint: rotation-schedule rate $s_{uR}$ (and
+$s_{uF}$ for MCF-A), verdict, the maximum deviations under a common rotation (rotation-update
+vector $q$, lattice, translation, predicted rotations $R$) and the smallest control statistic
+for each. Tolerances: $q$ \svTolQ, lattice \svTolLat, translation \svTolTr, $R$ \svTolR.}
+\label{tab:si_diaga}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}lllcccccccc@{}}
+\toprule
+ & & & \multicolumn{4}{c}{statistic} & \multicolumn{4}{c}{controls, minimum} \\
+\cmidrule(lr){4-7}\cmidrule(lr){8-11}
+checkpoint & knobs & verdict & $q$ & lattice & transl. & $R$ & $q$ & lattice & transl. & $R$ \\
+\midrule
+\inputrows{generated/si_diaga_stats.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json mcf_diagnostic_a.per_checkpoint.<ckpt>.{knobs,verdict,statistics,controls_min,tolerances}
+
+\paragraph{Why (b)--(d) are approximate.} The relative-rotation azimuth feature of MCF has a
+branch cut, and the exact C$_2$-conjugate copies of every symmetric-prior draw sit on it at
+$t=0$ (amendment A2). The 50-step sampler deviation, the largest departure from equivariance of
+the final rotations when the full sampler is run from the same prior draw and from its rotated
+copy, therefore exceeds $10^{-3}$ on all
+\svDiagAApproxN{} selected checkpoints (\svDiagAApprox; Table~\ref{tab:si_diaga2}), and by the
+rule of A2 the outputs of diagnostics (b)--(d) are labelled approximate. At the corrupted batch
+state the selected checkpoints give the harness verdict HARNESS\_CHECK (reported, not gated),
+with edges on the branch cut; the Thurlemann checkpoint, whose prior draw has none on the cut,
+passes there.
+% src: results/n3/n3_results.json mcf_diagnostic_a.{approximate_checkpoints, approximate_rule}, per_checkpoint.<ckpt>.{sampler_deviation, corrupt_batch_state}
+
+\begin{table}[htbp]
+\caption{MCF diagnostic (a), sampler and harness fields (reported, not gated): the 50-step
+sampler deviation of the predicted rotations in the native float32 run and in a float64
+replica, whether the float32 deviation exceeds $10^{-3}$ (the A2 rule that labels (b)--(d)
+approximate), the verdict at the corrupted batch state, and the edges of that state on the
+azimuth branch cut.}
+\label{tab:si_diaga2}
+\centering
+\small
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+ & \multicolumn{3}{c}{50-step sampler deviation} & \multicolumn{2}{c}{corrupted batch} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-6}
+checkpoint & float32 & float64 & $>10^{-3}$ & verdict & on cut/edges \\
+\midrule
+\inputrows{generated/si_diaga_sampler.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json mcf_diagnostic_a.per_checkpoint.<ckpt>.{sampler_deviation, sampler_deviation_threshold_1e-3, corrupt_batch_state}
+
+\subsection{Diagnostics (b)--(d) (approximate)}
+\paragraph{(b) Perfect-model ceiling (oracle, approximate).} For each crystal, $c_i$ is the Haar
+fraction of MCF's invariance group whose common rotation of the true molecular frames still
+matches the experimental structure: a \svDiagBGrid$^\circ$ grid walked at \svDiagBWalk$^\circ$ to
+the window edges for $z_\mathrm{MCF}=2$, the matching fraction of the D$_2$ elements for
+$z_\mathrm{MCF}\ge3$, and the iii-u Haar floor for $z_\mathrm{MCF}=1$. Its mean is a ceiling on
+MCF's draw@1, and $1-(1-c_i)^{16}$ on its any@16 (Table~\ref{tab:si_diagb}). The draw@1 ceiling
+does not bound LJ-picked@1 (results file: ``\svDiagBNote''), because a selector can pick
+better than a random draw.
+
+\begin{table}[htbp]
+\caption{TEST-B: MCF diagnostic (b), perfect-model ceiling (oracle item, approximate), per
+matcher and $z_\mathrm{MCF}$ (molecules in the exported MCF cell): mean $c_i$ (draw@1 ceiling,
+\%) and mean $1-(1-c_i)^{16}$ (any@16 ceiling, \%). For $z_\mathrm{MCF}=1$ the value is the
+Haar floor, as labelled. The draw@1 ceiling does not bound LJ-picked@1. Not a result.}
+\label{tab:si_diagb}
+\centering
+\small
+\begin{tabular}{@{}lcrccl@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 ceiling & any@16 ceiling & label \\
+\midrule
+\inputrows{generated/si_diagb_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.mcf_diagnostics.b.summary
+
+\paragraph{(c) Oracle-aligned score (oracle, approximate).} Each MCF-R draw is first moved by the
+element of MCF's invariance group that best aligns its frames with the true ones, and then
+matched (Table~\ref{tab:si_diagc}). The alignment uses the truth, so this is an oracle item and
+not a result. It is not computed for the \svDiagCZoneN{} crystals with $z_\mathrm{MCF}=1$, where
+it is exact by construction.
+
+\begin{table}[htbp]
+\caption{TEST-B: MCF diagnostic (c), oracle-aligned MCF-R scores (oracle item, approximate; LJ
+selector): draw@1 per seed and mean, any@16 (mean) and picked@1 per seed and mean, all in \%.
+Not a result.}
+\label{tab:si_diagc}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcrccccc@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1, per seed & draw@1 & any@16 & picked@1, per seed & picked@1 \\
+\midrule
+\inputrows{generated/si_diagc_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.mcf_diagnostics.c.matchers
+
+\paragraph{(d) Consistency (approximate).} MCF-R's unaligned draw@1 must not exceed the (b)
+ceiling beyond its bootstrap interval; an exceedance would mean that (b) is wrong. No stratum
+exceeds it under any matcher (consistent: \svDiagDConsistent; Table~\ref{tab:si_diagd}).
+
+\begin{table}[htbp]
+\caption{TEST-B: MCF diagnostic (d), consistency (approximate): MCF-R's unaligned draw@1 (\%)
+with its 95\% bootstrap interval, the (b) draw@1 ceiling (\%), and whether the draw@1 exceeds the
+ceiling.}
+\label{tab:si_diagd}
+\centering
+\small
+\begin{tabular}{@{}lcrcccc@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 & 95\% interval & ceiling & exceeds \\
+\midrule
+\inputrows{generated/si_diagd_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.mcf_diagnostics.d
+
+\subsection{Context arms: MCF-A and the prior floor}
+MCF-A is MolCrystalFlow trained and sampled with its released joint objective, generating the
+lattice and centroids as well as the orientations. It receives less information than every
+other arm and is context only: it never enters H1--H3. Its prior floor samples the refit
+lattice prior, uniform centroids and symmetric-prior rotations. The protocol reports both under
+MCF's native rule at three tolerances as well as the primary matcher (Table~\ref{tab:si_mcfa}).
+The protocol also asks for the number of MCF-A draws whose generated cell has an interplanar
+spacing below 2.5~\AA{} (which receive $e_\mathrm{LJ}=+\infty$); no named record holds that
+count for TEST-B or DEV-TEST, so it is not reported.
+% src: results/n3/n3_results.json sets.testB.report.table1.{MCF-A,MCF-A-floor}; tasks/n3_protocol.md:598-613 (spacing count requested; absent from the results file and the step record)
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): context table, MCF-A and its prior floor. picked@1 (\%) per seed
+and for the ensemble (3-model ensemble, 48 draws) under the primary matcher and MCF's rule at
+stol 0.5, 0.8 and 1.0; draw@1 and any@16 (\%) are recorded for the primary matcher only.
+Context only; no tests.}
+\label{tab:si_mcfa}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllcccc@{}}
+\toprule
+arm & selector & matcher & picked@1, per seed & ensemble & draw@1 & any@16 \\
+\midrule
+\inputrows{generated/si_mcfa_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.{MCF-A,MCF-A-floor}
+
+\clearpage
+% =====================================================================
+\section{Strata in full (main-text Table 5)}\label{si:strata}
+% =====================================================================
+Table~5 of the main text gives seed-mean picked@1 by stratum. Tables~\ref{tab:si_strata} and
+\ref{tab:si_strata_sens} give, for every stratum, level and arm, the number of crystals picked
+correctly in each seed ($k$, s0 / s1 / s2), the Wilson 95\% interval of each seed's rate, and the
+ensemble count and its Wilson interval. The random floor's $k$ is fractional because RANDOM is
+scored as its exact expectation. Levels with $n<30$ are marked ``too small to interpret''. Each
+$z_\mathrm{MCF}$ level carries MCF's diagnostic-(b) ceiling under the primary matcher, labelled
+oracle and approximate; as above, this draw@1 ceiling does not bound LJ-picked@1. The FF$^\ast$
+truth label is reported for the H2 pair only (OURS, OURS-N2 and iii-s). The sensitivity strata
+(Table~\ref{tab:si_strata_sens}) repeat the three handedness strata under the refined mirror-RMSD
+definition at thresholds of 0.1 and 0.5~\AA{} and under the parser-capped definition (200
+automorphisms) at 0.3~\AA{} (method parameters; the primary definition is refined, 0.3~\AA).
+All rows are descriptive, with no tests.
+% src: tasks/n3_protocol.md:336-358 (Section 2.6)
+
+\begingroup
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}lcccccc@{}}
+\caption{TEST-B ($n=\svN$), primary matcher: every stratum of main-text Table~5 in full. $k$: crystals
+picked correctly per seed (iii-s: one run); Wilson 95\% intervals (\%) per seed and for the
+ensemble (3-model ensemble, 48 draws). Descriptive; no tests.}
+\label{tab:si_strata}\\
+\toprule
+arm & $k$ (s0 / s1 / s2) & Wilson s0 & Wilson s1 & Wilson s2 & $k$, ensemble & Wilson, ensemble \\
+\midrule
+\endfirsthead
+\multicolumn{7}{@{}l}{Table~\thetable{} (continued)} \\
+\toprule
+arm & $k$ (s0 / s1 / s2) & Wilson s0 & Wilson s1 & Wilson s2 & $k$, ensemble & Wilson, ensemble \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_strata_testB.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_results.json sets.testB.report.table2 (main strata); sets.testB.mcf_diagnostics.b.summary.primary
+
+\begingroup
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}lcccccc@{}}
+\caption{TEST-B ($n=\svN$), primary matcher: sensitivity strata of the handedness definitions,
+in the layout of Table~\ref{tab:si_strata}. Descriptive; no tests.}
+\label{tab:si_strata_sens}\\
+\toprule
+arm & $k$ (s0 / s1 / s2) & Wilson s0 & Wilson s1 & Wilson s2 & $k$, ensemble & Wilson, ensemble \\
+\midrule
+\endfirsthead
+\multicolumn{7}{@{}l}{Table~\thetable{} (continued)} \\
+\toprule
+arm & $k$ (s0 / s1 / s2) & Wilson s0 & Wilson s1 & Wilson s2 & $k$, ensemble & Wilson, ensemble \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_strata_sens_testB.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_results.json sets.testB.report.table2 (sensitivity.* strata)
+
+\clearpage
+% =====================================================================
+\section{Representability in full (main-text Table 2)}\label{si:tabler}
+% =====================================================================
+Table~R counts the crystals whose \emph{true} structure each representation can emit, before
+any sampling. The frozen wording of the protocol (its Section~5), with the TEST-B counts, reads:
+``\svTRText'' The MolCrystalFlow paper describes a mixed-handedness crystal structure
+prediction scenario whose code is not released at the commit we used (\svMcfBase).
+
+\paragraph{(a) Exact expansion.} Column (a), exact expansion with the full space-group operations
+(OURS and the classical arms), represents every TEST-B crystal by construction, because build
+step~2 keeps only crystals whose expansion reproduces them: it removed the crystals that are
+not $Z'=1$ general-position and those whose expansion orbit failed (Table~\ref{tab:si_build}).
+On DEV-TEST, column (a) is computed rather than true by construction, and it covers every
+crystal.
+No representability claim is made against MolCrystalFlow's per-copy representation, column (b),
+which also covers the $Z'>1$ and special-position crystals our design excludes (\svDevNotEligible{}
+of the \svDevOThree{} parsed crystals of the development corpus).
+
+\paragraph{(c) The released MCF driver: the homochiral approximant.} The released MCF crystal
+structure prediction driver uses one conformer and one handedness for all copies. Column (c)
+is its best homochiral approximant: the true lattice and centroids, with each copy made by an
+improper operation replaced by the RMSD-optimal proper rotation onto its mirror image, found by
+element-blocked ICP. The protocol fixed 16 starts (the four sign-diagonal rotations and twelve
+seeded random rotations); amendment A2 added the best automorphism rotation as a 17th start,
+and the 16-start column is reported beside it. The extra start lowered the optimum for
+\svTRAutoImproved{} TEST-B crystals (largest RMSD gain \svTRMaxGain~\AA), and the two columns
+differ in outcome for \svTRChangedHalf{} crystals at stol 0.5 and for \svTRChangedPrimary{}
+under the primary matcher: the approximant matches \svTRQ/\svTRMixed{} mixed-handedness crystals at
+stol 0.5 with 17 starts and \svTRQSixteen/\svTRMixed{} with the 16 frozen starts
+(Table~\ref{tab:si_tabler_c}). With the 16 frozen starts alone the frozen sentence reads:
+``\svTRTextSixteen''
+
+\paragraph{(d) The legacy det$+$1 pipeline: keep flag and oracle rebuild.} Column (d) counts
+the crystals the legacy pipeline kept (the part-file keep flag); the frozen sentence uses this
+count (\svTRN{} not representable, \svTRM{} of them centrosymmetric). For the kept crystals,
+\texttt{n3\_legacy\_oracle.py} rebuilds the structure with a fresh registry and matches it to
+the CIF; that rebuild match is reported separately (``oracle'' columns of
+Table~\ref{tab:si_tabler_abd}). Counting kept crystals whose rebuild misses the primary
+matcher as unrepresentable as well gives \svTRNOracle{} (\svTRMOracle{} centrosymmetric). Every
+Table~R job finished within its \svTRTimeout-s limit; timeouts, deterministic failures, errors
+and missing rows sum to \svTRBad{} on TEST-B and \svTRBadDev{} on DEV-TEST.
+% src: results/n3/table_r_testB.json, table_r_devtest.json (wording, c_diagnostics, rows, corpus_context, timing_s); tasks/n3_protocol.md:876-910
+
+\begin{table}[htbp]
+\caption{Table~R in full, columns (a), (b) and (d): crystals whose true structure the
+representation can emit, under the primary matcher and MCF's rule at stol 0.5 and 0.8. (a) exact
+expansion with the full operations; (b) MCF's per-copy representation; (d) the legacy det$+$1
+pipeline: the part-file keep flag, and the oracle rebuild of the kept crystals. DEV-TEST rows:
+used during development, not confirmatory.}
+\label{tab:si_tabler_abd}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrcccccccccc@{}}
+\toprule
+ & & \multicolumn{3}{c}{(a) exact expansion} & \multicolumn{3}{c}{(b) MCF per copy} & \multicolumn{4}{c}{(d) legacy det$+$1} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}\cmidrule(lr){9-12}
+ & & & & & & & & keep & \multicolumn{3}{c}{oracle rebuild} \\
+\cmidrule(lr){10-12}
+row & $n$ & primary & 0.5 & 0.8 & primary & 0.5 & 0.8 & flag & primary & 0.5 & 0.8 \\
+\midrule
+\inputrows{generated/si_tabler_abd.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/table_r_testB.json, table_r_devtest.json rows.<row>.{a,b,d}
+
+\begin{table}[htbp]
+\caption{Table~R in full, column (c): the best homochiral approximant of the released MCF
+driver, with 17 starts (16 frozen plus the best automorphism rotation, amendment A2) and with
+the 16 frozen starts alone, under the primary matcher and MCF's rule at stol 0.5 and 0.8.
+``no improper op'': crystals without an improper operation, which (c) represents as (a) does;
+``multiple optima'': crystals with tied distinct optima, scored as a match if any matches.
+DEV-TEST rows: used during development, not confirmatory.}
+\label{tab:si_tabler_c}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrccccccrr@{}}
+\toprule
+ & & \multicolumn{3}{c}{(c), 17 starts} & \multicolumn{3}{c}{(c), 16 frozen starts} & & \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-8}
+row & $n$ & primary & 0.5 & 0.8 & primary & 0.5 & 0.8 & no improper op & multiple optima \\
+\midrule
+\inputrows{generated/si_tabler_c.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/table_r_testB.json, table_r_devtest.json rows.<row>.{c,c_frozen16}
+
+\begin{table}[htbp]
+\caption{Construction of TEST-B and SEL from the pool of CIFs: crystals remaining after each
+build step, and the removals of build steps 2 and 3. Build step 2 is the eligibility filter
+behind column (a).}
+\label{tab:si_build}
+\centering
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+step & crystals \\
+\midrule
+\inputrows{generated/si_build.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/table_r_testB.json corpus_context.pool.build_counts, build_step2
+
+\clearpage
+% =====================================================================
+\section{DEV-TEST}\label{si:devtest}
+% =====================================================================
+DEV-TEST holds \svNDev{} crystals that were used during development (disclosures (a)--(e),
+Section~\ref{si:disclosures}). Every arm that ran on TEST-B ran on it with the same frozen
+configuration, and its rows form a secondary continuity record. Every table in this section is
+labelled ``used during development, not confirmatory''; none carries a test, and the frozen
+report computes no hypothesis family on DEV-TEST. The OURS and OURS-N2 rows reuse the draws
+stored during development, re-matched from their rotations.
+% src: results/n3/n3_results.json sets.devtest.{role,families}; tasks/n3_protocol.md:332-334 (Section 2.5)
+
+\begin{table}[htbp]
+\caption{\devlabel, primary matcher: every arm. picked@1 (\%) per seed and seed mean $\pm$
+s.d.; $\Delta$ = OURS $-$ arm (pp, paired over crystals) with BCa 95\% CI and the two-stage
+interval; draw@1 and any@16 (\%). Rows below the rule: ablations, descriptive and context arms.
+No tests.}
+\label{tab:si_dev_t1}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+arm & selector & per seed & mean $\pm$ s.d. & $\Delta$ [BCa 95\% CI] & two-stage & draw@1 & any@16 \\
+\midrule
+\inputrows{generated/si_t1_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1
+
+\begin{table}[htbp]
+\caption{\devlabel: secondary matchers, in the layout of Table~\ref{tab:si_secondary}. No
+tests.}
+\label{tab:si_dev_secondary}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+ & & \multicolumn{2}{c}{stol 0.5} & \multicolumn{2}{c}{stol 0.8} \\
+\cmidrule(lr){3-4}\cmidrule(lr){5-6}
+arm & selector & per seed & ens. & per seed & ens. \\
+\midrule
+\inputrows{generated/si_secondary_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.secondary
+
+\begin{table}[htbp]
+\caption{\devlabel: ensembles and any-of-all-draws, in the layout of
+Table~\ref{tab:si_ensemble}. No tests.}
+\label{tab:si_dev_ensemble}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+arm & ensemble & picked@1 & ensemble picked@1 & any@16 & any, all draws \\
+\midrule
+\inputrows{generated/si_ensemble_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.{ensemble_*,any_all_pct}
+
+\begin{table}[htbp]
+\caption{\devlabel: ECDF of the picked structure's normalised RMS displacement, in the layout and
+with the notes of Table~\ref{tab:si_ecdf}. No tests.}
+\label{tab:si_dev_ecdf}
+\centering
+\footnotesize
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+arm & $x=0.1$ & 0.2 & 0.3 & 0.5 & 0.8 & 1.0 \\
+\midrule
+\inputrows{generated/si_ecdf_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.secondary.mcf10.rms_ecdf
+
+\begin{table}[htbp]
+\caption{\devlabel: geodesic orientation error (degrees), in the layout of
+Table~\ref{tab:si_geodesic}.}
+\label{tab:si_dev_geodesic}
+\centering
+\small
+\begin{tabular}{@{}llccccc@{}}
+\toprule
+arm & seed & $q_{10}$ & $q_{25}$ & median & $q_{75}$ & $q_{90}$ \\
+\midrule
+\inputrows{generated/si_geodesic_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.geodesic_deg
+
+\begin{table}[htbp]
+\caption{\devlabel: ablations and descriptive arms, in the layout of
+Table~\ref{tab:si_ablation}. No tests.}
+\label{tab:si_dev_ablation}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}llcccccc@{}}
+\toprule
+arm & selector & per seed & mean $\pm$ s.d. & draw@1 & any@16 & $\Delta$ [BCa 95\% CI] & two-stage \\
+\midrule
+\inputrows{generated/si_ablation_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.{ii-S,iv-S,i-E}
+
+\begin{table}[htbp]
+\caption{\devlabel: steric basin (P1), in the layout of Table~\ref{tab:si_steric}; unconverged
+references: \svStericRefUnconvDev. No tests.}
+\label{tab:si_dev_steric}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{3.4cm}lcccc@{}}
+\toprule
+ & selector & per seed & mean & $\Delta$ [BCa 95\% CI] & two-stage \\
+\midrule
+\inputrows{generated/si_steric_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.steric_basin
+
+\begin{table}[htbp]
+\caption{\devlabel: descriptive contrasts around H2, in the layout of
+Table~\ref{tab:si_h2desc} (the FF$^\ast$-label split is computed for TEST-B only). Unconverged
+BASIN references: \svBasinUnconvNDev{} (\svBasinUnconvDev). No tests.}
+\label{tab:si_dev_h2desc}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}p{5.0cm}lrccr@{}}
+\toprule
+contrast & form & $n$ & $\Delta$ [BCa 95\% CI] & two-stage & nonzero \\
+\midrule
+\inputrows{generated/si_h2desc_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.{i_e_vs_h2, h2_omc25_nonoverlap, h2_basin_reference}, table1.iii-s.h2_basin_delta
+
+\begin{table}[htbp]
+\caption{\devlabel: BASIN-form picked@1 (\%), in the layout of Table~\ref{tab:si_basin}.}
+\label{tab:si_dev_basin}
+\centering
+\small
+\begin{tabular}{@{}lccc@{}}
+\toprule
+arm & BASIN, per seed & BASIN, mean & EXACT, mean \\
+\midrule
+\inputrows{generated/si_basin_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.h2_basin_picked1_*
+
+\begingroup
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{longtable}{@{}p{3.1cm}lrccccccccc@{}}
+\caption{\devlabel: seed-mean picked@1 (\%) by stratum for the Table~1 arms (the layout of
+Table~5 of the main text), including the sensitivity strata. $^{*}$Fewer than 30 crystals: too
+small to interpret. The FF$^\ast$ truth label is reported for the H2 pair only. No tests.}
+\label{tab:si_dev_strata}\\
+\toprule
+stratum & & $n$ & floor & iii-u & iii-p & iii-s & iv-P & MCF-R & MCF-R+G & OURS & OURS-N2 \\
+\midrule
+\endfirsthead
+\multicolumn{12}{@{}l}{Table~\thetable{} (continued)} \\
+\toprule
+stratum & & $n$ & floor & iii-u & iii-p & iii-s & iv-P & MCF-R & MCF-R+G & OURS & OURS-N2 \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_strata_devtest.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_results.json sets.devtest.report.table2
+
+\begin{table}[htbp]
+\caption{\devlabel: MCF diagnostic (b), perfect-model ceiling (oracle item, approximate), in the
+layout of Table~\ref{tab:si_diagb}. DEV-TEST has no $z_\mathrm{MCF}=1$ crystal. The draw@1
+ceiling does not bound LJ-picked@1. Not a result.}
+\label{tab:si_dev_diagb}
+\centering
+\small
+\begin{tabular}{@{}lcrccl@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 ceiling & any@16 ceiling & label \\
+\midrule
+\inputrows{generated/si_diagb_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.mcf_diagnostics.b.summary
+
+\begin{table}[htbp]
+\caption{\devlabel: MCF diagnostic (c), oracle-aligned MCF-R scores (oracle item, approximate),
+in the layout of Table~\ref{tab:si_diagc}. Not a result.}
+\label{tab:si_dev_diagc}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lcrccccc@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1, per seed & draw@1 & any@16 & picked@1, per seed & picked@1 \\
+\midrule
+\inputrows{generated/si_diagc_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.mcf_diagnostics.c.matchers
+
+\begin{table}[htbp]
+\caption{\devlabel: MCF diagnostic (d), consistency (approximate), in the layout of
+Table~\ref{tab:si_diagd}; consistent: \svDiagDConsistentDev.}
+\label{tab:si_dev_diagd}
+\centering
+\small
+\begin{tabular}{@{}lcrcccc@{}}
+\toprule
+matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 & 95\% interval & ceiling & exceeds \\
+\midrule
+\inputrows{generated/si_diagd_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.mcf_diagnostics.d
+
+\begin{table}[htbp]
+\caption{\devlabel: context table, MCF-A and its prior floor, in the layout of
+Table~\ref{tab:si_mcfa}. Context only; no tests.}
+\label{tab:si_dev_mcfa}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lllcccc@{}}
+\toprule
+arm & selector & matcher & picked@1, per seed & ensemble & draw@1 & any@16 \\
+\midrule
+\inputrows{generated/si_mcfa_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.{MCF-A,MCF-A-floor}
+
+\clearpage
+% =====================================================================
+\section{The VALSEL selection grids}\label{si:valsel}
+% =====================================================================
+Every choice the protocol leaves open was made on VALSEL (VAL then SEL, \svValselN{} crystals),
+before any TEST-B or DEV-TEST input reached the cluster, and frozen in the step-6 selection
+record (SHA-256 \svSelSha, commit \svSelCommit). Table~\ref{tab:si_sel_summary} lists every
+frozen choice and the criterion that decided it; Tables~\ref{tab:si_sel_a} and
+\ref{tab:si_sel_b} give the full grids. Counts are summed over the three seeds (method
+parameter): ``hits'' are seed-summed VALSEL picks that match under the primary matcher, draw@1
+is the seed-summed expected number of matches of a random draw, and any@16 the seed-summed
+number of crystals with at least one matching draw.
+
+\paragraph{How ties were broken.} Each grid was decided by its first criterion unless candidates
+tied on it, and ties went down the preregistered order printed with each grid. For selectors the
+last key is the preference LJ $>$ RESID $>$ MODE@$r$ (smaller $r$ first) $>$ RANDOM; it decided
+iii-u (LJ, MODE@0.25 and MODE@0.5 tied on hits) and iv-P Stage~A (no selector scored a hit). The
+MCF-R+G rate $s_{uR}$ was decided by draw@1 after two cells tied on hits. For checkpoints the
+order is VALSEL picked@1, then draw@1, then any@16, and the final tie-break is the lower
+fixed-draw VAL loss (for MCF-A Stage~1: any-of-10 at stol 1.0, then at stol 0.8, then MCF's
+logged validation loss). The final tie-break decided MCF-R seeds 0 and 1, MCF-R+G seed 1 and all
+three iv-P seeds; in each of those cases the candidates were tied on every VALSEL criterion. For
+the MCF arms the checkpoint labelled ``last'' is the latest-epoch top-3 checkpoint, not
+final-epoch weights (Section~\ref{si:mcfckpt}).
+% src: results/n3/n3_selection.json valsel_cell_scores.<grid>.{stage_a,stage_b}.{tie,decided_by}; tasks/n3_protocol.md:251-276,1530-1541
+
+\begingroup
+\singlespacing
+\footnotesize
+\begin{longtable}{@{}p{4.4cm}p{6.6cm}p{4.2cm}@{}}
+\caption{Every frozen VALSEL choice and what decided it (step-6 selection record).}
+\label{tab:si_sel_summary}\\
+\toprule
+choice & frozen value & decided by \\
+\midrule
+\endfirsthead
+\toprule
+choice & frozen value & decided by \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_sel_summary.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_selection.json frozen, valsel_cell_scores
+
+\begingroup
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}llccccl@{}}
+\caption{VALSEL grids for selectors and sampler settings (Stage~A and single-stage grids),
+\svValselN{} crystals, counts summed over three seeds. The score column is the grid's first
+criterion (named in each header): seed-summed hits, any-of-10 at stol 1.0 (MCF-A Stage~2) or
+picked@1 at stol 1.0 (MCF-A Stage~3). $s_{uR}$, $s_{uF}$: MCF's rotation- and frame-schedule
+rates; ``pref.'': the cell preferred on ties.}
+\label{tab:si_sel_a}\\
+\toprule
+cell & selector & draw@1 & any@16 & score & per seed & \\
+\midrule
+\endfirsthead
+\multicolumn{7}{@{}l}{Table~\thetable{} (continued)} \\
+\toprule
+cell & selector & draw@1 & any@16 & score & per seed & \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_sel_stagea.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_selection.json valsel_cell_scores.<grid>.stage_a
+
+\begingroup
+\singlespacing
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{longtable}{@{}lccccl@{}}
+\caption{VALSEL grids for checkpoints (Stage~B and MCF-A Stage~1), per seed. c1--c3 are the
+grid's criteria in tie order (named in each header), then the validation loss used as the final
+tie-break (fixed-draw VAL loss; for MCF-A, MCF's logged validation loss). Checkpoint labels are
+MCF's epoch and step (``last'': the latest-epoch top-3 checkpoint) or iv-P's epoch.}
+\label{tab:si_sel_b}\\
+\toprule
+seed: checkpoint & c1 & c2 & c3 & validation loss & \\
+\midrule
+\endfirsthead
+\multicolumn{6}{@{}l}{Table~\thetable{} (continued)} \\
+\toprule
+seed: checkpoint & c1 & c2 & c3 & validation loss & \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+\inputrows{generated/si_sel_stageb.tex}
+\end{longtable}
+\endgroup
+% src: results/n3/n3_selection.json valsel_cell_scores.<grid>.stage_b
+
+\begin{table}[htbp]
+\caption{iv-P learning rate: the lowest fixed-draw VAL loss of the seed-0 run within the window
+(epochs 1--\svIvPWindow), and whether the run was still improving by the protocol's 2\% rule
+(which would have widened the window; late extension: \svIvPLate). The run at $10^{-3}$
+diverged in epoch 1, and its non-finite minimum ranks last (step-5b clarifications).}
+\label{tab:si_sel_ivp}
+\centering
+\small
+\begin{tabular}{@{}lccl@{}}
+\toprule
+learning rate & lowest VAL loss in window & improving & \\
+\midrule
+\inputrows{generated/si_sel_ivp_lr.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_selection.json valsel_cell_scores.ivP_window
+
+\clearpage
+% =====================================================================
+\section{Run health and gates}\label{si:health}
+% =====================================================================
+\paragraph{FF$^\ast$ retries.} The protocol retries a failed FF$^\ast$ call once, unbatched, in a
+fresh process, and calls a failure that recurs deterministic. \svFFRetryTotal{} structure
+evaluations were retried, all in iii-s (\svFFRetryT{} on TEST-B, \svFFRetryD{} on DEV-TEST), all
+after CUDA out-of-memory errors in batched calls of \svFFRetryBatch{} structures, and every retry
+succeeded: \svFFDet{} deterministic FF$^\ast$ failures in any run. No iii-s or i-E crystal lacked
+a finite minimum.
+% src: tasks/n3_step4_record_2026-10-11.md:871-872 (retries), 783-793, 824-827; macros in generated/si_numbers.tex
+
+\paragraph{MCF inference health.} All \svMcfCalls{} MCF inference calls on TEST-B and DEV-TEST
+passed their checks with \svMcfNonfiniteDraws{} non-finite draws and finite residuals, so no
+non-finite-residual rule was invoked. One draw of \svBranchOf{} (MCF-R, TEST-B, seed 0,
+checkpoint \svBranchCkpt) fell on the azimuth branch cut; the other \svBranchClean{} calls had
+none. All \svLJBundles{} LJ bundles of the MCF arms had \svLJDetFail{} deterministic energy
+failures and \svLJNonfinite{} non-finite energies.
+% src: tasks/n3_step4_record_2026-10-11.md:767-771; macros in generated/si_numbers.tex
+
+\paragraph{X--H normalisation.} Every FF$^\ast$ evaluation uses a copy of the conformer whose
+C--H, N--H and O--H bonds are moved to the neutron-normalised lengths\cite{allen2010xh} (the
+scored structure keeps
+the experimental hydrogen positions). The protocol asks for the number of normalised bonds per
+set. The step record holds it for the VAL runs only: the iii-s VAL search normalised \svXHCH{}
+C--H, \svXHNH{} N--H and \svXHOH{} O--H bonds (\svXHShort{} of them shortened), and the i-E smoke
+run on \svXHIeN{} VAL crystals \svXHIeCH{} C--H bonds. For TEST-B and DEV-TEST the counts are not
+recorded in the results file or the step record, so they are not reported.
+% src: tasks/n3_step4_record_2026-10-11.md:537-538, 644; tasks/n3_protocol.md:696-702. TEST-B/DEV-TEST counts: absent from every named record (registered output not produced).
+
+\paragraph{Failures.} No crystal was an arm failure in any arm, the scorer recorded no
+deterministic matcher failure, and no deterministic energy failure appears in the bundles that
+record the field (Tables~\ref{tab:si_fail} and \ref{tab:si_fail_dev}). The \svIiisArmFail{} iii-s candidates on TEST-B (\svIiisArmFailDev{} on
+DEV-TEST) with the scorer's \texttt{arm\_fail} status are candidate slots that the arm marked
+invalid or that are not finite; the scorer counts them as non-matches
+(\texttt{scripts/n3\_score.py}), and every crystal still had a finite iii-s pick.
+% src: results/n3/n3_results.json sets.<set>.report.table1.<arm>.{arm_miss_refcodes*,det_fail_*,energy_det_fail_*,arm_fail_draws}; scripts/n3_score.py:743-746
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): failure lists per arm. Arm-failure crystals (MISS, listed by
+refcode); deterministic matcher failures (count and list); deterministic energy failures per seed
+(``not recorded'' where the arm's bundles carry no such field); candidates with the scorer's
+\texttt{arm\_fail} status.}
+\label{tab:si_fail}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrlll@{}}
+\toprule
+arm & arm-failure crystals & det.\ matcher & list & det.\ energy (per seed) & \texttt{arm\_fail} draws \\
+\midrule
+\inputrows{generated/si_fail_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>
+
+\begin{table}[htbp]
+\caption{\devlabel: failure lists per arm, in the layout of Table~\ref{tab:si_fail}.}
+\label{tab:si_fail_dev}
+\centering
+\footnotesize
+\begin{tabular}{@{}llrlll@{}}
+\toprule
+arm & arm-failure crystals & det.\ matcher & list & det.\ energy (per seed) & \texttt{arm\_fail} draws \\
+\midrule
+\inputrows{generated/si_fail_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>
+
+\paragraph{FF$^\ast$ truth anchoring and unconverged references.} Each experimental structure was
+minimised under FF$^\ast$ (UMA s-1p1\cite{wood2025uma}, OMC task; fairchem-core
+\svFairchem\cite{fairchem2026core}; settings \svFFSettings) and labelled anchored (converged and still matching), drifted (converged and no
+longer matching) or unresolved (not converged). The VALSEL rate fixed the H2 form (EXACT, since
+anchoring was at least 50\%; VAL alone \svAnchValOnly\%), and the TEST-B and DEV-TEST rates are
+reported as recorded (Table~\ref{tab:si_anchor}). The unconverged TEST-B references, which are
+the unresolved crystals, are \svBasinUnconv{} (DEV-TEST: \svBasinUnconvDev).
+% src: results/n3/n3_results.json h2_form, sets.<set>.ff_truth_anchoring, sets.<set>.report.h2_basin_reference
+
+\begin{table}[htbp]
+\caption{FF$^\ast$ truth anchoring: crystals, anchoring rate (\%), labels, minimisations with no
+minimum, and the median drift of the minimised experimental orientation (degrees). The VALSEL row
+fixed the H2 form before any arm's candidate was minimised.}
+\label{tab:si_anchor}
+\centering
+\footnotesize
+\begin{tabular}{@{}p{3.2cm}rcrrrrc@{}}
+\toprule
+set & $n$ & anchoring (\%) & anchored & drifted & unresolved & no min. & drift ($^\circ$) \\
+\midrule
+\inputrows{generated/si_anchor.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json h2_form; sets.testB.ff_truth_anchoring; sets.devtest.ff_truth_anchoring
+
+\paragraph{Elements outside OMC25.} FF$^\ast$ ran on every crystal, whatever its elements. The
+element set of OMC25\cite{gharakhanyan2026omc25}, the potential's organic-crystal training set, is \{\svOmcElements\};
+\svOmcOutside{} TEST-B crystals and \svOmcOutsideDev{} DEV-TEST crystal contain other elements
+(Table~\ref{tab:si_omc}).
+% src: results/n3/omc25_outside_elements_testB.json, omc25_outside_elements_devtest.json
+
+\begin{table}[htbp]
+\caption{Crystals with elements outside OMC25's element set, by refcode.}
+\label{tab:si_omc}
+\centering
+\small
+\begin{tabular}{@{}ll@{\hspace{2.5em}}ll@{}}
+\toprule
+\multicolumn{2}{@{}l}{TEST-B} & \multicolumn{2}{l}{DEV-TEST (not confirmatory)} \\
+refcode & elements & refcode & elements \\
+\midrule
+\multicolumn{2}{@{}l}{\begin{tabular}[t]{@{}ll@{}}\inputrows{generated/si_omc25_testB.tex}\end{tabular}} &
+\multicolumn{2}{l}{\begin{tabular}[t]{@{}ll@{}}\inputrows{generated/si_omc25_devtest.tex}\end{tabular}} \\
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/omc25_outside_elements_{testB,devtest}.json crystals
+
+\paragraph{Gates F and C.} Gate F checked the MCF export on every set: every crystal exported
+(F1), reassembled within $10^{-3}$~\AA{} and matched its truth under the primary matcher (F2),
+and its LJ energy through the adapter agreed with ours to $10^{-4}$ relative (F5, gated on all
+sets but TRAIN); the handedness-parity check F3 is reported and not gated, and F4, the
+per-copy feature check, lists the crystals whose bond perception hit the iteration cap
+(Table~\ref{tab:si_gatef}). Gate C checked
+the harness before any MCF training. Gate C-a reproduced MCF's published match rates with its
+released checkpoint trained on the Thurlemann
+data\cite{zeng2026molcrystalflowdata,thurlemann2023regularized} (Table~\ref{tab:si_gateca}): MCF's own scorer and our emulation
+of its reading agreed on every outcome (\svGcaAgree{} on the TEST split, \svGcaAgreeVal{} on
+VAL), and the medians over five runs lie within $\pm5$ percentage points of the values read from
+MCF's Fig.~3a at stol 0.9 and 1.0 (reference values, approximate). Gate C-b checked that the
+patches leave the computation unchanged: bitwise on the CPU (\svGcbCpu{} tensors), and on the
+GPU by the noise envelope of amendment A4 (\svGcbRuns{} runs; the patched statistic \svGcbStat{}
+is not the largest, the unpatched maximum being \svGcbMaxUn; false-failure bound \svGcbBound).
+Gate C-c checked the clamp of P3: \svGcc. Every gate passed (after the corrections of amendment
+A4 for Gate C).
+% src: results/n3/gateF.json; results/n3/gateC.json; tasks/n3_protocol.md:1423-1518 (A4)
+
+\begin{table}[htbp]
+\caption{Gate F, the MCF export gate, per set: crystals, exported (F1), reassembled and matched
+under the primary matcher (F2), handedness parity agreeing up to relabelling (F3, not gated),
+bond-perception cap hits (F4), LJ adapter agreement within $10^{-4}$ relative (F5), and the
+gate verdict.}
+\label{tab:si_gatef}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrrrlp{3.6cm}l@{}}
+\toprule
+set & $n$ & F1 & F2 & F3 & F4 cap hits & F5 & verdict \\
+\midrule
+\inputrows{generated/si_gatef.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/gateF.json sets.<set>
+
+\begin{table}[htbp]
+\caption{Gate C-a: any-of-$k$ match rate (\%) of MCF's released Thurlemann checkpoint on its own
+benchmark splits, median of five runs, scored by MCF's own scorer, by our emulation of MCF's
+reading, and by our scorer's own reading (an observation, not a claim), beside the value read
+from MCF's published Fig.~3a (reference, approximate). ``within 5 pp'': check (ii).}
+\label{tab:si_gateca}
+\centering
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}p{3.0cm}cccccc@{}}
+\toprule
+split & stol & MCF scorer & MCF reading, ours & own reading & Fig.~3a & $\pm$5 pp \\
+\midrule
+\inputrows{generated/si_gateca.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/gateC.json C-a.labels.{test,val}
+
+\paragraph{Scoring provenance.} Each set was scored once, at step 9, by one Slurm job in one
+environment (\svScoreEnv), running only the frozen commands; no job stopped and none restarted
+(Table~\ref{tab:si_prov}).
+% src: results/n3/n3_results.json sets.<set>.provenance, one_scoring_environment
+
+\begin{table}[htbp]
+\caption{Step-9 scoring jobs: Slurm job, node, first and last event (cluster local time),
+frozen commands done of started, checksummed output files, and stops.}
+\label{tab:si_prov}
+\centering
+\footnotesize
+\begin{tabular}{@{}llllllrl@{}}
+\toprule
+set & job & node & first & last & commands & files & stops \\
+\midrule
+\inputrows{generated/si_provenance.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.<set>.provenance
+
+\clearpage
+% =====================================================================
+\section{Compute}\label{si:compute}
+% =====================================================================
+The protocol registers per-crystal compute for each arm: sampling-plus-selection wall-clock,
+LJ and FF$^\ast$ evaluation counts, and training cost. The results file records OURS (and
+OURS-N2, which shares its sampler): \svOursSec~s per crystal per seed (median) for sampling and
+selection, with \svOursLj{} LJ evaluations per crystal. Every other field, for every other arm,
+has no value in the results file or the step record and is printed as ``not recorded''
+(Table~\ref{tab:si_compute}); no value is supplied for it. The step record logs the elapsed time
+of each Slurm job, but a job ran several arms and sets, so those times cannot be assigned to an
+arm and a crystal and are not converted here. The protocol registered no compute comparison, and
+none is made.
+% src: results/n3/n3_results.json sets.<set>.report.table1.<arm>.compute; tasks/n3_step4_record_2026-10-11.md (job-level elapsed times only)
+
+\begin{table}[htbp]
+\caption{TEST-B ($n=\svN$): per-crystal compute, field by field. ``not recorded'': the field
+has no value in any named record.}
+\label{tab:si_compute}
+\centering
+\footnotesize
+\begin{tabular}{@{}l>{\centering}p{2.6cm}>{\centering}p{2.3cm}>{\centering}p{2.3cm}>{\centering\arraybackslash}p{2.0cm}@{}}
+\toprule
+arm & sampling + selection, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training cost \\
+\midrule
+\inputrows{generated/si_compute_testB.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.compute
+
+\begin{table}[htbp]
+\caption{\devlabel: per-crystal compute, in the layout of Table~\ref{tab:si_compute}. The OURS
+rows reuse stored development draws, so no sampling time was recorded.}
+\label{tab:si_compute_dev}
+\centering
+\footnotesize
+\begin{tabular}{@{}l>{\centering}p{2.6cm}>{\centering}p{2.3cm}>{\centering}p{2.3cm}>{\centering\arraybackslash}p{2.0cm}@{}}
+\toprule
+arm & sampling + selection, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training cost \\
+\midrule
+\inputrows{generated/si_compute_devtest.tex}
+\bottomrule
+\end{tabular}
+\end{table}
+% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.compute
+
+\clearpage
+% =====================================================================
+\section{The data sets}\label{si:dataset}
+% =====================================================================
+TRAIN ($n=\svNTrain$) and TEST-B ($n=\svN$) are drawn from the Cambridge Structural
+Database\cite{groom2016csd}; Figure~\ref{fig:si_dataset} compares their composition. The figure
+shows set-level distributions only, so no structure is redistributed.
+% src: results/n3/gateF.json sets.train.n; results/n3/n3_results.json sets.testB.report.n; scripts/fig_n3_dataset.py (figure inputs and checks)
+
+\begin{figure}[htbp]
+\centering
+\figorplaceholder{fig_n3_dataset}{0.82\linewidth}
+\caption{TRAIN versus TEST-B, percent of crystals: (a) space-group class (centrosymmetric,
+Sohncke, other); (b) number of space-group operations in the CSD cell, $K$ ($=Z$ for $Z'=1$);
+(c) heavy atoms per molecule; (d) lattice lengths $a$, $b$, $c$ in the CSD setting (box:
+quartiles; line: median; whiskers: 5th to 95th percentile); (e) elements present besides C and
+H. Generated by \texttt{scripts/fig\_n3\_dataset.py} from the frozen set caches; the TEST-B class
+and $K$ counts are checked against \texttt{results/n3/labels\_summary\_testB.json}.}
+\label{fig:si_dataset}
+\end{figure}
+% src: scripts/fig_n3_dataset.py:1-14,119-128 (panels, whiskers 5-95); figures/fig_n3_dataset.{pdf,png} (built by another agent)
+
+\clearpage
+% =====================================================================
+\section{Representative examples}\label{si:examples}
+% =====================================================================
+Figure~\ref{fig:si_examples} shows identified TEST-B crystals that OURS reproduces and that it
+misses. They were chosen by a fixed rule, with no hand-picking: in the frozen TEST-B order, the
+first three crystals whose seed-0 OURS pick matches under the primary matcher and the first
+three whose pick does not. Each panel is built from the frozen seed-0 OURS draws and the
+step-9 scorer's rows for them (\texttt{results/n3/private/draws/ours\_s0\_testB.pt} and
+\texttt{results/n3/private/match/ours\_s0\_testB\_\_primary.jsonl}, both checked against their
+recorded hashes); the pick is the scorer's own LJ selection, and the figure script checks that
+the matches it draws reproduce the frozen outcome.
+% src: scripts/fig_n3_examples.py:1-25 (selection rule, inputs, checks); figures/fig_n3_examples.{pdf,png} (built by another agent; guarded by \figorplaceholder)
+
+\begin{figure}[htbp]
+\centering
+\figorplaceholder{fig_n3_examples}{0.72\linewidth}
+\caption{Representative TEST-B crystals, seed 0, LJ pick, primary matcher: the first three
+matches (left) and the first three non-matches (right) in the frozen TEST-B order. Each panel
+shows the $K$ copies of the cell projected along its shortest axis, heavy atoms only: the
+experimental structure (thick grey) and the exact expansion of the picked $R_{\text{asym}}$
+(thin colour). RMS: the primary matcher's \texttt{get\_rms\_dist} (normalised), recomputed for
+display for matches only; $\Delta\theta$: geodesic angle between the picked and the
+experimental $R_{\text{asym}}$. Generated by \texttt{scripts/fig\_n3\_examples.py}.}
+\label{fig:si_examples}
+\end{figure}
+% src: scripts/fig_n3_examples.py; figures/fig_n3_examples.* (guarded by \IfFileExists via \figorplaceholder)
 
 \bibliography{references}
 

@@ -8,7 +8,7 @@
 \providecommand*\mcitethebibliography{\thebibliography}
 \csname @ifundefined\endcsname{endmcitethebibliography}
   {\let\endmcitethebibliography\endthebibliography}{}
-\begin{mcitethebibliography}{20}
+\begin{mcitethebibliography}{37}
 \providecommand*\natexlab[1]{#1}
 \providecommand*\mciteSetBstSublistMode[1]{}
 \providecommand*\mciteSetBstMaxWidthForm[2]{}
@@ -117,6 +117,13 @@ Levy,~D.; Panigrahi,~S.~S.; Kaba,~S.-O.; Zhu,~Q.; Lee,~K. L.~K.; Galkin,~M.;
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
+\bibitem[Puny \latin{et~al.}(2025)Puny, Lipman, and Miller]{puny2025sgfm}
+Puny,~O.; Lipman,~Y.; Miller,~B.~K. Space Group Conditional Flow Matching.
+  \emph{arXiv preprint arXiv:2509.23822} \textbf{2025}, \relax
+\mciteBstWouldAddEndPunctfalse
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
 \bibitem[Mu \latin{et~al.}(2026)Mu, He, Zhu, and Yin]{mu2026nextcrystal}
 Mu,~J.; He,~L.; Zhu,~X.; Yin,~S. {NextCrystal}: A Symmetry-Driven Generative
   Framework for Crystal Structure Prediction. \emph{arXiv preprint
@@ -134,12 +141,165 @@ Groom,~C.~R.; Bruno,~I.~J.; Lightfoot,~M.~P.; Ward,~S.~C. The Cambridge
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Deng \latin{et~al.}(2023)Deng, Zhong, Jun, Riebesell, Han, Bartel, and
-  Ceder]{deng2023chgnet}
-Deng,~B.; Zhong,~P.; Jun,~K.; Riebesell,~J.; Han,~K.; Bartel,~C.~J.; Ceder,~G.
-  {CHGNet} as a Pretrained Universal Neural Network Potential for
-  Charge-Informed Atomistic Modelling. \emph{Nature Machine Intelligence}
-  \textbf{2023}, \emph{5}, 1031--1041\relax
+\bibitem[Ong \latin{et~al.}(2013)Ong, Richards, Jain, Hautier, Kocher, Cholia,
+  Gunter, Chevrier, Persson, and Ceder]{ong2013pymatgen}
+Ong,~S.~P.; Richards,~W.~D.; Jain,~A.; Hautier,~G.; Kocher,~M.; Cholia,~S.;
+  Gunter,~D.; Chevrier,~V.~L.; Persson,~K.~A.; Ceder,~G. Python Materials
+  Genomics (pymatgen): A Robust, Open-Source Python Library for Materials
+  Analysis. \emph{Computational Materials Science} \textbf{2013}, \emph{68},
+  314--319\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Togo \latin{et~al.}(2024)Togo, Shinohara, and Tanaka]{togo2024spglib}
+Togo,~A.; Shinohara,~K.; Tanaka,~I. Spglib: A Software Library for Crystal
+  Symmetry Search. \emph{Science and Technology of Advanced Materials: Methods}
+  \textbf{2024}, \emph{4}, 2384822\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Shervashidze \latin{et~al.}(2011)Shervashidze, Schweitzer, van
+  Leeuwen, Mehlhorn, and Borgwardt]{shervashidze2011wl}
+Shervashidze,~N.; Schweitzer,~P.; van Leeuwen,~E.~J.; Mehlhorn,~K.;
+  Borgwardt,~K.~M. {Weisfeiler--Lehman} Graph Kernels. \emph{Journal of Machine
+  Learning Research} \textbf{2011}, \emph{12}, 2539--2561\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Hagberg \latin{et~al.}(2008)Hagberg, Schult, and
+  Swart]{hagberg2008networkx}
+Hagberg,~A.~A.; Schult,~D.~A.; Swart,~P.~J. Exploring Network Structure,
+  Dynamics, and Function using {NetworkX}. Proceedings of the 7th Python in
+  Science Conference (SciPy 2008). 2008; pp 11--15\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Zeng and Liu(2026)Zeng, and Liu]{zeng2026molcrystalflowdata}
+Zeng,~C.; Liu,~M. \emph{{MolCrystalFlow} Data and Model Checkpoints {V2}};
+  Dataset, 2026; Record 19673190, DOI: 10.5281/zenodo.19673190\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Th{\"u}rlemann \latin{et~al.}(2023)Th{\"u}rlemann, B{\"o}selt, and
+  Riniker]{thurlemann2023regularized}
+Th{\"u}rlemann,~M.; B{\"o}selt,~L.; Riniker,~S. Regularized by Physics: Graph
+  Neural Network Parametrized Potentials for the Description of Intermolecular
+  Interactions. \emph{Journal of Chemical Theory and Computation}
+  \textbf{2023}, \emph{19}, 562--579\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Yershova \latin{et~al.}(2010)Yershova, Jain, LaValle, and
+  Mitchell]{yershova2010hopf}
+Yershova,~A.; Jain,~S.; LaValle,~S.~M.; Mitchell,~J.~C. Generating Uniform
+  Incremental Grids on {SO(3)} Using the {Hopf} Fibration. \emph{The
+  International Journal of Robotics Research} \textbf{2010}, \emph{29},
+  801--812\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Gorski \latin{et~al.}(2005)Gorski, Hivon, Banday, Wandelt, Hansen,
+  Reinecke, and Bartelmann]{gorski2005healpix}
+Gorski,~K.~M.; Hivon,~E.; Banday,~A.~J.; Wandelt,~B.~D.; Hansen,~F.~K.;
+  Reinecke,~M.; Bartelmann,~M. {HEALPix}: A Framework for High-Resolution
+  Discretization and Fast Analysis of Data Distributed on the Sphere. \emph{The
+  Astrophysical Journal} \textbf{2005}, \emph{622}, 759--771\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Wood \latin{et~al.}(2025)Wood, Dzamba, Fu, Gao, Shuaibi,
+  Barroso-Luque, Abdelmaqsoud, Gharakhanyan, Kitchin, Levine, Michel, Sriram,
+  Cohen, Das, Sahoo, Rizvi, Ulissi, and Zitnick]{wood2025uma}
+Wood,~B. \latin{et~al.}  {UMA}: A Family of Universal Models for Atoms.
+  Advances in Neural Information Processing Systems 38 (NeurIPS 2025). 2025; pp
+  143528--143564, arXiv:2506.23971\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[{FAIR Chemistry team}(2026)]{fairchem2026core}
+{FAIR Chemistry team} \emph{{fairchem}: Machine Learning Models for Chemistry
+  and Materials Science (fairchem-core 2.23.0)}; Software, 2026; Version
+  fairchem-core 2.23.0 was used; Zenodo concept DOI 10.5281/zenodo.15587497
+  (all versions); https://github.com/facebookresearch/fairchem\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Liu and Nocedal(1989)Liu, and Nocedal]{liu1989lbfgs}
+Liu,~D.~C.; Nocedal,~J. On the Limited Memory {BFGS} Method for Large Scale
+  Optimization. \emph{Mathematical Programming} \textbf{1989}, \emph{45},
+  503--528\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Allen and Bruno(2010)Allen, and Bruno]{allen2010xh}
+Allen,~F.~H.; Bruno,~I.~J. Bond Lengths in Organic and Metal-Organic Compounds
+  Revisited: {X--H} Bond Lengths from Neutron Diffraction Data. \emph{Acta
+  Crystallographica Section B} \textbf{2010}, \emph{66}, 380--386\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Gharakhanyan \latin{et~al.}(2026)Gharakhanyan, Barroso-Luque, Yang,
+  Shuaibi, Michel, Levine, Dzamba, Fu, Gao, Liu, Ni, Noori, Wood, Uyttendaele,
+  Boromand, Zitnick, Marom, Ulissi, and Sriram]{gharakhanyan2026omc25}
+Gharakhanyan,~V. \latin{et~al.}  Open Molecular Crystals 2025 ({OMC25}) Dataset
+  and Models. \emph{Scientific Data} \textbf{2026}, \emph{13}, 354\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Stuke \latin{et~al.}(2020)Stuke, Kunkel, Golze, Todorovi{\'c},
+  Margraf, Reuter, Rinke, and Oberhofer]{stuke2020oe62}
+Stuke,~A.; Kunkel,~C.; Golze,~D.; Todorovi{\'c},~M.; Margraf,~J.~T.;
+  Reuter,~K.; Rinke,~P.; Oberhofer,~H. Atomic Structures and Orbital Energies
+  of 61,489 Crystal-Forming Organic Molecules. \emph{Scientific Data}
+  \textbf{2020}, \emph{7}, 58\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Cai(2026)]{cai2026symmcflow}
+Cai,~F. \emph{{fronkt/symmc-flow}: {SymMC}-{Flow} symmetry-conditioned
+  rigid-body flow matching and CSD data pipeline for molecular-crystal
+  structure prediction (v2)}; Software, 2026; Version v2, DOI:
+  10.5281/zenodo.21500734; concept DOI 10.5281/zenodo.20822234 resolves to the
+  latest version\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Satorras \latin{et~al.}(2021)Satorras, Hoogeboom, and
+  Welling]{satorras2021egnn}
+Satorras,~V.~G.; Hoogeboom,~E.; Welling,~M. {E}(n) Equivariant Graph Neural
+  Networks. International Conference on Machine Learning (ICML). 2021;
+  arXiv:2102.09844\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Kabsch(1976)]{kabsch1976solution}
+Kabsch,~W. A Solution for the Best Rotation to Relate Two Sets of Vectors.
+  \emph{Acta Crystallographica Section A} \textbf{1976}, \emph{32},
+  922--923\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Kabsch(1978)]{kabsch1978discussion}
+Kabsch,~W. A Discussion of the Solution for the Best Rotation to Relate Two
+  Sets of Vectors. \emph{Acta Crystallographica Section A} \textbf{1978},
+  \emph{34}, 827--828\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
@@ -155,52 +315,38 @@ Martirossyan,~M.~M.; Egg,~T.; Hoellmer,~P.; Karypis,~G.; Transtrum,~M.;
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Satorras \latin{et~al.}(2021)Satorras, Hoogeboom, and
-  Welling]{satorras2021egnn}
-Satorras,~V.~G.; Hoogeboom,~E.; Welling,~M. {E}(n) Equivariant Graph Neural
-  Networks. International Conference on Machine Learning (ICML). 2021;
-  arXiv:2102.09844\relax
+\bibitem[Holm(1979)]{holm1979simple}
+Holm,~S. A Simple Sequentially Rejective Multiple Test Procedure.
+  \emph{Scandinavian Journal of Statistics} \textbf{1979}, \emph{6},
+  65--70\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Cao \latin{et~al.}(2025)Cao, Geiger, dos Santos~Costa, Reidenbach,
-  Kreis, Geffner, Pellegrini, Zhou, and Kucukbenli]{cao2025so3averaged}
-Cao,~Z.; Geiger,~M.; dos Santos~Costa,~A.; Reidenbach,~D.; Kreis,~K.;
-  Geffner,~T.; Pellegrini,~F.; Zhou,~G.; Kucukbenli,~E. Efficient Molecular
-  Conformer Generation with {SO(3)}-Averaged Flow Matching and Reflow.
-  \emph{arXiv preprint arXiv:2507.09785} \textbf{2025}, \relax
-\mciteBstWouldAddEndPunctfalse
-\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{}{\mcitedefaultseppunct}\relax
-\EndOfBibitem
-\bibitem[Pooladian \latin{et~al.}(2023)Pooladian, Ben-Hamu, Domingo-Enrich,
-  Amos, Lipman, and Chen]{pooladian2023multisample}
-Pooladian,~A.-A.; Ben-Hamu,~H.; Domingo-Enrich,~C.; Amos,~B.; Lipman,~Y.;
-  Chen,~R. T.~Q. Multisample Flow Matching: Straightening Flows with Minibatch
-  Couplings. International Conference on Machine Learning (ICML). 2023;
-  arXiv:2304.14772\relax
+\bibitem[Efron(1987)]{efron1987better}
+Efron,~B. Better Bootstrap Confidence Intervals. \emph{Journal of the American
+  Statistical Association} \textbf{1987}, \emph{82}, 171--185\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Ong \latin{et~al.}(2013)Ong, Richards, Jain, Hautier, Kocher, Cholia,
-  Gunter, Chevrier, Persson, and Ceder]{ong2013pymatgen}
-Ong,~S.~P.; Richards,~W.~D.; Jain,~A.; Hautier,~G.; Kocher,~M.; Cholia,~S.;
-  Gunter,~D.; Chevrier,~V.~L.; Persson,~K.~A.; Ceder,~G. Python Materials
-  Genomics (pymatgen): A Robust, Open-Source Python Library for Materials
-  Analysis. \emph{Computational Materials Science} \textbf{2013}, \emph{68},
-  314--319\relax
+\bibitem[Song \latin{et~al.}(2022)Song, Smith, Kalyanam, Zhu, Adams, Colby,
+  Finnegan, Gough, Hillery, Irvine, Maji, and St.~John]{song2022anvil}
+Song,~X.~C.; Smith,~P.; Kalyanam,~R.; Zhu,~X.; Adams,~E.; Colby,~K.;
+  Finnegan,~P.; Gough,~E.; Hillery,~E.; Irvine,~R.; Maji,~A.; St.~John,~J.
+  Anvil -- System Architecture and Experiences from Deployment and Early User
+  Operations. Practice and Experience in Advanced Research Computing (PEARC
+  '22). New York, NY, USA, 2022; pp 1--9, Article 23\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Cai(2026)]{cai2026symmcflow}
-Cai,~F. \emph{{fronkt/symmc-flow}: {SymMC}-{Flow} symmetry-conditioned
-  rigid-body flow matching and CSD data pipeline for molecular-crystal
-  structure prediction (v2)}; Software, 2026; Version v2, DOI:
-  10.5281/zenodo.21500734; concept DOI 10.5281/zenodo.20822234 resolves to the
-  latest version\relax
+\bibitem[Boerner \latin{et~al.}(2023)Boerner, Deems, Furlani, Knuth, and
+  Towns]{boerner2023access}
+Boerner,~T.~J.; Deems,~S.; Furlani,~T.~R.; Knuth,~S.~L.; Towns,~J. {ACCESS}:
+  Advancing Innovation: {NSF}'s Advanced Cyberinfrastructure Coordination
+  Ecosystem: Services \& Support. Practice and Experience in Advanced Research
+  Computing (PEARC '23). 2023; pp 173--176\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
