@@ -288,8 +288,8 @@ Stuke,~A.; Kunkel,~C.; Golze,~D.; Todorovi{\'c},~M.; Margraf,~J.~T.;
 \bibitem[Cai(2026)]{cai2026symmcflow}
 Cai,~F. \emph{symmc-flow v3: preregistered benchmark of molecular-crystal
   orientation completion (code, protocol, refcode lists, results)}; Software,
-  2026; Version v3; concept DOI 10.5281/zenodo.20822234 resolves to the latest
-  version\relax
+  2026; Version v3, DOI: 10.5281/zenodo.24328285; concept DOI
+  10.5281/zenodo.20822234 resolves to the latest version\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
