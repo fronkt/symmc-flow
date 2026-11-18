@@ -24,7 +24,7 @@ rendered images. H atoms are omitted from the drawing (they are expanded like ev
   (a) the cell projected along b (b into the page): the four copies coloured by operation; copies made by
       improper operations (det W_k = -1) are hatched and labelled "mirrored"; inversion centres and 2_1 axes
       are drawn where the operations put them. Paler atoms lie further from the viewer.
-  (b) schematic: copy_k = (W_k, t_k) applied to (R_asym l + c0), each operation in the CSD setting with
+  (b) schematic: copy k has centroid c_k = W_k c0 + t_k and orientation C_k R_asym (eq 1), each operation in the CSD setting with
       det W_k. Each glyph is the copy's conformer up to a proper rotation: l itself (det +1) or its mirror
       image (det -1).
 
@@ -446,7 +446,7 @@ def main():
     ax.axis("off")
     ax.text(0.12, top - 0.05, "(b) exact expansion: one $R_{asym}$ gives every copy", fontsize=7.5, ha="left",
             va="top")
-    ax.text(5.0, top - 0.62, "copy$_k$ = $(W_k,\\, " + TSYM + "_k)$ applied to $(R_{asym}\\, l + c_0)$",
+    ax.text(5.0, top - 0.62, "copy $k$: centroid $c_k = W_k c_0 + " + TSYM + "_k$,  orientation $C_k R_{asym}$",
             fontsize=7.3, ha="center", va="center")
     # conformer glyph in its principal frame (largest two axes in the page)
     cl = loc[heavy] - loc[heavy].mean(0)
@@ -467,7 +467,7 @@ def main():
     gh = gsize * np.max(np.abs(G2[:, 1]))          # glyph half-height
     gx, gy = 1.6, top - 1.05 - gh
     glyph(gx, gy, OPS["1"][0], False)
-    ax.text(gx + 1.35, gy + 0.2, "asymmetric unit:  $R_{asym}\\, l + c_0$", fontsize=6.8, ha="left", va="center")
+    ax.text(gx + 1.35, gy + 0.2, "asymmetric unit: conformer $l$ rotated by $R_{asym}$, at $c_0$", fontsize=6.8, ha="left", va="center")
     ax.text(gx + 1.35, gy - 0.22, "$R_{asym}$ predicted (3 numbers);  $l$, $c_0$ given", fontsize=6.0,
             ha="left", va="center", color="#444444")
     xs = [1.25, 3.75, 6.25, 8.75]
