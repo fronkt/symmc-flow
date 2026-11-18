@@ -43,6 +43,18 @@ plt.rcParams.update({
 })
 
 
+FAMS = [("tric", "tric."), ("mono", "mono."), ("orth", "orth."), ("tetr", "tetr."), ("hex", "trig./hex."),
+        ("cub", "cubic")]
+
+
+def crystal_family(sg):
+    """Crystal family from the international space-group number (trigonal and hexagonal merged)."""
+    for hi, fam in ((2, "tric"), (15, "mono"), (74, "orth"), (142, "tetr"), (194, "hex"), (230, "cub")):
+        if sg <= hi:
+            return fam
+    raise ValueError(sg)
+
+
 def aggregates(name):
     import n3_common as C
     from n3_labels import sg_class
@@ -50,9 +62,10 @@ def aggregates(name):
     items = C.load_set(name)
     assert len(items) == C.SET_SIZES[name]
     out = {"n": len(items), "class": collections.Counter(), "K": collections.Counter(), "heavy": [],
-           "elem": collections.Counter(), "abc": []}
+           "elem": collections.Counter(), "abc": [], "fam": collections.Counter()}
     for a in items:
         out["class"][sg_class(int(a["sg"]))] += 1
+        out["fam"][crystal_family(int(a["sg"]))] += 1
         out["K"][int(a["K"])] += 1
         Z = a["Z"].numpy()
         out["heavy"].append(int((Z > 1).sum()))
@@ -87,12 +100,15 @@ def main():
     gs = fig.add_gridspec(3, 2, height_ratios=[1, 1, 1.05], hspace=0.62, wspace=0.42,
                           left=0.13, right=0.985, top=0.905, bottom=0.075)
 
-    # (a) crystal class
+    # (a) crystal family (space-group class -- centrosymmetric / Sohncke / other -- is in main Table 5 and SI)
     ax = fig.add_subplot(gs[0, 0])
-    bars(ax, CLASSES, {k: [pct(k, agg[k]["class"][c]) for c, _ in CLASSES] for k, _, _ in SETS})
-    ax.set_xticklabels([lab for _, lab in CLASSES])
+    fams = [f for f in FAMS if agg["train"]["fam"][f[0]] + agg["testB"]["fam"][f[0]] > 0]
+    bars(ax, fams, {k: [pct(k, agg[k]["fam"][f]) for f, _ in fams] for k, _, _ in SETS})
+    ax.set_xticklabels([lab for _, lab in fams], rotation=35, ha="right")
     ax.set_ylabel("crystals (%)")
-    ax.set_title("(a) crystal class", loc="left")
+    ax.set_title("(a) crystal family", loc="left")
+    for k, _, _ in SETS:
+        print(k, "families", dict(agg[k]["fam"]), "classes", dict(agg[k]["class"]))
 
     # (b) K = number of operations
     ax = fig.add_subplot(gs[0, 1])
