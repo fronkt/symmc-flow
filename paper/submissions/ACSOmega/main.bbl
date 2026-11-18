@@ -286,11 +286,10 @@ Stuke,~A.; Kunkel,~C.; Golze,~D.; Todorovi{\'c},~M.; Margraf,~J.~T.;
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
 \bibitem[Cai(2026)]{cai2026symmcflow}
-Cai,~F. \emph{{fronkt/symmc-flow}: {SymMC}-{Flow} symmetry-conditioned
-  rigid-body flow matching and CSD data pipeline for molecular-crystal
-  structure prediction (v2)}; Software, 2026; Version v2, DOI:
-  10.5281/zenodo.21500734; concept DOI 10.5281/zenodo.20822234 resolves to the
-  latest version\relax
+Cai,~F. \emph{symmc-flow v3: preregistered benchmark of molecular-crystal
+  orientation completion (code, protocol, refcode lists, results)}; Software,
+  2026; Version v3; concept DOI 10.5281/zenodo.20822234 resolves to the latest
+  version\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
