@@ -173,6 +173,9 @@ def reference_docx(path):
             st.font.color.rgb = None
             el = st.element.rPr
             if el is not None and el.rFonts is not None:
+                # theme-font attributes win over rFonts: without dropping them the title and headings stay Aptos
+                for k in ("w:asciiTheme", "w:hAnsiTheme", "w:eastAsiaTheme", "w:cstheme"):
+                    el.rFonts.attrib.pop(docx.oxml.ns.qn(k), None)
                 for k in ("w:ascii", "w:hAnsi", "w:cs", "w:eastAsia"):
                     el.rFonts.set(docx.oxml.ns.qn(k), "Times New Roman")
         except Exception:
