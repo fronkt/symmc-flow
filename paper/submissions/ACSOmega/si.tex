@@ -621,7 +621,13 @@ scored as its exact expectation. Levels with $n<30$ are marked ``too small to in
 $z_\mathrm{MCF}$ level carries MCF's diagnostic-(b) ceiling under the primary matcher, labelled
 oracle and approximate; as above, this draw@1 ceiling does not bound LJ-picked@1. The FF$^\ast$
 truth label is reported for the H2 pair only (OURS, OURS-N2 and iii-s). The sensitivity strata
-(Table~\ref{tab:si_strata_sens}) repeat the three handedness strata under the refined mirror-RMSD
+(Table~\ref{tab:si_strata_sens}) repeat the three handedness strata. A conformer is chiral
+(geometrically, as a rigid body) when its refined mirror RMSD exceeds 0.3~\AA; the refined
+mirror RMSD is the minimum of a proper-rotation Kabsch fit over the first 200
+element-matched graph automorphisms and an element-blocked Hungarian ICP (30 iterations, 5
+deterministic starts). A cell is mixed-handedness when the conformer is chiral and the space
+group has an improper operation, and improper-achiral when it has an improper operation but
+the conformer is not chiral. The sensitivity rows use the refined mirror-RMSD
 definition at thresholds of 0.1 and 0.5~\AA{} and under the parser-capped definition (200
 automorphisms) at 0.3~\AA{} (method parameters; the primary definition is refined, 0.3~\AA).
 All rows are descriptive, with no tests.
@@ -980,7 +986,7 @@ stratum & & $n$ & floor & iii-u & iii-p & iii-s & iv-P & MCF-R & MCF-R+G & OURS 
 \begin{table}[htbp]
 \caption{\devlabel: MCF diagnostic (b), perfect-model ceiling (oracle item, approximate), in the
 layout of Table~\ref{tab:si_diagb}. DEV-TEST has no $z_\mathrm{MCF}=1$ crystal. The draw@1
-ceiling does not bound LJ-picked@1. Not a result.}
+ceiling does not bound LJ-picked@1. Non-confirmatory diagnostic.}
 \label{tab:si_dev_diagb}
 \centering
 \small
@@ -996,7 +1002,7 @@ matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 ceiling & any@16 ceiling & label \\
 
 \begin{table}[htbp]
 \caption{\devlabel: MCF diagnostic (c), oracle-aligned MCF-R scores (oracle item, approximate),
-in the layout of Table~\ref{tab:si_diagc}. Not a result.}
+in the layout of Table~\ref{tab:si_diagc}. Non-confirmatory diagnostic.}
 \label{tab:si_dev_diagc}
 \centering
 \footnotesize
@@ -1330,7 +1336,7 @@ set & $n$ & F1 & F2 & F3 & F4 cap hits & F5 & verdict \\
 \begin{table}[htbp]
 \caption{Gate C-a: any-of-$k$ match rate (\%) of MCF's released Thurlemann checkpoint on its own
 benchmark splits, median of five runs, scored by MCF's own scorer, by our emulation of MCF's
-reading, and by our scorer's own reading (an observation, not a claim), beside the value read
+reading, and by our scorer's own reading (a descriptive discrepancy), beside the value read
 from MCF's published Fig.~3a (reference, approximate). ``within 5 pp'': check (ii).}
 \label{tab:si_gateca}
 \centering

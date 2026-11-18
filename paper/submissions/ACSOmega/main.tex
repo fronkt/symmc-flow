@@ -257,7 +257,7 @@ which the MCF arms of this benchmark use. The legacy det+1 pipeline cannot repre
 MolCrystalFlow CSP driver cannot produce \nRMixedMiss/\nRMixed{} mixed-handedness cells under
 the default StructureMatcher; a homochiral approximant nevertheless matches
 \nRMixedApprox/\nRMixed{} at stol 0.5. Here ``cannot produce'' means that the
-lowest-RMSD homochiral approximant found by a 16-start search did not match under the
+lowest-RMSD homochiral approximant found by a 17-start search (the 16 frozen starts plus the best automorphism rotation) did not match under the
 primary matcher; it is not a proof that no homochiral cell could. The legacy parser
 accepted 351 crystals, of which 342 match on oracle reconstruction (Supporting
 Information). The MolCrystalFlow paper describes a
@@ -271,7 +271,7 @@ can emit, under the primary matcher unless stated. (a) exact expansion with the 
 operations (OURS and the classical arms; by construction); (b) MolCrystalFlow's per-copy
 representation; (c) the information of the released MolCrystalFlow CSP driver, one
 conformer and one handedness for all copies, as the lowest-RMSD homochiral approximant
-found by a 16-start search (primary matcher, and stol 0.5); (d) crystals accepted by the
+found by a 17-start search (primary matcher, and stol 0.5); (d) crystals accepted by the
 legacy det+1 parser (part-file keep flag).}
 \label{tab:repr}
 \centering

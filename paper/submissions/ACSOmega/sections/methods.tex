@@ -17,7 +17,10 @@ experimental lattice $L$ (cell vectors as rows); the $K$ space-group operations 
 the crystal's own CSD setting, from pymatgen's SpacegroupAnalyzer (symprec
 0.1)\cite{ong2013pymatgen,togo2024spglib} run on the experimental structure; the
 fractional centroid $c_0$ of the asymmetric-unit molecule; and its rigid
-experimental conformer as centred coordinates $l_a$. Each predicted one rotation,
+experimental conformer as centred coordinates $l_a$ in a body frame fixed by the conformer
+alone (the principal axes of its gyration tensor, ordered by spread, with signs set by an
+element-weighted third moment and a right-handed frame), so the true $R_{\mathrm{asym}}$ is the
+rotation from that body frame into the crystal's Cartesian frame. Each predicted one rotation,
 the asymmetric-unit orientation $R_{\mathrm{asym}}\in\mathrm{SO}(3)$, and exact
 space-group expansion placed atom $a$ of copy $k$ at
 \begin{equation}
@@ -254,7 +257,7 @@ The H2 form was fixed on VALSEL before any candidate was minimised. The 400 VALS
 truths were minimised under FF*; if at least 50\% converged and still matched the
 experimental structure, H2 would compare unrelaxed outputs (EXACT), and otherwise
 it would compare minimised picks with the minimised truth (BASIN). The form was
-EXACT, committed (commit 1aff111) before any candidate minimisation, so H2 compares
+EXACT, committed (commit 1aff111) before production benchmark candidate minimisation, so H2 compares
 the unrelaxed OURS pick and iii-s's lowest minimum, each with the unrelaxed
 experimental structure. Because an EXACT-form difference can come from crystals
 whose experimental pose drifts under FF*, every TEST-B truth was also labelled
