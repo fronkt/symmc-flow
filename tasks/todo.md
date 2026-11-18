@@ -288,6 +288,8 @@ nodes (a, b, h). The A100 nodes g[000-015] stay up (RCAC news 7947: CPU and AI n
     clone's `.git/` in the step-5b pullback inventory), so they are false positives. The receipt is retained (REC).
   - [ ] **Step 9 (laptop)**: build a driver for the 16 `runs.step9` + 2 `runs.step9_scoring`. It unblinds, so
     plan first and get Frank's OK. Plan written 11-15: "N3 step 9 plan" at the top of this file.
+  - [x] **Step 9 cleanup 11-18** (job 22282744, Frank: "ok go"): both targets deleted. Search: 395,029 files, name
+    hits 0, errors 0, hash hits 53, the same 53 stock-git paths as step 8 (false positives). Receipt retained (REC).
 - **Submit commands, after the OK** (from `$SCRATCH/n3_ops`). The `-J` name must be the fixed one: each inner
   script refuses any other, and `--dependency=singleton` keys on the name.
   ```

@@ -1061,3 +1061,21 @@ Frank: "Go ahead" (11-10), with the session in manual-approval mode for the CSD-
   - OURS-N2 family: H1 +6.33 [5.47, 7.33], H2 −92.93 [−93.9, −91.8], H3 +6.47 [5.60, 7.43]; the same verdicts.
   - Diagnostic (a) PASS (approximate). FF* truth anchoring on TEST-B 98.3 % (983 ANCHORED / 2 DRIFTED / 15
     UNRESOLVED). One scoring environment for both sets; no stop or restart.
+- **Step-9 cleanup ran 11-18 06:08:39-06:12:05 EST** (job 22282744 on g010, 3 min 26 s, about 0.06 GPU-h; it
+  waited from 11-17 ~15:40 on Priority).
+  - Sacct state FAILED: the script exits 1 on a FAIL receipt (as in step 8).
+  - The job log has the image `386af7e8…` and cleanup `52b20050…` hashes (both as in step 8), manifest tool
+    `4ba9ee91…` (the step-9 box's), wrapper `b5dad716…`, and "no other N3 job queued or running".
+  - **`deleted /anvil/scratch/x-fcai3/n3_box` and `deleted /anvil/scratch/x-fcai3/n3_upload`.** Both paths are
+    gone. `$SCRATCH` keeps `n3_manifests` (receipts) and `n3_ops` (logs, scripts).
+  - Search: `searched 395029 files; hashed 38523; name hits 0; hash hits 53; errors 0`, against 4,346 manifest
+    hashes (labels pullback_step4anvil, pullback_step5b, pullback_step7, pullback_step9, step5, step7, step9) and 1
+    empty inventory entry skipped. `discard_outputs: false`.
+    - Receipt `$SCRATCH/n3_manifests/cleanup_receipt_20261118T111203572358Z.json` (`pass: false`, sha256
+      `963837ce…`), also copied to `C:/Users/frank/n3_manifests/` with the hash matching.
+  - **The 53 hash hits are the step-8 false positives, unchanged: no N3 file remains.** The hit path set is
+    identical to the step-8 receipt's (pxrd-diff 14 and the three `sts_pa_*` repos 13 each; 11 stock hook samples,
+    `info/exclude`, `description`, pxrd-diff's `refs/remotes/origin/HEAD`). They match the Gate C-b clone's `.git/`
+    entries in the retained `pullback_step5b` inventory, as expected when the job was submitted.
+- **Step 9 complete (11-18).** Scoring results are committed (f1c713a), every step-9 output is on the laptop
+  (verified pullback), and the box root and upload directory on Anvil are deleted.
