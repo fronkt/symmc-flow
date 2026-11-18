@@ -96,7 +96,11 @@ and imposes no space-group constraint, and MOFFlow\cite{kim2025mofflow} generate
 of rigid building blocks of metal--organic frameworks. Space-group symmetry has been built into
 generators of inorganic crystals, through Wyckoff positions or space-group-constrained
 coordinates\cite{jiao2024diffcsppp,wyckoffdiff2025,symmcd2025,puny2025sgfm,mu2026nextcrystal};
-none of these generates rigid molecules.
+none of these generates rigid molecules. For molecular crystals, SALA\cite{cai2026sala}
+generates conformation, lattice and packing end to end from a molecular graph and a space
+group by evolving asymmetric-unit atomic coordinates; the present benchmark addresses a
+narrower task, completing the orientation of a rigid asymmetric unit when the lattice,
+operations and position are given.
 
 We ask whether this redundancy matters for learned models, in a benchmark that compares
 enforced symmetry together with our learner against learned independent-copy models and

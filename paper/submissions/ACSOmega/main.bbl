@@ -8,7 +8,7 @@
 \providecommand*\mcitethebibliography{\thebibliography}
 \csname @ifundefined\endcsname{endmcitethebibliography}
   {\let\endmcitethebibliography\endthebibliography}{}
-\begin{mcitethebibliography}{37}
+\begin{mcitethebibliography}{38}
 \providecommand*\natexlab[1]{#1}
 \providecommand*\mciteSetBstSublistMode[1]{}
 \providecommand*\mciteSetBstMaxWidthForm[2]{}
@@ -128,6 +128,13 @@ Puny,~O.; Lipman,~Y.; Miller,~B.~K. Space Group Conditional Flow Matching.
 Mu,~J.; He,~L.; Zhu,~X.; Yin,~S. {NextCrystal}: A Symmetry-Driven Generative
   Framework for Crystal Structure Prediction. \emph{arXiv preprint
   arXiv:2602.17176} \textbf{2026}, \relax
+\mciteBstWouldAddEndPunctfalse
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Cai and Mo(2026)Cai, and Mo]{cai2026sala}
+Cai,~W.; Mo,~F. Symmetry-Aware Flow Matching for End-to-end Molecular Crystal
+  Generation. \emph{arXiv preprint arXiv:2609.34690} \textbf{2026}, \relax
 \mciteBstWouldAddEndPunctfalse
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {}{\mcitedefaultseppunct}\relax
