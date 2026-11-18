@@ -67,8 +67,8 @@ a search over the asymmetric-unit orientation with a universal interatomic poten
 given the same information (H2), the difference is \nHTwoDelta{} pp \nHTwoCI: H2 is not
 supported, because the search reproduces \nSearchPick\% of the structures. Against our
 previous architecture (H3), the difference is \nHThreeDelta{} pp \nHThreeCI, and H3 is
-supported. Among the learned models tested, predicting the asymmetric unit and expanding
-it exactly did better on this task; with this much information given, physics-based
+supported, although both comparators, as retrained here, scored no better than random
+orientations with the same selection step on this metric. With this much information given, physics-based
 search remained far more accurate.
 \end{abstract}
 
@@ -357,7 +357,12 @@ lattice and the true centroids of all copies, reproduces \nMcfRPick\% of the tes
 structures (MCF-R) and \nMcfRGPick\% with the symmetry scan (MCF-R+G). OURS exceeds both:
 \nHOneRDelta{} pp \nHOneRCI{} against MCF-R and \nHOneGDelta{} pp \nHOneGCI{} against
 MCF-R+G, so H1 is supported with $\Delta_{\text{H1}}=$~\nHOneDelta{} pp \nHOneCI{} (Holm
-$p=$~\nHOneP). Both two-stage seed intervals exclude zero. H1 measures a bundle: explicit,
+$p=$~\nHOneP). Both two-stage seed intervals exclude zero. The retrained comparators did not,
+however, beat random orientations with the same LJ pick (iii-u, \nHaarPick\%) under the
+primary matcher, and under the secondary matchers MCF-R+G exceeded them only at the loosest
+tolerance (Supporting Information), while MolCrystalFlow's own oracle diagnostic shows that
+its representation can express these crystals; H1 therefore shows that OURS learned what these
+retrained configurations did not, not that it beats a working orientation model. H1 measures a bundle: explicit,
 enforced symmetry together with our learner, since MCF-R is not given the operations
 (although they are recoverable from its inputs; Methods). Before the benchmark, we ran
 MolCrystalFlow's released checkpoint on its released test split and scored it with
@@ -404,7 +409,8 @@ Supporting Information (Compute) does so.
 Our previous architecture, retrained on this task with per-copy operation labels, mirrored
 conformers and absolute orientation targets (iv-P), reproduced no test structure in any seed
 (\nIvPPick\%); OURS exceeds it by \nHThreeDelta{} pp
-\nHThreeCI{} (Holm $p=$~\nHThreeP), and H3 is supported. Taking the identity copy's predicted
+\nHThreeCI{} (Holm $p=$~\nHThreeP), and H3 is supported; as for H1, the comparator scored at the
+level of random orientations. Taking the identity copy's predicted
 orientation as $R_{\text{asym}}$ and expanding it exactly (iv-S, descriptive) gives
 \nIvSPick\%.
 
@@ -446,8 +452,9 @@ stratum & & $n$ & floor & iii-u & iii-p & iii-s & iv-P & MCF-R & MCF-R+G & OURS 
 The task gives the true lattice, operations and asymmetric-unit centroid, restricts the test
 set to $Z'=1$ general-position crystals and holds each conformer rigid at its experimental
 geometry, so nothing here measures crystal structure prediction. Even on this reduced task
-the learned model's median orientation error is about \nOursGeoMed$^\circ$, and it falls far
-short of physics-based search with the same information. MolCrystalFlow ran in our harness
+the learned model's median orientation error is about \nOursGeoMed$^\circ$ (its tenth percentile
+is about \nOursGeoQten$^\circ$), and it falls far short of physics-based search with the same
+information, the established route to molecular-crystal structures\cite{price2023blindtest7}. MolCrystalFlow ran in our harness
 on an exported primitive cell, so H1 compares a bundle of enforced symmetry and learner
 rather than learners alone. The interatomic potential's training data overlap with organic
 crystals. The diagnostics of MolCrystalFlow's invariances are approximate, and DEV-TEST is not
@@ -462,8 +469,10 @@ that selection is robust to other potentials such as OPLS, GAFF or UFF.
 In a preregistered benchmark of molecular-crystal orientation completion, predicting the
 asymmetric-unit orientation and building the crystal by exact space-group expansion
 outperformed a learned model of independent copies given the true lattice and the true
-centroids of all copies (H1) and our previous architecture (H3). As an ablation estimate,
-our learner adds \nLearnDelta{} pp \nLearnCI{} over MolCrystalFlow's orientations inside the
+centroids of all copies (H1) and our previous architecture (H3), both of which, as
+retrained here, scored no better than random orientations with the same selection on the
+headline metric. As an
+ablation estimate, our learner adds \nLearnDelta{} pp \nLearnCI{} over MolCrystalFlow's orientations inside the
 same exact expansion. A physics-based search given the same information was far more accurate
 (H2 not supported). For learned molecular-crystal models, the results favour predicting
 the asymmetric unit and expanding it exactly over predicting every copy; whether that

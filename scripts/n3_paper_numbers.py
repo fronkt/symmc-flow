@@ -148,6 +148,7 @@ def build():
     m.append(macro("nOmcCI", ci(omc["OURS - iii-s"]["bca_pp"])))
     gd = o["geodesic_deg"]["per_seed"]
     m.append(macro("nOursGeoMed", f"{sum(s['median'] for s in gd) / len(gd):.0f}"))
+    m.append(macro("nOursGeoQten", f"{sum(s['q10'] for s in gd) / len(gd):.0f}"))  # seed-mean of per-seed q10
     m.append(macro("nOursEns", pct(o["ensemble_picked1_pct"])))
     wr = tr["wording"]
     assert wr["final"] and wr["n"] == 1000

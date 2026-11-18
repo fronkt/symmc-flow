@@ -8,7 +8,7 @@
 \providecommand*\mcitethebibliography{\thebibliography}
 \csname @ifundefined\endcsname{endmcitethebibliography}
   {\let\endmcitethebibliography\endthebibliography}{}
-\begin{mcitethebibliography}{38}
+\begin{mcitethebibliography}{39}
 \providecommand*\natexlab[1]{#1}
 \providecommand*\mciteSetBstSublistMode[1]{}
 \providecommand*\mciteSetBstMaxWidthForm[2]{}
@@ -155,6 +155,15 @@ Ong,~S.~P.; Richards,~W.~D.; Jain,~A.; Hautier,~G.; Kocher,~M.; Cholia,~S.;
   Genomics (pymatgen): A Robust, Open-Source Python Library for Materials
   Analysis. \emph{Computational Materials Science} \textbf{2013}, \emph{68},
   314--319\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Hunnisett \latin{et~al.}(2024)Hunnisett, \latin{et~al.}
+  others]{price2023blindtest7}
+Hunnisett,~L.~M.; others The Seventh Blind Test of Crystal Structure
+  Prediction: Structure Generation Methods. \emph{Acta Crystallographica
+  Section B} \textbf{2024}, \emph{80}\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
