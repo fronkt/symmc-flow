@@ -155,9 +155,9 @@ def main():
     axR.text(1.30, sum(yd) / len(yd), "descriptive", transform=trR, ha="left", va="center", fontsize=6.0,
              color=GREY, fontstyle="italic", rotation=90)
     # direction cues
-    axR.text(0.99, 1.005, "favours OURS →", transform=axR.transAxes, ha="right", va="bottom",
+    axR.text(0.99, 1.005, "favors OURS →", transform=axR.transAxes, ha="right", va="bottom",
              fontsize=6.3, color=GREY)
-    axL.text(0.02, 1.005, "← favours arm", transform=axL.transAxes, ha="left", va="bottom",
+    axL.text(0.02, 1.005, "← favors arm", transform=axL.transAxes, ha="left", va="bottom",
              fontsize=6.3, color=GREY)
     fig.text(0.5, 0.035,
              f"Δ = OURS {MINUS} arm, picked@1 (percentage points); TEST-B, n = {n:,}",

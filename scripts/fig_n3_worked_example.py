@@ -420,7 +420,7 @@ def main():
     span = hi[0] - lo[0]
     x = lo[0] + 0.20 * span
     inv_symbol(ax, (x, ky), 0.22, 5)
-    ax.text(x + 0.45, ky, "inversion centre", fontsize=6.0, va="center")
+    ax.text(x + 0.45, ky, "inversion center", fontsize=6.0, va="center")
     x = lo[0] + 0.50 * span
     screw_symbol(ax, (x, ky), 0.38, 5)
     ax.text(x + 0.6, ky, "$2_1$ axis $\\parallel$ $b$", fontsize=6.0, va="center")
