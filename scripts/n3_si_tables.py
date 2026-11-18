@@ -12,6 +12,12 @@ Reads only named evidence records (PAPER_ACCEPTANCE_CONTRACT assertion 1):
   tasks/n3_step4_record_2026-10-11.md   run-health counts that no results file holds (FF* OOM retries, MCF branch-cut
                                         draws, residual and LJ health, X-H normalisation). Each is found by a regex on
                                         the record and cited by file:line in the generated TeX; nothing is typed here.
+  Retained run records (gitignored; aggregate counts and times only, nothing coordinate-level is written out):
+  results/n3/private/step7/             events.jsonl + done/<run>.json: per-run driver elapsed time and outputs (S11)
+  results/n3/private/draws/*.pt (meta)  per-crystal times, LJ/FF* counts, X-H counts, MCF-A spacing counts (S5, S10,
+                                        S11); results/n3/private/classical/*.jsonl, draws/mcfRS_*.jsonl (shards)
+  results/vast_g2/, results/g2_learned_s*, results/vast_n12/, n3_mcf/runs/*_train.{json,log},
+  results/n3/private/old/runs/          realized training (S1 epochs; S11 training cost)
 
 Writes paper/submissions/ACSOmega/generated/si_*.tex: si_numbers.tex (\\newcommand macros, each with a source
 comment) and table-row files read with \\inputrows (the primitive \\@@input, as in main.tex), plus two pgfplots figures.
@@ -23,11 +29,14 @@ Usage: python scripts/n3_si_tables.py [--check]   (--check: regenerate in memory
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
 import re
+import statistics
 import sys
+from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -178,6 +187,191 @@ class Record:
         return m, f"{self.rel}:{a}" + (f"-{b}" if b != a else "")
 
 
+# ----------------------------------------------------------------------------- retained run records (private)
+# Read for aggregate counts and times only (bundle meta, per-crystal shard fields, driver event times, training
+# logs); no coordinate or CIF text is written out. These records are gitignored (results/n3/private/, n3_mcf/,
+# results/vast_*/), so a run of this script, and --check, needs the local copies.
+PRIV = "results/n3/private"
+STEP7 = f"{PRIV}/step7"                      # events.jsonl (driver start/done per run) + done/<run>.json (outputs)
+SHARD = f"{PRIV}/classical"                  # per-crystal shards of the classical and FF* runs
+MCFTRAIN = "n3_mcf/runs/n3_mcf{a}_s{s}_train"  # .json ("hours": training-process wall-clock) + .log (devices)
+IVPRUNS = f"{PRIV}/old/runs"                 # iv-P training: <run>/hist.jsonl (per-epoch sec) + meta.json
+N2REC = "results/vast_n12/n2_s{s}"           # OURS-N2 training: .json (args, hist), .pt (best), .resume.pt (last)
+G2LOG = ("results/g2_learned_s{s}", "results/vast_g2/g2_learned_s{s}")  # OURS training, local then resumed box
+TRAIN_OF = {"MCF-R+G": "MCF-R", "ii-S": "MCF-R", "iv-S": "iv-P", "i-E": "OURS"}  # sample that arm's checkpoints
+NO_TRAIN = ("floor", "iii-u", "iii-p", "iii-s", "MCF-A-floor")                 # (draws); no training of their own
+
+
+def _jsonl(rel):
+    return [json.loads(x) for x in open(P(rel), encoding="utf-8") if x.strip()]
+
+
+def _med(v):
+    return statistics.median(v)
+
+
+def kfmt(x, nd):
+    """A non-integer with thousands separators, half-up to nd decimals."""
+    q = Decimal(repr(x)).quantize(Decimal(1).scaleb(-nd), rounding=ROUND_HALF_UP)
+    return f"{q:,}".replace(",", "{,}")
+
+
+def per_crystal(v):
+    """A per-crystal count: the value if constant, else the median and the mean."""
+    if min(v) == max(v):
+        return num(v[0])
+    return f"{cnt(_med(v))} (mean {kfmt(statistics.mean(v), 1)})"
+
+
+def andlist(xs):
+    xs = [str(x) for x in xs]
+    return xs[0] if len(xs) == 1 else ", ".join(xs[:-1]) + " and " + xs[-1]
+
+
+def span(xs, nd=2):
+    a, b = rnd(min(xs), nd), rnd(max(xs), nd)
+    return a if a == b else f"{a}--{b}"
+
+
+class Runs:
+    """The step-7 run records: driver elapsed time per run, the bundles each run wrote, and the draw bundles."""
+
+    def __init__(self):
+        t = lambda x: datetime.strptime(x, "%Y-%m-%d %H:%M:%S")  # noqa: E731
+        start, self.sec = {}, {}
+        for e in _jsonl(f"{STEP7}/events.jsonl"):
+            if e["event"] == "start":
+                assert e["run"] not in start, e
+                start[e["run"]] = t(e["time"])
+            else:
+                assert e["event"] == "done" and e["run"] not in self.sec, e
+                self.sec[e["run"]] = (t(e["time"]) - start[e["run"]]).total_seconds()
+        assert set(start) == set(self.sec)
+        self.prod, self.outs, self.mode, self.cmds, self.cache = {}, {}, {}, {}, {}
+        for f in sorted(os.listdir(P(STEP7, "done"))):
+            r = json.load(open(P(STEP7, "done", f), encoding="utf-8"))
+            self.mode[r["run"]], self.cmds[r["run"]] = r["mode"], r["commands"]
+            self.outs[r["run"]] = {os.path.basename(o) for o in list(r["outputs"]) + list(r.get("side_outputs") or {})
+                                   if o.endswith(".pt")}
+            for o in self.outs[r["run"]]:
+                assert o not in self.prod, o
+                self.prod[o] = r["run"]
+        assert set(self.sec) == {r for r, m in self.mode.items() if m != "uploaded"}  # only uploads are untimed
+
+    def bundle(self, name):
+        name = os.path.basename(name)
+        if name not in self.cache:
+            import torch
+            b = torch.load(P(PRIV, "draws", name), weights_only=False, map_location="cpu")
+            self.cache[name] = {k: b[k] for k in ("arm", "seed", "set", "meta", "refcodes", "valid")}
+        return self.cache[name]
+
+    def upstream(self, name):
+        m = self.bundle(name)["meta"]
+        u = m.get("source_bundle") or m.get("source")
+        return os.path.basename(u) if isinstance(u, str) and u.endswith(".pt") else None
+
+    def chain(self, name):
+        """The runs that wrote this bundle and every bundle it was made from, and those bundles."""
+        name = os.path.basename(name)
+        runs, names = {self.prod[name]}, {name}
+        u = self.upstream(name)
+        if u:
+            r, b = self.chain(u)
+            runs, names = runs | r, names | b
+        return runs, names
+
+    def run_figure(self, bundles, n):
+        """(s per crystal per seed or None if a run is an upload, runs, other products of those runs)."""
+        R, names = set(), set()
+        for b in bundles:
+            r, nm = self.chain(b)
+            R, names = R | r, names | nm
+        sec = (sum(self.sec[r] for r in R) / (n * len(bundles))
+               if all(self.mode[r] != "uploaded" for r in R) else None)
+        other = sorted(o for r in R for o in self.outs[r] if o.split(".")[0] + ".pt" not in names)  # x.rot.pt: x's
+        return sec, sorted(R), other
+
+
+def training_records(S):
+    """Realized training per trained arm, from the training records (none is re-run)."""
+    import torch
+    T = {}
+    # OURS: the frozen checkpoints are the per-epoch resume checkpoints of scripts/g2_learned_flow.py; their 'hist'
+    # is the training history up to the copy, and the sampler loads their 'best_state' (scripts/n3_ours.py:93).
+    ep, best, h, ran, local = [], [], [], [], []
+    for sd, ck in sorted(S["frozen"]["OURS"]["checkpoints"].items()):
+        raw = open(P(ck["ckpt"]), "rb").read()
+        assert hashlib.sha256(raw).hexdigest() == ck["sha256"], ck
+        c = torch.load(P(ck["ckpt"]), weights_only=False, map_location="cpu")
+        hist = c["hist"]
+        assert [x["epoch"] for x in hist] == list(range(len(hist))) and c["epoch"] == len(hist) - 1
+        i = min(range(len(hist)), key=lambda k: (hist[k]["val"], k))
+        assert hist[i]["val"] == c["best"]
+        ep.append(len(hist)); best.append(i + 1); h.append(sum(x["sec"] for x in hist) / 3600)
+        loc, box = (torch.load(P(g.format(s=sd) + ".resume.pt"), weights_only=False, map_location="cpu")
+                    for g in G2LOG)
+        assert loc["hist"] == hist[:len(loc["hist"])] and box["hist"][:len(hist)] == hist
+        local.append(len(loc["hist"])); ran.append(len(box["hist"]))
+    assert len(set(ep)) == len(set(ran)) == len(set(local)) == 1
+    T["OURS"] = {"epochs": ep[0], "best": best, "ran": ran[0], "local": local[0], "h": h,
+                 "src": f"frozen OURS checkpoints {S['frozen']['OURS']['checkpoints']['0']['ckpt']} (s0-s2; SHA-256 "
+                        f"checked) hist (epoch, val, sec) and best; {G2LOG[0]}.resume.pt, {G2LOG[1]}.resume.pt "
+                        f"(epochs run locally / in all); CPU (scripts/g2_learned_flow.py has no device option)"}
+    # OURS-N2: scripts/g2_train_v2.py records; each frozen checkpoint is the run's best-val or last-epoch state.
+    ep, chosen, h = [], [], []
+    for sd, ck in sorted(S["frozen"]["OURS-N2"]["checkpoints"].items()):
+        r = json.load(open(P(N2REC.format(s=sd) + ".json"), encoding="utf-8"))
+        hist = r["hist"]
+        assert r["args"]["epochs"] == len(hist) and r["args"]["procs"] > 1
+        raw = open(P(ck["ckpt"]), "rb").read()
+        assert hashlib.sha256(raw).hexdigest() == ck["sha256"], ck
+        st = torch.load(P(ck["ckpt"]), weights_only=False, map_location="cpu")["best_state"]
+        same = lambda o: o.keys() == st.keys() and all(torch.equal(o[k], st[k]) for k in st)  # noqa: E731
+        bs = torch.load(P(N2REC.format(s=sd) + ".pt"), weights_only=False, map_location="cpu")["best_state"]
+        last = torch.load(P(N2REC.format(s=sd) + ".resume.pt"), weights_only=False, map_location="cpu")
+        assert last["epoch"] == len(hist) - 1
+        i = min(range(len(hist)), key=lambda k: (hist[k]["val"], k))      # hist val is rounded to 4 decimals
+        assert abs(hist[i]["val"] - r["best_val"]) < 5e-5 and sum(x["val"] == hist[i]["val"] for x in hist) == 1
+        e = ({i + 1} if same(bs) else set()) | ({len(hist)} if same(last["model"]) else set())
+        assert len(e) == 1, (sd, e)
+        ep.append(len(hist)); chosen.append(e.pop()); h.append(sum(x["sec"] for x in hist) / 3600)
+        procs = r["args"]["procs"]
+    assert len(set(ep)) == 1
+    T["OURS-N2"] = {"epochs": ep[0], "chosen": chosen, "h": h, "procs": procs,
+                    "src": f"{N2REC.format(s='{0,1,2}')}.json (args.epochs, args.procs, hist sec); frozen OURS-N2 "
+                           f"checkpoints matched tensor-wise to {N2REC.format(s='<s>')}.pt best_state or .resume.pt "
+                           "model; CPU (gloo, scripts/g2_train_v2.py)"}
+    # MCF-R and MCF-A: n3_mcf_run.py train records; one GPU each ("Training with devices: [0]" in the log).
+    for a, arm in (("R", "MCF-R"), ("A", "MCF-A")):
+        h = []
+        for sd in range(3):
+            r = json.load(open(P(MCFTRAIN.format(a=a, s=sd) + ".json"), encoding="utf-8"))
+            assert r["returncode"] == 0
+            log = open(P(MCFTRAIN.format(a=a, s=sd) + ".log"), encoding="utf-8", errors="replace").read()
+            assert log.count("Training with devices: [0]") == 1
+            h.append(r["hours"])
+        T[arm] = {"h": h, "src": f"{MCFTRAIN.format(a=a, s='{0,1,2}')}.json hours (training-process wall-clock) and "
+                                 ".log (one device)"}
+    # iv-P: n3_old_symmc.py train histories; the frozen checkpoints name the runs of record.
+    fz = S["frozen"]["iv-P"]
+    rec = sorted({os.path.basename(os.path.dirname(c)) for c in fz["checkpoints"].values()})
+    allr = sorted(x for x in os.listdir(P(IVPRUNS)) if os.path.exists(P(IVPRUNS, x, "hist.jsonl")))
+
+    def ivh(x):
+        m = json.load(open(P(IVPRUNS, x, "meta.json"), encoding="utf-8"))
+        assert m["device"] == "cuda"
+        return sum(e["sec"] for e in _jsonl(f"{IVPRUNS}/{x}/hist.jsonl")) / 3600, m
+
+    screen = [x for x in allr if x not in rec]
+    assert all(ivh(x)[1]["seed"] == 0 and ivh(x)[1]["lr"] != fz["lr"] for x in screen)
+    T["iv-P"] = {"h": [ivh(x)[0] for x in rec], "screen": sum(ivh(x)[0] for x in screen), "runs": rec,
+                 "screen_runs": screen,
+                 "src": f"{IVPRUNS}/<run>/hist.jsonl (sum of per-epoch sec) and meta.json (device cuda); runs of "
+                        f"record from {SELF} frozen.iv-P.checkpoints"}
+    return T
+
+
 # ----------------------------------------------------------------------------- build
 def build():
     d = json.load(open(P(RES), encoding="utf-8"))
@@ -214,6 +408,33 @@ def build():
     mac("svOursSel", sel(fo["selector"]), f"{SELF} frozen.OURS.selector (= OURS-N2)")
     mac("svOursS", num(fo["S"]), f"{SELF} frozen.OURS.S (= OURS-N2)")
     mac("svOursEuler", num(fo["euler_steps"]), f"{SELF} frozen.OURS.euler_steps (= OURS-N2)")
+
+    # realized training (S1 epochs; S11 training cost), from the training records
+    TR_ = training_records(S)
+    to, tn = TR_["OURS"], TR_["OURS-N2"]
+    mac("svOursEpochs", num(to["epochs"]), to["src"])
+    mac("svOursBestEpochs", andlist(to["best"]), to["src"] + " (argmin val, one-based, seeds 0/1/2)")
+    mac("svOursRanEpochs", num(to["ran"]), to["src"])
+    mac("svOursLocalEpochs", num(to["local"]), to["src"])
+    mac("svOursNTwoEpochs", num(tn["epochs"]), tn["src"])
+    mac("svOursNTwoChosen", andlist(tn["chosen"]), tn["src"] + " (one-based, seeds 0/1/2)")
+    mac("svTrainOursSeed", span(to["h"]), to["src"] + " (h per seed)")
+    mac("svTrainNTwoSeed", span(tn["h"]), tn["src"] + " (h per seed)")
+    mac("svTrainNTwoProcs", num(tn["procs"]), tn["src"])
+    mac("svTrainMcfRSeed", span(TR_["MCF-R"]["h"]), TR_["MCF-R"]["src"] + " (h per seed)")
+    mac("svTrainMcfASeed", span(TR_["MCF-A"]["h"]), TR_["MCF-A"]["src"] + " (h per seed)")
+    mac("svTrainIvPSeed", span(TR_["iv-P"]["h"]), TR_["iv-P"]["src"] + " (h per seed)")
+    mac("svTrainIvPScreen", rnd(TR_["iv-P"]["screen"], 2), TR_["iv-P"]["src"] + " (learning-rate screening runs "
+        + ", ".join(TR_["iv-P"]["screen_runs"]) + ")")
+
+    def train_cell(a):
+        if a in NO_TRAIN:
+            return "n/a"
+        if a in TRAIN_OF:
+            return f"as {PLAIN[TRAIN_OF[a]]}"
+        h = rnd(sum(TR_[a]["h"]), 2)
+        return f"CPU, {h} h$^{{e}}$" if a in ("OURS", "OURS-N2") else f"{h} GPU-h$^{{f}}$"
+    RR = Runs()
 
     # ======================================================================== per-set tables
     for s in ("testB", "devtest"):
@@ -339,8 +560,10 @@ def build():
         L.append("\\midrule\n")
         L.append(f"P1 of OURS $-$ P1 of iii-p ($n={num(c['n'])}$) & & & & {dl(c)} & {ci(c['two_stage_pp'])} \\\\\n")
         rows(f"si_steric_{s}.tex", [f"{RES} sets.{s}.report.steric_basin (arms, contrasts)"], L)
-        mac(f"svStericRefUnconv{tag}", refs(sb["reference"]["ref_unconverged_refcodes"]),
-            f"{RES} sets.{s}.report.steric_basin.reference.ref_unconverged_refcodes")
+        # si.tex: "Every reference completed the fixed 80-step press and was valid; convergence was not assessed."
+        pr = RR.bundle(sb["reference"]["reference"])
+        assert sb["reference"]["ref_invalid_refcodes"] == [] and bool(pr["valid"].all()) and pr["meta"]["steps"] == 80
+        assert len(pr["refcodes"]) == n
         ctx = re.sub(r"\s*\(printed beside it, §3\.3\)$", "", sb["g2_devtest_context"])
         assert ctx != sb["g2_devtest_context"]
         mac(f"svGtwoContext{tag}", tex(ctx), f"{RES} sets.{s}.report.steric_basin.g2_devtest_context (its trailing"
@@ -559,16 +782,170 @@ def build():
         if s == "testB":
             mac("svOmcElements", ", ".join(o["omc25_element_set"]), f"{OMC[s]} omc25_element_set")
 
-        # ---------------- S11 compute
-        L = []
+        # ---------------- S11 compute (results file for OURS / OURS-N2; every other entry from the run records)
+        cfg = S["report_configs"][s]["arms"]
+        B = RR.bundle
+        shards = {}
+
+        def shard(name):
+            if name not in shards:
+                shards[name] = {r["refcode"]: r for r in _jsonl(f"{SHARD}/{name}")}
+            return shards[name]
+
+        def classical_rows(b, name):
+            """The FF* shard of a bundle, checked to be the one it was built from (same crystals, same stats)."""
+            rws = shard(name)
+            assert len(rws) == len(b["refcodes"]) == n and set(rws) == set(b["refcodes"])
+            assert [rws[r]["stats"] for r in b["refcodes"]] == b["meta"]["stats"]
+            return [rws[r] for r in b["refcodes"]]
+
+        L, shared_arms, iiis_ff_only = [], {}, None
         for a in ALL:
-            c = t1[a]["compute"]
-            sec = c["sec_per_crystal_per_seed_median"]
-            L.append(f"{LAB[a]} & {NR if sec is None else rnd(sec, 2)} & "
-                     f"{NR if c['lj_evals_per_crystal'] is None else num(c['lj_evals_per_crystal'])} & "
-                     f"{NR if c['ff_evals_per_crystal'] is None else num(c['ff_evals_per_crystal'])} & {NR} \\\\\n")
-        rows(f"si_compute_{s}.tex", [f"{src1}.<arm>.compute (sec_per_crystal_per_seed_median, lj_evals_per_crystal, "
-                                     "ff_evals_per_crystal); training cost: no key in any named record -> 'not recorded'"], L)
+            spec, c = cfg[a], t1[a]["compute"]
+            bl = [B(p) for p in spec["bundles"]]
+            borrowed = spec["selector"] == "random" and any(
+                cfg[o]["bundles"] == spec["bundles"] and cfg[o]["selector"] != "random" for o in cfg)
+            stored = any(RR.mode[r] == "uploaded" for p in spec["bundles"] for r in RR.chain(p)[0])
+            # run figure: driver elapsed of every step-7 run that made the arm's draws and selection inputs
+            sec, runs, other = RR.run_figure(spec["bundles"], n)
+            if other and not borrowed:
+                shared_arms[a] = other
+            if borrowed:
+                run_c = f"{NR}$^{{b}}$"
+            elif sec is None:
+                run_c = f"{NR}$^{{d}}$"
+            else:
+                run_c = rnd(sec, 2) + ("$^{a}$" if other else "")
+            # worker figure: per-crystal time in one worker, median over crystals and seeds
+            w = None
+            if a in ("OURS", "OURS-N2"):
+                v = [b["meta"].get("sec_per_crystal") for b in bl]
+                w = None if any(x is None for x in v) else [x for y in v for x in y]
+                if w is not None:
+                    assert rnd(_med(w), 2) == rnd(c["sec_per_crystal_per_seed_median"], 2)
+            elif a == "iii-u":
+                w = [x for b in bl for x in b["meta"]["sec"]]
+            elif a == "iii-p":
+                w = []
+                for p, b in zip(spec["bundles"], bl):
+                    u = B(RR.upstream(p))
+                    assert u["arm"] == "iii-u" and u["refcodes"] == b["refcodes"]
+                    w += [x + y for x, y in zip(u["meta"]["sec"], b["meta"]["sec"])]
+            elif a == "iii-s":
+                rw = classical_rows(bl[0], f"iii-s_{s}.jsonl")
+                w = [r["screen"]["sec"] + r["sec"] for r in rw]
+                iiis_ff_only = _med([r["stats"]["sec"] for r in rw])
+            elif a == "i-E":
+                w = []
+                for p, b in zip(spec["bundles"], bl):
+                    o = B(RR.upstream(p))
+                    assert o["arm"] == "ours" and o["refcodes"] == b["refcodes"]
+                    rw = classical_rows(b, os.path.basename(p)[:-3] + ".jsonl")
+                    so = o["meta"].get("sec_per_crystal")
+                    if so is None:
+                        w = None
+                        break
+                    w += [x + r["sec"] for x, r in zip(so, rw)]
+            if borrowed:
+                w_c = f"{NR}$^{{b}}$"
+            elif w is not None:
+                w_c = rnd(_med(w), 2) + ("$^{h}$" if a == "iii-p" else "")
+            elif stored:
+                w_c = f"{NR}$^{{d}}$"
+            else:
+                assert a in ("iv-P", "iv-S", "MCF-R", "MCF-R+G", "ii-S", "MCF-A", "MCF-A-floor"), a
+                w_c = f"{NR}$^{{c}}$"
+            # LJ evaluations per crystal (the arm's own selection inputs)
+            if a in ("OURS", "OURS-N2"):
+                assert all(b["meta"]["n_lj_per_crystal"] == c["lj_evals_per_crystal"] for b in bl)
+                lj = num(c["lj_evals_per_crystal"])
+            elif a in ("floor", "i-E"):
+                lj = "n/a"
+            elif a == "iii-u":
+                lj = per_crystal([int(v.sum()) for b in bl for v in b["valid"]])
+            elif a == "iii-p":
+                assert all(b["meta"]["steps"] == 80 for b in bl)
+                lj = per_crystal([int(v.sum()) * (b["meta"]["steps"] + 2) for b in bl for v in b["valid"]]) + "$^{g}$"
+            elif a == "iii-s":
+                lj = per_crystal([r["screen"]["n_eval"] for r in classical_rows(bl[0], f"iii-s_{s}.jsonl")])
+            elif a in ("iv-P", "iv-S"):
+                assert all(b["meta"]["lj_evals"] == int(b["valid"].sum()) for b in bl)
+                lj = per_crystal([int(v.sum()) for b in bl for v in b["valid"]])
+            elif a in ("MCF-R", "MCF-A", "MCF-A-floor"):
+                for b in bl:
+                    assert sum(b["meta"]["lj_counts"].values()) == int(b["valid"].sum())
+                lj = per_crystal([b["meta"]["lj_evaluations_per_crystal"] for b in bl])
+            elif a == "MCF-R+G":
+                lj = per_crystal([x for b in bl for x in b["meta"]["lj_evaluations_per_crystal"].values()])
+            elif a == "ii-S":
+                v = []
+                for p in spec["bundles"]:
+                    k = {}
+                    for r in _jsonl(f"{PRIV}/draws/{os.path.basename(p)[:-3]}.jsonl"):
+                        assert r["status"] == "ok"
+                        k[r["key"][0]] = k.get(r["key"][0], 0) + len(r["lj_all"])
+                    assert len(k) == n
+                    v += list(k.values())
+                lj = per_crystal(v)
+            # FF* evaluations per crystal (structures evaluated by FF*)
+            if a == "iii-s":
+                ff = per_crystal([r["stats"]["struct_evals"] for r in classical_rows(bl[0], f"iii-s_{s}.jsonl")])
+            elif a == "i-E":
+                ff = per_crystal([x["struct_evals"] for b in bl for x in b["meta"]["stats"]])
+            else:
+                assert all("stats" not in b["meta"] for b in bl), a
+                ff = "n/a"
+            L.append(f"{LAB[a]} & {run_c} & {w_c} & {lj} & {ff} & {train_cell(a)} \\\\\n")
+        assert {a: [x.split("_s")[0] for x in v] for a, v in shared_arms.items()} == \
+            {"iii-u": ["iii-p"] * 3, "i-E": ["basin-ours"] * 3}, shared_arms   # caption note a
+        rows(f"si_compute_{s}.tex", [
+            f"run figure: {STEP7}/events.jsonl (driver start -> done per run) over the runs in {STEP7}/done/<run>.json "
+            "that wrote the arm's bundles and, via each bundle's meta source/source_bundle, the bundles they were made "
+            f"from; summed, / (n x seeds); uploaded runs untimed",
+            f"worker figure: bundle meta sec_per_crystal (OURS, OURS-N2; = {src1}.<arm>.compute."
+            "sec_per_crystal_per_seed_median) / sec (iii-u, iii-p + its iii-u source); "
+            f"{SHARD}/iii-s_<set>.jsonl screen.sec + sec; i-E: its OURS source's sec_per_crystal + "
+            f"{SHARD}/i-E-ours_s<k>_<set>.jsonl sec (shards checked against the bundle stats); median",
+            "LJ: OURS n_lj_per_crystal; iii-u valid draws; iii-p valid draws x (meta steps + 2); iii-s shard "
+            "screen.n_eval; iv-P/iv-S meta lj_evals (= valid draws); MCF-R/MCF-A/floor meta lj_evaluations_per_crystal; "
+            "MCF-R+G meta lj_evaluations_per_crystal (per refcode); ii-S draws/<bundle>.jsonl len(lj_all) per crystal",
+            "FF*: stats.struct_evals (iii-s shard, i-E bundle meta); training: training_records() sources "
+            "(svTrain* macros)"], L)
+        mac(f"svIiisFFSec{tag}", rnd(iiis_ff_only, 2), f"{SHARD}/iii-s_{s}.jsonl stats.sec (FF* call time only, "
+            "median over crystals)")
+
+        # ---------------- X-H normalisation per FF* run, and MCF-A draws below the 2.5 A spacing
+        xh = {}
+        for run, cm in RR.cmds.items():
+            if run.split("/")[1] != s or not any("n3_classical.py" in x for x in cm):
+                continue
+            for o in RR.outs[run]:
+                m = B(o)["meta"]
+                if "xh" not in m:
+                    continue
+                assert len(m["xh"]) == n
+                tot = {k: sum(x[k] for x in m["xh"]) for k in ("C-H", "N-H", "O-H", "shortened")}
+                assert m.get("xh_total", tot) == tot
+                xh[o] = tot
+        assert sorted(o.split("_s")[0] for o in xh) == ["basin-ours_n2"] * 3 + ["fftruth"] + ["i-E-ours"] * 3 + \
+            ["iii-s"], sorted(xh)                                                           # as listed in si.tex
+        assert all("xh" not in B(f"basin-ours_s{k}_{s}.pt")["meta"] for k in range(3))      # from-ie: no FF* call
+        assert len({tuple(v.items()) for v in xh.values()}) == 1, xh
+        v = next(iter(xh.values()))
+        xsrc = (f"{PRIV}/draws/<bundle>.pt meta.xh summed over crystals (= meta.xh_total where present), identical in "
+                f"every FF* run on {SETNAME[s]}: " + ", ".join(sorted(xh)))
+        for k, nm in (("C-H", "CH"), ("N-H", "NH"), ("O-H", "OH"), ("shortened", "Short")):
+            mac(f"svXHSet{nm}{tag}", num(v[k]), xsrc)
+        for a, nm in (("MCF-A", "McfA"), ("MCF-A-floor", "McfAFloor")):
+            sp = []
+            for p in cfg[a]["bundles"]:
+                b = B(p)
+                assert int(b["valid"].sum()) == b["valid"].numel() == 16 * n
+                sp.append(b["meta"]["lj_counts"]["spacing_inf"])
+            mac(f"svSpacing{nm}{tag}", andlist(num(x) for x in sp),
+                f"{PRIV}/draws/<bundle>.pt meta.lj_counts.spacing_inf (n3_mcf_run.py to_bundle: generated cell height "
+                f"< 2.5 A -> +inf), {a} seeds 0/1/2: " + ", ".join(os.path.basename(p) for p in cfg[a]["bundles"]))
+        mac(f"svSpacingDraws{tag}", num(16 * n), f"{RES} sets.{s}.report.n x 16 draws per seed (all valid)")
     oc = sets["testB"]["report"]["table1"]["OURS"]["compute"]
     mac("svOursSec", rnd(oc["sec_per_crystal_per_seed_median"], 2),
         f"{RES} sets.testB.report.table1.OURS.compute.sec_per_crystal_per_seed_median")

@@ -314,10 +314,9 @@ is deterministic). $\Delta$: OURS minus arm, paired over crystals, with BCa 95\%
 two-stage: the seed-resampling interval. draw@1: a random draw; any@16: any of 16 draws (for
 iii-s, its 16 lowest distinct minima).
 H1/H2/H3: S, supported; N, not supported (Table~\ref{tab:hyp}); primary family on the OURS
-row, the N2 family on the OURS-N2 row. $^{b}$Not computed for iv-P. Compute: OURS
-\nOursSec~s per crystal per seed (median) with 16 LJ evaluations
-\TODO{comparator compute and training GPU-h: not in n3\_results.json; source from the run
-records}.}
+row, the N2 family on the OURS-N2 row. $^{b}$Not computed for iv-P. Per-crystal compute,
+evaluation counts and training cost for every arm are in the Supporting Information
+(Compute); OURS uses 16 LJ evaluations per crystal.}
 \label{tab:main}
 \centering
 \footnotesize
@@ -394,9 +393,8 @@ Minimising OURS's own draws with the same potential (i-E, descriptive) raises it
 operations and position given, only three rotational degrees of freedom remain, a
 multi-start search with an accurate potential covers them well, and the learned model does
 not compete with it on accuracy. The protocol registered no compute hypothesis, so we make
-no claim about speed; it does require per-arm compute to be reported descriptively, and
-Table~\ref{tab:main} gives what was recorded \TODO{source the comparator compute and
-training GPU-h from the run records}.
+no claim about speed; it does require per-arm compute to be reported descriptively, and the
+Supporting Information (Compute) does so.
 
 \subsection{H3: the previous architecture}
 Our previous architecture, retrained on this task with per-copy operation labels, mirrored

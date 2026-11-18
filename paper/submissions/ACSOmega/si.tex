@@ -97,13 +97,20 @@ OURS and OURS-N2 have no VALSEL knob (protocol Section~3.1): each samples with t
 (method parameters, as frozen). Their
 checkpoints, with the first twelve hexadecimal digits of the SHA-256 recorded in the step-6
 selection freeze (\svSelSha, commit \svSelCommit), are listed in Table~\ref{tab:si_ours_ckpt}.
-\TODO{confirm OURS training epochs with Frank: the training script's default is 40 epochs
-(scripts/g2\_learned\_flow.py:155), but the training history stored in
-results/vast\_g2/eval\_s\{0,1,2\}.pt covers 8 epochs, and the kept lowest-validation-loss
-epochs are 1, 8 and 4 (one-based), as the Methods state}
+OURS was trained on CPU with \texttt{scripts/g2\_learned\_flow.py}, launched with its 40-epoch
+default. Each seed trained epochs 1--\svOursLocalEpochs{} on a local CPU and then, resumed from
+its per-epoch checkpoint, further epochs on a rented CPU box; the training records end after
+epoch \svOursRanEpochs, so no run reached 40. The checkpoints of record are copies of that
+per-epoch checkpoint taken after epoch \svOursEpochs: their stored training histories hold
+epochs 1--\svOursEpochs, and the sampler loads their lowest-validation-loss state: epochs
+\svOursBestEpochs{} for seeds 0, 1 and 2. Epoch \svOursRanEpochs{} is in no checkpoint
+of record. OURS-N2 (\texttt{scripts/g2\_train\_v2.py}, \svTrainNTwoProcs{} CPU processes) ran
+its full \svOursNTwoEpochs{} epochs per seed; its checkpoints, each seed's
+lowest-validation-loss or final epoch as chosen on VAL, are epochs \svOursNTwoChosen{} (for
+seed 0 the lowest-validation-loss epoch is the final one).
 % src: generated/si_ours_ckpt.tex <- results/n3/n3_selection.json frozen.OURS, frozen.OURS-N2
-% The TODO's numbers are the unresolved ambiguity reported by the methods agent (scripts/g2_learned_flow.py:155;
-% sections/methods.tex:105-106,117); they are flagged, not results.
+% src: generated/si_numbers.tex svOurs{Local,Ran,Best,}Epochs, svOursNTwo{Epochs,Chosen}, svTrainNTwoProcs <- results/vast_g2/eval_s{0,1,2}.pt (keys model/opt/hist/best/best_state/epoch = the per-epoch resume checkpoint after epoch index 7; SHA-256 as frozen), results/g2_learned_s{0,1,2}.log + .resume.pt (local, epochs 1-3), results/vast_g2/g2_learned_s{0,1,2}.log + .resume.pt ("resumed after epoch 2", last epoch index 8; no final .pt/.json was written), results/vast_n12/n2_s{0,1,2}.json (args.epochs 30, procs 16), results/vast_n12/n2_selection.json (chosen)
+% src: scripts/g2_learned_flow.py:155 (--epochs default 40), 194-227 (per-epoch resume checkpoint; best_state); scripts/n3_ours.py:93 (loads best_state); rented CPU box: tasks/omega_rebuild_plan.md:67
 
 \begin{table}[htbp]
 \caption{OURS and OURS-N2 checkpoints as frozen at step 6 (selection freeze); SHA-256
@@ -320,10 +327,11 @@ difference & $\Delta$ (pp) & BCa 95\% CI & two-stage & nonzero \\
 \paragraph{Steric basin.} For continuity with our earlier work, the steric press (80 Adam steps
 on the steric LJ energy; method parameters) is applied to the draws of OURS and of iii-p (P1),
 and a hit is a match of the pressed draw to the pressed experimental structure
-(Table~\ref{tab:si_steric}). The reference press converged for every crystal (unconverged
-references: \svStericRefUnconv). The protocol prints our earlier DEV-TEST result beside it, as
+(Table~\ref{tab:si_steric}). Every reference completed the fixed 80-step press and was valid;
+convergence was not assessed. The protocol prints our earlier DEV-TEST result beside it, as
 history (DEV-TEST was used during development): \svGtwoContext.
 % src: results/n3/n3_results.json sets.testB.report.steric_basin; tasks/n3_protocol.md:752-757
+% src: reference press: sets.<set>.report.steric_basin.reference.ref_invalid_refcodes = [] and results/n3/private/draws/p1ref_s-1_<set>.pt (meta.steps 80, all valid), asserted in scripts/n3_si_tables.py; scripts/g2_asym_baselines.py:110-140 (fixed step count, no convergence flag)
 
 \begin{table}[htbp]
 \caption{TEST-B ($n=\svN$): steric basin (P1). picked@1 (\%) per seed and seed mean of each
@@ -346,8 +354,8 @@ two-stage interval. Descriptive; no tests.}
 search's minimised structure against the unrelaxed experimental one. Table~\ref{tab:si_h2desc}
 gives the descriptive contrasts the protocol attaches to it: i-E against iii-s; OURS against
 iii-s on the crystals whose experimental pose FF$^\ast$ holds (anchored), loses (drifted) or does
-not converge (unresolved); on the crystals outside the potential's training data (OMC25
-non-overlap); and in the secondary BASIN form, in which each arm's pick and the experimental
+not converge (unresolved); on the crystals whose CSD refcode family is not in the potential's
+OMC25 training data (OMC25 non-overlap); and in the secondary BASIN form, in which each arm's pick and the experimental
 structure are both FF$^\ast$-minimised before matching. Table~\ref{tab:si_basin} gives the
 BASIN-form rates. \svBasinUnconvN{} BASIN references (the FF$^\ast$-minimised experimental
 structures) did not converge: \svBasinUnconv; none was invalid (\svBasinInvalid).
@@ -508,7 +516,8 @@ better than a random draw.
 \caption{TEST-B: MCF diagnostic (b), perfect-model ceiling (oracle item, approximate), per
 matcher and $z_\mathrm{MCF}$ (molecules in the exported MCF cell): mean $c_i$ (draw@1 ceiling,
 \%) and mean $1-(1-c_i)^{16}$ (any@16 ceiling, \%). For $z_\mathrm{MCF}=1$ the value is the
-Haar floor, as labelled. The draw@1 ceiling does not bound LJ-picked@1. Not a result.}
+Haar floor, as labelled. The draw@1 ceiling does not bound LJ-picked@1. An oracle diagnostic
+using experimental truth.}
 \label{tab:si_diagb}
 \centering
 \small
@@ -524,14 +533,14 @@ matcher & $z_\mathrm{MCF}$ & $n$ & draw@1 ceiling & any@16 ceiling & label \\
 
 \paragraph{(c) Oracle-aligned score (oracle, approximate).} Each MCF-R draw is first moved by the
 element of MCF's invariance group that best aligns its frames with the true ones, and then
-matched (Table~\ref{tab:si_diagc}). The alignment uses the truth, so this is an oracle item and
-not a result. It is not computed for the \svDiagCZoneN{} crystals with $z_\mathrm{MCF}=1$, where
+matched (Table~\ref{tab:si_diagc}). The alignment uses the true frames, so this is an oracle
+item: an oracle diagnostic using experimental truth. It is not computed for the \svDiagCZoneN{} crystals with $z_\mathrm{MCF}=1$, where
 it is exact by construction.
 
 \begin{table}[htbp]
 \caption{TEST-B: MCF diagnostic (c), oracle-aligned MCF-R scores (oracle item, approximate; LJ
 selector): draw@1 per seed and mean, any@16 (mean) and picked@1 per seed and mean, all in \%.
-Not a result.}
+An oracle diagnostic using experimental truth.}
 \label{tab:si_diagc}
 \centering
 \footnotesize
@@ -574,9 +583,12 @@ other arm and is context only: it never enters H1--H3. Its prior floor samples t
 lattice prior, uniform centroids and symmetric-prior rotations. The protocol reports both under
 MCF's native rule at three tolerances as well as the primary matcher (Table~\ref{tab:si_mcfa}).
 The protocol also asks for the number of MCF-A draws whose generated cell has an interplanar
-spacing below 2.5~\AA{} (which receive $e_\mathrm{LJ}=+\infty$); no named record holds that
-count for TEST-B or DEV-TEST, so it is not reported.
-% src: results/n3/n3_results.json sets.testB.report.table1.{MCF-A,MCF-A-floor}; tasks/n3_protocol.md:598-613 (spacing count requested; absent from the results file and the step record)
+spacing below 2.5~\AA{} (the smallest height $V/|\mathbf{a}_j\times\mathbf{a}_k|$ of the cell as
+generated; these draws receive $e_\mathrm{LJ}=+\infty$). On TEST-B they are \svSpacingMcfA{} of
+the \svSpacingDraws{} draws of seeds 0, 1 and 2, and \svSpacingMcfAFloor{} of the prior
+floor's; on DEV-TEST, \svSpacingMcfADev{} of \svSpacingDrawsDev{}, and \svSpacingMcfAFloorDev{}.
+% src: results/n3/n3_results.json sets.testB.report.table1.{MCF-A,MCF-A-floor}; tasks/n3_protocol.md:598-613 (spacing count requested), 1198-1199 (A2 item 5: height definition)
+% src: spacing counts: generated/si_numbers.tex svSpacing* <- results/n3/private/draws/<MCF-A and floor bundles>.pt meta.lj_counts.spacing_inf (scripts/n3_mcf_run.py:852-857; scripts/n3_mcf_lib.py:47,352-359)
 
 \begin{table}[htbp]
 \caption{TEST-B ($n=\svN$): context table, MCF-A and its prior floor. picked@1 (\%) per seed
@@ -685,9 +697,11 @@ of the \svDevOThree{} parsed crystals of the development corpus).
 
 \paragraph{(c) The released MCF driver: the homochiral approximant.} The released MCF crystal
 structure prediction driver uses one conformer and one handedness for all copies. Column (c)
-is its best homochiral approximant: the true lattice and centroids, with each copy made by an
-improper operation replaced by the RMSD-optimal proper rotation onto its mirror image, found by
-element-blocked ICP. The protocol fixed 16 starts (the four sign-diagonal rotations and twelve
+is the lowest-RMSD homochiral approximant found: the true lattice and centroids, with each copy
+made by an improper operation replaced by the lowest-RMSD proper rotation onto its mirror image
+found by element-blocked ICP. A multi-start search gives no global-optimality certificate, and
+minimising per-molecule RMSD does not optimise the matcher's criterion, so a non-match shows
+that this approximant fails, not that every homochiral cell would. The protocol fixed 16 starts (the four sign-diagonal rotations and twelve
 seeded random rotations); amendment A2 added the best automorphism rotation as a 17th start,
 and the 16-start column is reported beside it. The extra start lowered the optimum for
 \svTRAutoImproved{} TEST-B crystals (largest RMSD gain \svTRMaxGain~\AA), and the two columns
@@ -733,7 +747,7 @@ row & $n$ & primary & 0.5 & 0.8 & primary & 0.5 & 0.8 & flag & primary & 0.5 & 0
 % src: results/n3/table_r_testB.json, table_r_devtest.json rows.<row>.{a,b,d}
 
 \begin{table}[htbp]
-\caption{Table~R in full, column (c): the best homochiral approximant of the released MCF
+\caption{Table~R in full, column (c): the lowest-RMSD homochiral approximant found for the released MCF
 driver, with 17 starts (16 frozen plus the best automorphism rotation, amendment A2) and with
 the 16 frozen starts alone, under the primary matcher and MCF's rule at stol 0.5 and 0.8.
 ``no improper op'': crystals without an improper operation, which (c) represents as (a) does;
@@ -889,8 +903,9 @@ arm & selector & per seed & mean $\pm$ s.d. & draw@1 & any@16 & $\Delta$ [BCa 95
 % src: results/n3/n3_results.json sets.devtest.report.table1.{ii-S,iv-S,i-E}
 
 \begin{table}[htbp]
-\caption{\devlabel: steric basin (P1), in the layout of Table~\ref{tab:si_steric}; unconverged
-references: \svStericRefUnconvDev. No tests.}
+\caption{\devlabel: steric basin (P1), in the layout of Table~\ref{tab:si_steric}. Every
+reference completed the fixed 80-step press and was valid; convergence was not assessed. No
+tests.}
 \label{tab:si_dev_steric}
 \centering
 \footnotesize
@@ -1171,11 +1186,18 @@ failures and \svLJNonfinite{} non-finite energies.
 C--H, N--H and O--H bonds are moved to the neutron-normalised lengths\cite{allen2010xh} (the
 scored structure keeps
 the experimental hydrogen positions). The protocol asks for the number of normalised bonds per
-set. The step record holds it for the VAL runs only: the iii-s VAL search normalised \svXHCH{}
+set. The step record holds it for the VAL runs: the iii-s VAL search normalised \svXHCH{}
 C--H, \svXHNH{} N--H and \svXHOH{} O--H bonds (\svXHShort{} of them shortened), and the i-E smoke
-run on \svXHIeN{} VAL crystals \svXHIeCH{} C--H bonds. For TEST-B and DEV-TEST the counts are not
-recorded in the results file or the step record, so they are not reported.
-% src: tasks/n3_step4_record_2026-10-11.md:537-538, 644; tasks/n3_protocol.md:696-702. TEST-B/DEV-TEST counts: absent from every named record (registered output not produced).
+run on \svXHIeN{} VAL crystals \svXHIeCH{} C--H bonds. For TEST-B and DEV-TEST the draw bundles
+of the FF$^\ast$ runs record the count per crystal. Summed over each set's conformers, every
+FF$^\ast$ run on a set normalised the same bonds: \svXHSetCH{} C--H, \svXHSetNH{} N--H and
+\svXHSetOH{} O--H on TEST-B (\svXHSetShort{} shortened), and \svXHSetCHDev{}, \svXHSetNHDev{} and
+\svXHSetOHDev{} on DEV-TEST (\svXHSetShortDev{} shortened). These runs are iii-s, i-E (each
+seed), the FF$^\ast$ truth minimisations and the BASIN minimisations of OURS-N2's draws (each
+seed). OURS's BASIN picks re-use the i-E minima and call FF$^\ast$ no further, and no other arm
+calls FF$^\ast$, so the counts do not apply to them.
+% src: tasks/n3_step4_record_2026-10-11.md:537-538, 644 (VAL); tasks/n3_protocol.md:696-702
+% src: TEST-B/DEV-TEST: generated/si_numbers.tex svXHSet* <- results/n3/private/draws/{iii-s_s-1,i-E-ours_s{0,1,2},fftruth_s-1,basin-ours_n2_s{0,1,2}}_<set>.pt meta.xh (per crystal; = meta.xh_total where present), the FF* runs among the step-7 done records; equality across runs asserted in scripts/n3_si_tables.py
 
 \paragraph{Failures.} No crystal was an arm failure in any arm, the scorer recorded no
 deterministic matcher failure, and no deterministic energy failure appears in the bundles that
@@ -1353,47 +1375,78 @@ set & job & node & first & last & commands & files & stops \\
 \section{Compute}\label{si:compute}
 % =====================================================================
 The protocol registers per-crystal compute for each arm: sampling-plus-selection wall-clock,
-LJ and FF$^\ast$ evaluation counts, and training cost. The results file records OURS (and
-OURS-N2, which shares its sampler): \svOursSec~s per crystal per seed (median) for sampling and
-selection, with \svOursLj{} LJ evaluations per crystal. Every other field, for every other arm,
-has no value in the results file or the step record and is printed as ``not recorded''
-(Table~\ref{tab:si_compute}); no value is supplied for it. The step record logs the elapsed time
-of each Slurm job, but a job ran several arms and sets, so those times cannot be assigned to an
-arm and a crystal and are not converted here. The protocol registered no compute comparison, and
-none is made.
-% src: results/n3/n3_results.json sets.<set>.report.table1.<arm>.compute; tasks/n3_step4_record_2026-10-11.md (job-level elapsed times only)
+LJ and FF$^\ast$ evaluation counts, and training cost (Tables~\ref{tab:si_compute} and
+\ref{tab:si_compute_dev}). The results file holds them for OURS and OURS-N2 only (\svOursSec~s
+per crystal per seed, median, with \svOursLj{} LJ evaluations). Every other entry is aggregated
+here from the retained run records, which the generated tables cite: the step-7 driver's event
+log and per-run done records, the draw bundles and their per-crystal shards, and the training
+records. Two wall-clock figures are given, with different boundaries. The run figure is the
+elapsed time, from the driver's start event to its done event, of every step-7 run that made an
+arm's draws and selection inputs (for a derived arm, also the runs that made its source draws),
+summed and divided by the number of crystals and seeds. Each job had one GPU; a run used up to
+28 CPU worker processes and one FF$^\ast$ worker, and its figure includes model and set loading
+and bundle writing. The worker figure is the median, over crystals and seeds, of the time one
+worker spent on one crystal, where the bundles record a time per crystal. Both exclude the step-9
+scorer, which applies each selector (argmin, random or MODE) to the stored values. Neither is an
+optimizer-only time: in iii-s's search the FF$^\ast$ calls alone took \svIiisFFSec~s per crystal
+(median; DEV-TEST \svIiisFFSecDev~s), a part of its worker figure. Recorded but not aggregated
+here: the Slurm elapsed time and GPU-hours of each job in the step record (one job ran several
+arms and sets) and the step-5 VALSEL sampling and selection runs. The protocol registered no
+compute comparison, and none is made.
+% src: results/n3/n3_results.json sets.<set>.report.table1.<arm>.compute (OURS, OURS-N2); every other entry: generated/si_compute_<set>.tex (sources in its header) and generated/si_numbers.tex svTrain*, svIiisFFSec*
+% src: one GPU per job and W = 28, G = 1: results/n3/private/anvil_jobs/anvil_step7.sbatch (--gpus-per-node=1), anvil_step7_prelude.sh:8-9; results/n3/private/step7/done/<run>.json executed --workers; job-level times: tasks/n3_step4_record_2026-10-11.md:735-853
 
 \begin{table}[htbp]
-\caption{TEST-B ($n=\svN$): per-crystal compute, field by field. ``not recorded'': the field
-has no value in any named record.}
+\caption{TEST-B ($n=\svN$): per-crystal compute, field by field. Run figure: the summed
+step-7 run time per crystal and seed; worker figure: the median time of one crystal in one
+worker (both defined above). ``n/a'': not applicable (the arm has no such step); ``not
+recorded'': no record holds the value at that granularity. Counts that vary over crystals are
+given as median (mean). Training over the three seeds; ``as X'': the arm samples X's
+checkpoints or draws and has no training of its own. Notes: $^{a}$the arm's runs also wrote
+another product, which is in the figure: iii-u's runs made iii-p's press (the figure is the
+same on both rows), and i-E's runs made OURS's BASIN picks, which re-use the i-E minima.
+$^{b}$The random floor picks among iii-u's draws, which were timed only together with iii-u's LJ
+evaluations. $^{c}$Timed per set only (batched sampling or one pass over the set); the run
+figure covers it. $^{d}$DEV-TEST: OURS and OURS-N2 reuse stored development draws, whose
+sampling was not timed, and i-E minimises them. $^{e}$CPU training, no GPU: the sum of the
+per-epoch wall-clock times in each seed's training history (OURS: \svOursEpochs{} epochs,
+\svTrainOursSeed~h per seed; OURS-N2: \svOursNTwoEpochs{} epochs on \svTrainNTwoProcs{}
+processes, \svTrainNTwoSeed~h per seed). $^{f}$One GPU: for MCF-R and MCF-A the training
+process's wall-clock (\svTrainMcfRSeed{} and \svTrainMcfASeed~h per seed); for iv-P the sum of
+its per-epoch times (\svTrainIvPSeed~h per seed), not counting the two seed-0 learning-rate
+screening runs (\svTrainIvPScreen~GPU-h more). $^{g}$Per draw: one LJ evaluation before the
+press, 80 press steps (each an LJ energy and gradient) and one after. $^{h}$iii-u's time for the
+draw plus the press; the MODE selection runs in the step-9 scorer and is not timed.}
 \label{tab:si_compute}
 \centering
-\footnotesize
-\begin{tabular}{@{}l>{\centering}p{2.6cm}>{\centering}p{2.3cm}>{\centering}p{2.3cm}>{\centering\arraybackslash}p{2.0cm}@{}}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l>{\centering}p{1.8cm}>{\centering}p{1.8cm}>{\centering}p{2.3cm}>{\centering}p{2.2cm}>{\centering\arraybackslash}p{2.2cm}@{}}
 \toprule
-arm & sampling + selection, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training cost \\
+arm & run figure, s per crystal per seed & worker figure, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training \\
 \midrule
 \inputrows{generated/si_compute_testB.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-% src: results/n3/n3_results.json sets.testB.report.table1.<arm>.compute
+% src: generated/si_compute_testB.tex (header lists every record read); results/n3/n3_results.json sets.testB.report.table1.<arm>.compute (OURS, OURS-N2)
 
 \begin{table}[htbp]
-\caption{\devlabel: per-crystal compute, in the layout of Table~\ref{tab:si_compute}. The OURS
-rows reuse stored development draws, so no sampling time was recorded.}
+\caption{\devlabel: per-crystal compute, in the layout and with the notes of
+Table~\ref{tab:si_compute}.}
 \label{tab:si_compute_dev}
 \centering
-\footnotesize
-\begin{tabular}{@{}l>{\centering}p{2.6cm}>{\centering}p{2.3cm}>{\centering}p{2.3cm}>{\centering\arraybackslash}p{2.0cm}@{}}
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}l>{\centering}p{1.8cm}>{\centering}p{1.8cm}>{\centering}p{2.3cm}>{\centering}p{2.2cm}>{\centering\arraybackslash}p{2.2cm}@{}}
 \toprule
-arm & sampling + selection, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training cost \\
+arm & run figure, s per crystal per seed & worker figure, s per crystal per seed & LJ evaluations per crystal & FF$^\ast$ evaluations per crystal & training \\
 \midrule
 \inputrows{generated/si_compute_devtest.tex}
 \bottomrule
 \end{tabular}
 \end{table}
-% src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.compute
+% src: generated/si_compute_devtest.tex (header lists every record read); results/n3/n3_results.json sets.devtest.report.table1.<arm>.compute (OURS, OURS-N2 LJ count); stored DEV-TEST OURS draws: results/n3/private/step7/done/ours__devtest.json (mode uploaded, no events)
 
 \clearpage
 % =====================================================================

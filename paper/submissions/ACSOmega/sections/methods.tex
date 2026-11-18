@@ -12,12 +12,12 @@
 \subsection{Task and inputs}
 
 The benchmark, N3, asks for orientation completion of $Z'=1$ molecular crystals
-whose molecule sits on a general position. Each arm was given the experimental
-lattice $L$ (cell vectors as rows); the $K$ space-group operations $(W_k,t_k)$ in
+whose molecule sits on a general position. OURS and the classical arms were given the
+experimental lattice $L$ (cell vectors as rows); the $K$ space-group operations $(W_k,t_k)$ in
 the crystal's own CSD setting, from pymatgen's SpacegroupAnalyzer (symprec
 0.1)\cite{ong2013pymatgen,togo2024spglib} run on the experimental structure; the
 fractional centroid $c_0$ of the asymmetric-unit molecule; and its rigid
-experimental conformer as centred coordinates $l_a$. It predicted one rotation,
+experimental conformer as centred coordinates $l_a$. Each predicted one rotation,
 the asymmetric-unit orientation $R_{\mathrm{asym}}\in\mathrm{SO}(3)$, and exact
 space-group expansion placed atom $a$ of copy $k$ at
 \begin{equation}
@@ -53,7 +53,9 @@ a secondary set (Supporting Information, disclosures a--e).
 % src: scripts/csd_export.py:9-22,62-64; data/csd_mol_scale_big/manifest.csv (maxima: R 7.5, Z' 2.0, 64 atoms); tasks/n3_protocol.md:70-71,92,164-198,895; scripts/g2_asym_baselines.py:53-71
 
 TEST-B (confirmatory) and SEL (selection supplement) came from the next 4,500
-refcodes of the same stream, which no development step had parsed or scored. They
+refcodes of the same stream; no N3 development step parsed or scored them, although the
+legacy pipeline of the earlier version had parsed this pool and trained on it (no legacy
+checkpoint is used; Supporting Information, disclosure (f)). They
 were built by input-side steps only: the rigid-molecule parse and its rebuild check
 (3,632 kept); an expansion check requiring that the orbit points $W_kc_0+t_k$ match
 the stored centroids one to one and that expanding the true orientation reproduce
@@ -102,8 +104,10 @@ Haar-random, $t$ uniform on $[0,0.98)$ and $R_1$ the experimental orientation, t
 loss was $\lVert\omega_\theta(R_t,t)-u\rVert^2$ at the geodesic point
 $R_t=\exp(t\log(R_1R_0^{\top}))R_0$, with target $u=\log(R_1R_t^{\top})/(1-t)$.
 Each AdamW step (learning rate $10^{-3}$, weight decay $10^{-4}$) used one crystal
-and one draw. Seeds 0, 1 and 2 were trained for eight epochs, and each seed's
-lowest-validation-loss epoch was kept (epochs 1, 8 and 4). These checkpoints
+and one draw. Seeds 0, 1 and 2 were trained on CPU for eight epochs: the runs were
+launched for 40, their records end after nine, and the checkpoints of record were
+copied after the eighth (Supporting Information). Each seed's lowest-validation-loss
+epoch among the eight was kept (epochs 1, 8 and 4). These checkpoints
 predate N3, and they were kept as the model of record after DEV-TEST had been seen
 (Supporting Information, disclosure c). Sampling took
 40 Euler steps on $\mathrm{SO}(3)$ from 16 Haar-random starts per crystal, and the
@@ -114,7 +118,7 @@ the draws stored during development, re-matched from their rotations. OURS-N2, a
 sensitivity row, is the same network retrained for 30 epochs with eight draws per
 crystal per step, cosine learning-rate decay and fixed validation draws, its
 checkpoints chosen on VAL.
-% src: scripts/g2_learned_flow.py:130-144,184-227; results/vast_g2/eval_s{0,1,2}.pt (hist: epochs 0-7; best 0/7/3, zero-based); scripts/g2_rank.py:44-51; tasks/n3_protocol.md:19-20,156-162,242-244,274-275,362-368; scripts/g2_train_v2.py:1-12; tasks/omega_rebuild_plan.md:67-68,120-141
+% src: scripts/g2_learned_flow.py:130-144,155 (--epochs default 40),184-227; results/vast_g2/eval_s{0,1,2}.pt (hist: epochs 0-7; best 0/7/3, zero-based; epoch 7 = the per-epoch resume checkpoint after the eighth epoch); results/vast_g2/g2_learned_s{0,1,2}.log and .resume.pt (records end at epoch index 8, no final checkpoint written); scripts/n3_ours.py:93 (loads best_state); scripts/g2_rank.py:44-51; tasks/n3_protocol.md:19-20,156-162,242-244,274-275,362-368; scripts/g2_train_v2.py:1-12; tasks/omega_rebuild_plan.md:67-68,120-141
 
 \subsection{Comparators}
 
@@ -142,7 +146,10 @@ invariant, up to a branch-cut effect (amendment A2), under a group $H$ of common
 rotations set by $z_{\mathrm{MCF}}$ ($\mathrm{SO}(3)$ for $z_{\mathrm{MCF}}=1$,
 O(2) for 2, D$_2$ for 3 or more). MCF-R+G therefore scanned $H$ for each draw
 (both cosets on a 2$^\circ$ grid, or the four D$_2$ elements) and kept the member
-with the lowest steric energy; it uses no truth. MCF-A trained MCF's released joint objective (lattice, centroids and
+with the lowest steric energy; it uses no truth. For $z_{\mathrm{MCF}}=1$ no scan is run,
+so MCF-R+G equals MCF-R there. The network is equivariant away from the branch cut, but the
+sampler's invariance is only approximate: recorded sampler deviations can be of order one
+(Supporting Information, diagnostic (a)). MCF-A trained MCF's released joint objective (lattice, centroids and
 orientations generated). It receives less information than OURS, is reported in a
 separate context table and enters no hypothesis.
 % src: tasks/n3_protocol.md:507-531,556-584,598-613
@@ -265,8 +272,8 @@ representation can emit, computed before any sampling and under every matcher: (
 exact expansion, as used by OURS and the classical arms (all of TEST-B by
 construction); (b) MCF's per-copy representation; (c) the information of MCF's
 released structure-prediction driver, one conformer and one $\chi$ for all copies,
-as its best homochiral approximant (each improper copy replaced by the RMSD-optimal
-proper rotation onto its mirror); and (d) the old proper-rotation-only parser. No
+as the lowest-RMSD homochiral approximant found (each improper copy replaced by the
+lowest-RMSD proper rotation onto its mirror found by a multi-start search); and (d) the old proper-rotation-only parser. No
 representability claim is made relative to MCF's per-copy representation.
 % src: tasks/n3_protocol.md:876-909
 
