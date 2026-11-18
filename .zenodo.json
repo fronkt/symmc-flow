@@ -1,0 +1,29 @@
+{
+  "upload_type": "software",
+  "title": "symmc-flow v3: preregistered benchmark of molecular-crystal orientation completion (code, protocol, refcode lists, results)",
+  "creators": [
+    {
+      "name": "Cai, Frank",
+      "affiliation": "Purdue University",
+      "orcid": "0009-0003-0041-1459"
+    }
+  ],
+  "description": "<p>Code, preregistered protocol and results for the N3 benchmark of molecular-crystal <em>orientation completion</em> (ACS Omega resubmission, manuscript ao-2026-09173w). For crystals with one molecule in the asymmetric unit, the true lattice, space-group operations, asymmetric-unit centroid and rigid conformer are given and the asymmetric-unit orientation is predicted; this is not crystal structure prediction.</p><p>Contents: the preregistered protocol and its amendments (tasks/n3_protocol.md), the frozen model selection (results/n3/n3_selection.json), the refcode lists that define every set (tasks/n3_sets/), the numeric results committed before interpretation (results/n3/n3_results.json), the scoring and arm code (scripts/n3_*.py), the scripts that generate every number and table of the manuscript and Supporting Information (scripts/n3_paper_numbers.py, scripts/n3_si_tables.py), and the manuscript sources.</p><p>Cambridge Structural Database structures are licence-restricted and are not included; the refcode lists reproduce every set from a licensed CSD installation.</p>",
+  "license": "MIT",
+  "keywords": [
+    "molecular crystals",
+    "space-group symmetry",
+    "flow matching",
+    "orientation",
+    "preregistration",
+    "benchmark",
+    "Cambridge Structural Database"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/fronkt/symmc-flow",
+      "relation": "isSupplementTo",
+      "resource_type": "software"
+    }
+  ]
+}
