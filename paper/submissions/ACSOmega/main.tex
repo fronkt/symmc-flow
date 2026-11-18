@@ -203,7 +203,7 @@ manuscript's relative-target experiment itself was not rerun.
 cell: $K$ for primitive lattices and $K/\mathrm{mult}$ for centred ones, where
 mult is the centring multiplicity (lattice points per cell). MCF-R is not given the operations, but
 spglib on the true centroids, keeping the operations consistent with each copy's
-handedness, recovers the copy-to-copy rotations uniquely in 198 of 200 DEV-TEST
+handedness, recovers the copy-to-copy rotations uniquely in 198 of 200 DEV-TEST (development-set)
 crystals (the truth is among the candidates in the other 2). H1 therefore tests
 explicit, enforced symmetry together with our learner; the ii-S ablation
 separates the two.}
@@ -304,7 +304,8 @@ unrelaxed experimental structure); H2 form: EXACT. Information: $L$, true lattic
 true asymmetric-unit centroid; ops, the true space-group operations, enforced; all $c_k$,
 the true centroids of all copies. picked@1: seed mean $\pm$ s.d.\ over three seeds (iii-s
 is deterministic). $\Delta$: OURS minus arm, paired over crystals, with BCa 95\% CI;
-two-stage: the seed-resampling interval. draw@1: a random draw; any@16: any of 16 draws.
+two-stage: the seed-resampling interval. draw@1: a random draw; any@16: any of 16 draws (for
+iii-s, its 16 lowest distinct minima).
 H1/H2/H3: S, supported; N, not supported (Table~\ref{tab:hyp}); primary family on the OURS
 row, the N2 family on the OURS-N2 row. $^{b}$Not computed for iv-P. Compute: OURS
 \nOursSec~s per crystal per seed (median) with 16 LJ evaluations
@@ -370,7 +371,7 @@ differences is \nZmcfMin{} pp.
 The classical search iii-s is given exactly what OURS is given and searches over
 $R_{\text{asym}}$ with a universal interatomic potential (FF$^\ast$; Methods), keeping the
 lowest minimum. It reproduces \nSearchPick\% of the unrelaxed experimental structures, and
-OURS falls short by \nHTwoDelta{} pp \nHTwoCI{} (Holm $p=$~\nHTwoP). H2 is not supported.
+OURS minus iii-s is \nHTwoDelta{} pp \nHTwoCI{} (Holm $p=$~\nHTwoP). H2 is not supported.
 The comparison was preregistered in its EXACT form, which scores the search's minimised
 structure against the unrelaxed experimental one; this form was fixed on the selection set
 because the potential holds the experimental orientation there. On TEST-B, when the
@@ -382,7 +383,7 @@ data overlap with organic molecular crystals; on the \nOmcN{} test crystals outs
 overlap the difference is \nOmcDelta{} pp \nOmcCI{} (descriptive).
 
 Minimising OURS's own draws with the same potential (i-E, descriptive) raises its rate to
-\nIEPick\%, still \nIEvsSearchDelta{} pp \nIEvsSearchCI{} below the search. With the lattice,
+\nIEPick\%; i-E minus iii-s is still \nIEvsSearchDelta{} pp \nIEvsSearchCI. With the lattice,
 operations and position given, only three rotational degrees of freedom remain, a
 multi-start search with an accurate potential covers them well, and the learned model does
 not compete with it on accuracy. The protocol registered no compute hypothesis, so we make

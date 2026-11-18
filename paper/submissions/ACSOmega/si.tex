@@ -1325,13 +1325,16 @@ split & stol & MCF scorer & MCF reading, ours & own reading & Fig.~3a & $\pm$5 p
 % src: results/n3/gateC.json C-a.labels.{test,val}
 
 \paragraph{Scoring provenance.} Each set was scored once, at step 9, by one Slurm job in one
-environment (\svScoreEnv), running only the frozen commands; no job stopped and none restarted
+environment (\svScoreEnv), running 93 commands: the 92 frozen commands plus one separately
+authorised summary step (step-9 clarification); no job stopped and none restarted
 (Table~\ref{tab:si_prov}).
+% src: tasks/n3_step9_clarification_2026-11-15.md:37,62-63
 % src: results/n3/n3_results.json sets.<set>.provenance, one_scoring_environment
 
 \begin{table}[htbp]
 \caption{Step-9 scoring jobs: Slurm job, node, first and last event (cluster local time),
-frozen commands done of started, checksummed output files, and stops.}
+commands done of started (92 frozen plus one authorised summary), checksummed output
+files, and stops.}
 \label{tab:si_prov}
 \centering
 \footnotesize

@@ -368,7 +368,7 @@ def build():
                 mac(f"svDec{nm}", f2(x["delta_pp"], sign=True), f"{RES} sets.testB.report.{key}.delta_pp")
                 mac(f"svDec{nm}CI", ci(x["bca_pp"]), f"{RES} sets.testB.report.{key}.bca_pp")
             mac("svDecompSum", f2(a_["delta_pp"] + b_["delta_pp"], sign=True),
-                f"{RES} wording.ii_S_decomposition: (ii-S - MCF-R+G) + (OURS - ii-S), delta_pp")
+                f"{RES} sets.testB.report.wording.ii_S_decomposition: (ii-S - MCF-R+G) + (OURS - ii-S), delta_pp")
             mac("svDecompLearner", tex(rep["wording"]["ii_S_decomposition"]["learner"]),
                 f"{RES} sets.testB.report.wording.ii_S_decomposition.learner")
             mac("svZmcfMin", f2(rep["wording"]["zmcf_ge3_min_delta_pp"], sign=True),

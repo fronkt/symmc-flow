@@ -200,7 +200,8 @@ the full set: an arm failure counted as a miss, harness crashes were re-run, and
 no crystal was dropped or timed out.
 % src: tasks/n3_protocol.md:143-162,203-217
 
-Each sampling arm drew 16 samples per crystal and seed, and a selector made one
+Each sampling arm drew 16 samples per crystal and seed (iii-s instead keeps its 16 lowest
+distinct minima from a screened, multi-start search), and a selector made one
 pick: RANDOM (scored as the exact fraction of matching draws), LJ (lowest steric
 energy, a Lennard-Jones sum over intermolecular atom pairs within 6~\AA\ with
 contact distances 0.90 times the sum of the van der Waals radii), RESID (learned
