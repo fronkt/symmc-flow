@@ -14,6 +14,8 @@ sed -E 's/\itemsep[0-9.]*em//g' main.tex > _new_tmp.tex
   --config="PICTUREENV=(?:picture|DIFnomarkup|tabular|table|sidewaystable|figure)[\w\d*@]*" \
   _old_tmp.tex _new_tmp.tex > main_marked_vs_original.tex
 python -I ../../../scripts/latexdiff_fix_lists.py main_marked_vs_original.tex
-rm -f _old_tmp.tex _new_tmp.tex main_marked_vs_original.aux main_marked_vs_original.bbl
-latexmk -pdf -interaction=nonstopmode -halt-on-error main_marked_vs_original.tex > /dev/null
+rm -f _old_tmp.tex _new_tmp.tex
+# -gg: latexmk's own forced full rebuild. Deleting the .aux/.bbl by hand made latexmk run bibtex on an empty
+# .aux first (exit 12 on every fresh build); -gg cleans and orders the passes itself.
+latexmk -gg -pdf -interaction=nonstopmode -halt-on-error main_marked_vs_original.tex > build_marked.log 2>&1
 echo "wrote paper/submissions/ACSOmega/main_marked_vs_original.pdf"

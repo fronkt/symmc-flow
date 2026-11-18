@@ -38,8 +38,8 @@ protocol version 3 frozen & 2026-09-28 01:59 & 8f7e494 & no N3 arm trained, samp
 A1: SEL and TEST-B frozen & 2026-09-28 02:22 & 05aa3c9 & no arm output on SEL, TEST-B or DEV-TEST \\
 A2: implementation clarifications & 2026-09-28 07:52 & 74f1921 & as A1; CPU smoke runs on VAL and TRAIN only \\
 A2a: deployment packaging & 2026-10-11 01:06 & 783a1ab & as A1 \\
-A3: step-4 settings and approval & 2026-10-19 15:16 & a25a444 & as A1; no VALSEL truth minimised \\
-H2 form published (EXACT) & 2026-10-21 10:24 & 1aff111 & before any candidate was minimised under FF* \\
+A3: step-4 settings and approval & 2026-10-19 15:16 & a25a444 & as A1; no VALSEL truth minimized \\
+H2 form published (EXACT) & 2026-10-21 10:24 & 1aff111 & before any candidate was minimized under FF* \\
 A4: Gate C corrections & 2026-11-02 16:32 & b50fb74 & as A1; no MCF arm trained \\
 step-5b clarifications & 2026-11-06 17:22 & 159876d & before any VALSEL candidate score \\
 step-6 selection freeze & 2026-11-08 21:54 & 772a36e & before any TEST-B or DEV-TEST input on the cluster \\
@@ -55,7 +55,7 @@ results (\texttt{n3\_results.json}) & 2026-11-17 15:36 & f1c713a & before interp
 \subsection{Disclosures}\label{si:disclosures}
 
 The protocol requires the following disclosures (its Section 1.4). DEV-TEST is
-labelled ``used during development, not confirmatory'' wherever it is reported.
+labeled ``used during development, not confirmatory'' wherever it is reported.
 \begin{itemize}
 \item[(a)] DEV-TEST was scored by the G2 baselines, the G2 evaluation, N1 and N2.
 \item[(b)] The N1 idea of ranking draws before relaxing them came from a DEV-TEST
@@ -64,7 +64,7 @@ diagnostic: the relaxed-truth drift, median 14.4$^\circ$.
 N2 retrain and the G2 checkpoints tied on VAL picked@1 (7.0 vs 7.0\% per-seed mean;
 9.0 vs 9.0\% pooled). Both were then scored on DEV-TEST: G2 7.5\%, N2 5.0\%
 (crystal-level sign-flip $p=0.023$). G2 was kept. Applied when the protocol was
-written, and labelled post hoc, the rule ``incumbent unless VAL-better; tie
+written, and labeled post hoc, the rule ``incumbent unless VAL-better; tie
 $\rightarrow$ VAL draw@1'' keeps G2 from VAL alone: draw@1 0.96 vs 0.67\%, higher
 in every seed; any@16 13.3 vs 10.3\%. Applied per seed across the two runs, the
 same rule would replace seed 1 with the N2 checkpoint (VAL 7 vs 4\%), and DEV-TEST
@@ -131,7 +131,7 @@ Only ZAYGOY (4 copies) hit the cap.
 C$_2$-conjugate copies, which every symmetric-prior draw has at $t=0$, sit on it.
 The equivariance diagnostic (a) is therefore evaluated at a generic state, the
 invariance of MCF's sampled distribution is approximate, and diagnostics (b)--(d)
-are labelled approximate if the 50-step sampler deviation exceeds $10^{-3}$ on any
+are labeled approximate if the 50-step sampler deviation exceeds $10^{-3}$ on any
 selected checkpoint. MCF's sampler runs only in float32.
 \item MCF's own scorer rebuilds each lattice from its six parameters but keeps the
 Cartesian coordinates in the original frame, so for cells not in pymatgen's
@@ -159,14 +159,14 @@ returns a different resolved configuration is an environment error, never an FF*
 failure. The finite-difference gradient check passes only if every relative error
 is at most $10^{-4}$ in float64, on 5 VAL crystals at the true pose and one Haar
 pose.
-\item X--H normalisation moves each H bonded to C, N or O along its bond to exactly
-the normalised length, lengthening or shortening it; other H atoms are unchanged.
-\item Disclosure. Local CPU smoke runs minimised a few arm candidates under FF*
+\item X--H normalization moves each H bonded to C, N or O along its bond to exactly
+the normalized length, lengthening or shortening it; other H atoms are unchanged.
+\item Disclosure. Local CPU smoke runs minimized a few arm candidates under FF*
 before any H2 form existed (iii-s starts on VAL crystals 26 and 78; i-E on the
 iii-u draws of VAL crystal 26, and BASIN on its pick; in review, TRAIN crystal 57),
 each with UMA s-1p1 in float32, at most 10 evaluations per start and no matching
 of any kind. All of those outputs were deleted. They carry no information about the
-H2 form, which is a fixed threshold on minimised truths.
+H2 form, which is a fixed threshold on minimized truths.
 \item OMC25's element set, taken as the union of elements over all its molecules,
 is \{B, Br, C, Cl, F, H, I, N, O, P, S, Si\}. Crystals with other elements: DEV-TEST
 1, VAL 2, SEL 5, TEST-B 16 (listed by refcode). FF* runs on them all.
@@ -194,7 +194,7 @@ scientific item changed.
 
 \paragraph{A3 (2026-10-19): step-4 settings, approval and disclosures.} Made after
 the timing gate (TRAIN and VAL crystals, nothing matched) and before any VALSEL
-truth was minimised. The run moved from rented single GPU boxes to Purdue Anvil
+truth was minimized. The run moved from rented single GPU boxes to Purdue Anvil
 (ACCESS allocation CHE260157, A100 nodes, one Apptainer image) with the author's
 approval of a 700 GPU-h cap for steps 5--7, against a projection of 515--535 GPU-h;
 no degrade item was taken, and on Anvil's persistent file system the step-8 ``destroy
@@ -208,7 +208,7 @@ finite-difference gradient check failed at step $h=10^{-4}$ rad on one of ten ro
 a clash pose whose error scaled as $h^2$ (central-difference truncation, not a
 gradient defect), so the step was changed to $h=10^{-5}$ rad with the same pass
 rule; the check had to pass again on the production GPU before any VALSEL truth was
-minimised, and it did (commit 1aff111). A3 also discloses that one timing upload
+minimized, and it did (commit 1aff111). A3 also discloses that one timing upload
 was made in automatic mode on the author's prior approval instead of command by
 command, and that the first timing box was abandoned and its measurements
 discarded.
@@ -288,7 +288,7 @@ freeze apart from the step-7 fix, and a driver ran only the frozen commands (92 
 set, with three permitted rewrites: worker count, interpreter path and freeze hash)
 after checking that no scored output of the set existed. The clarification added
 one aggregation that the protocol asks for (its Section 3.2, diagnostic (c)) but no
-frozen command performed, a summary of the oracle-aligned MCF-R scores labelled an
+frozen command performed, a summary of the oracle-aligned MCF-R scores labeled an
 oracle item; set a resume rule for stopped jobs (every step-9 command is
 deterministic) and a rule that any code fix is recorded, pushed and disclosed; and
 recorded in advance that the random floor's continuous-RMS block would read
@@ -311,7 +311,7 @@ specifies; the transferred archive was checksum-verified on both ends.
 \subsection{MCF checkpoints}\label{si:mcfckpt}
 
 Table~\ref{tab:si_mcf_ckpt} lists the MCF checkpoint used for every seed of every
-MCF arm. Under the step-5b set reading, a checkpoint labelled ``last'' is the
+MCF arm. Under the step-5b set reading, a checkpoint labeled ``last'' is the
 latest-epoch top-3 checkpoint, not final-epoch weights: MCF-R and MCF-A were
 configured for 1,715 epochs (24,010 steps), and no checkpoint from the end of
 training exists for any seed. ii-S uses the MCF-R+G checkpoints. Because MCF-R+G

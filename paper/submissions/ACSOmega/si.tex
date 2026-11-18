@@ -57,13 +57,14 @@
 \affiliation{Purdue University, West Lafayette, Indiana 47907, United States}
 \email{cai485@purdue.edu}
 
-% Title: the main text's provisional title (Frank to confirm there first).
+% Title: the main text's title (confirmed by the author 2026-11-17).
 \title{Supporting Information for: Exact Space-Group Expansion of a Learned Asymmetric Unit:
 A Preregistered Benchmark of Molecular-Crystal Orientation Completion}
 
 \begin{document}
 
-\noindent This document reports every output the N3 protocol registers for the Supporting
+\noindent This document reports every output the benchmark's preregistered protocol (called
+N3 in the repository and below; \texttt{tasks/n3\_protocol.md}) registers for the Supporting
 Information (its Section~6), on the confirmatory set TEST-B ($n=\svN$) and on DEV-TEST
 ($n=\svNDev$), which was used during development and is not confirmatory. Sections:
 \ref{si:prereg}~preregistration, amendments and disclosures;
@@ -173,7 +174,7 @@ arm & selector & per seed & ens. & per seed & ens. \\
 \section{Ensembles, any@48 and continuous endpoints}\label{si:ensembles}
 % =====================================================================
 \paragraph{Ensembles.} The ensemble applies an arm's frozen selector to all draws of its three
-trained models (or Haar seed bases) at once. It is labelled with the number of models and
+trained models (or Haar seed bases) at once. It is labeled with the number of models and
 draws it pools (``3-model ensemble, 48 draws'') and is never a single model's accuracy.
 any@48 is the fraction of crystals with at least one matching draw among the 48
 (Table~\ref{tab:si_ensemble}).
@@ -200,13 +201,13 @@ arm & ensemble & picked@1 & ensemble picked@1 & any@16 & any, all draws \\
 \paragraph{Continuous endpoint: RMS of the picked structure.} For each arm's picked structure
 the protocol records the RMS displacement from
 \texttt{StructureMatcher(ltol=0.3, stol=1.0, angle\_tol=10, scale=False).get\_rms\_dist}
-(pymatgen's normalised RMS; no match counts as $+\infty$) and reports its empirical
+(pymatgen's normalized RMS; no match counts as $+\infty$) and reports its empirical
 distribution function (ECDF) per arm. Table~\ref{tab:si_ecdf} gives the ECDF at six
 displacements and Figure~\ref{fig:si_ecdf} the curves for the main arms; the value at $x=1.0$
 is the fraction of picks that this loosest matcher accepts at all.
 
 \begin{table}[htbp]
-\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalised RMS displacement, the
+\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalized RMS displacement, the
 percentage of crystals whose pick has RMS $\le x$, as the mean over seeds of the per-seed ECDF
 (stored on a 0.05 grid). $^{a}$The random floor's continuous block reads ``missing'', as the
 step-9 clarification recorded in advance: the frozen command list matches iii-u under this
@@ -228,7 +229,7 @@ arm & $x=0.1$ & 0.2 & 0.3 & 0.5 & 0.8 & 1.0 \\
 \begin{figure}[htbp]
 \centering
 \input{generated/si_ecdf_fig_testB.tex}
-\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalised RMS displacement
+\caption{TEST-B ($n=\svN$): ECDF of the picked structure's normalized RMS displacement
 (\texttt{get\_rms\_dist} at stol 1.0), mean over seeds, drawn through the stored 0.05 grid. A
 curve that ends below 100\% at $x=1$ has picks that this matcher does not accept at all.
 Values are those of Table~\ref{tab:si_ecdf}. Descriptive.}
@@ -238,15 +239,15 @@ Values are those of Table~\ref{tab:si_ecdf}. Descriptive.}
 
 \paragraph{Orientation error.} For the arms that output an asymmetric-unit orientation, the
 protocol reports the geodesic angle between the picked $R_{\text{asym}}$ and the experimental
-$R_0$, minimised over the molecule's proper point group (pymatgen's
+$R_0$, minimized over the molecule's proper point group (pymatgen's
 \texttt{PointGroupAnalyzer}, tolerance 0.3~\AA; method parameters). Table~\ref{tab:si_geodesic}
 gives its quantiles.
 
 \begin{table}[htbp]
 \caption{TEST-B ($n=\svN$): geodesic error (degrees) of the picked $R_{\text{asym}}$ to the
-experimental $R_0$, minimised over the molecule's proper point group; quantiles per seed and
+experimental $R_0$, minimized over the molecule's proper point group; quantiles per seed and
 pooled over seeds ($q_{10}$ to $q_{90}$). For i-E and iii-s the picked orientation is the
-FF$^\ast$-minimised one. Descriptive.}
+FF$^\ast$-minimized one. Descriptive.}
 \label{tab:si_geodesic}
 \centering
 \small
@@ -270,7 +271,7 @@ the MCF-R+G checkpoints, maps each copy back to an asymmetric-unit orientation, 
 exactly and keeps the lowest-LJ candidate, giving one candidate per draw (``MCF orientations
 inside our exact space-group expansion''). \emph{iv-S} takes the identity copy's orientation from
 the previous architecture (iv-P) as $R_{\text{asym}}$ and expands it exactly. \emph{i-E}
-minimises all 16 OURS draws per seed with the universal interatomic potential FF$^\ast$ and picks
+minimizes all 16 OURS draws per seed with the universal interatomic potential FF$^\ast$ and picks
 the lowest FF$^\ast$ energy; it separates the learned proposal from the energy model and is
 scored in the H2 form (EXACT).
 
@@ -351,13 +352,13 @@ two-stage interval. Descriptive; no tests.}
 % src: results/n3/n3_results.json sets.testB.report.steric_basin
 
 \paragraph{Descriptive contrasts around H2.} H2 was tested in its EXACT form, which scores the
-search's minimised structure against the unrelaxed experimental one. Table~\ref{tab:si_h2desc}
+search's minimized structure against the unrelaxed experimental one. Table~\ref{tab:si_h2desc}
 gives the descriptive contrasts the protocol attaches to it: i-E against iii-s; OURS against
 iii-s on the crystals whose experimental pose FF$^\ast$ holds (anchored), loses (drifted) or does
 not converge (unresolved); on the crystals whose CSD refcode family is not in the potential's
 OMC25 training data (OMC25 non-overlap); and in the secondary BASIN form, in which each arm's pick and the experimental
-structure are both FF$^\ast$-minimised before matching. Table~\ref{tab:si_basin} gives the
-BASIN-form rates. \svBasinUnconvN{} BASIN references (the FF$^\ast$-minimised experimental
+structure are both FF$^\ast$-minimized before matching. Table~\ref{tab:si_basin} gives the
+BASIN-form rates. \svBasinUnconvN{} BASIN references (the FF$^\ast$-minimized experimental
 structures) did not converge: \svBasinUnconv; none was invalid (\svBasinInvalid).
 % src: results/n3/n3_results.json sets.testB.report.{i_e_vs_h2, wording.H2_by_ff_label, h2_omc25_nonoverlap, h2_basin_reference}, table1.iii-s.h2_basin_delta
 
@@ -382,7 +383,7 @@ contrast & form & $n$ & $\Delta$ [BCa 95\% CI] & two-stage & nonzero \\
 
 \begin{table}[htbp]
 \caption{TEST-B ($n=\svN$): picked@1 (\%) in the secondary BASIN form (the pick and the
-experimental structure both FF$^\ast$-minimised before matching), per seed and seed mean, beside
+experimental structure both FF$^\ast$-minimized before matching), per seed and seed mean, beside
 the EXACT-form seed mean. iii-s is one deterministic run. Descriptive.}
 \label{tab:si_basin}
 \centering
@@ -429,7 +430,7 @@ start at the truth, are reset to it after every Euler step and are used at final
 rotations are untouched. \\
 P4 & The GPU-selection calls return device 0. \\
 P5 & \texttt{pl.seed\_everything(experiment.seed)} before the model is constructed. \\
-P6 & Speed-ups: a vectorised symmetric SO(3) prior and a scatter-softmax attention pooling,
+P6 & Speed-ups: a vectorized symmetric SO(3) prior and a scatter-softmax attention pooling,
 switched on after the equivalence checks on the cluster GPU (prior bit-identical; pooling outputs
 and input gradients within $10^{-5}$ relative). \\
 \bottomrule
@@ -475,7 +476,7 @@ $t=0$ (amendment A2). The 50-step sampler deviation, the largest departure from 
 the final rotations when the full sampler is run from the same prior draw and from its rotated
 copy, therefore exceeds $10^{-3}$ on all
 \svDiagAApproxN{} selected checkpoints (\svDiagAApprox; Table~\ref{tab:si_diaga2}), and by the
-rule of A2 the outputs of diagnostics (b)--(d) are labelled approximate. At the corrupted batch
+rule of A2 the outputs of diagnostics (b)--(d) are labeled approximate. At the corrupted batch
 state the selected checkpoints give the harness verdict HARNESS\_CHECK (reported, not gated),
 with edges on the branch cut; the Thurlemann checkpoint, whose prior draw has none on the cut,
 passes there.
@@ -516,7 +517,7 @@ better than a random draw.
 \caption{TEST-B: MCF diagnostic (b), perfect-model ceiling (oracle item, approximate), per
 matcher and $z_\mathrm{MCF}$ (molecules in the exported MCF cell): mean $c_i$ (draw@1 ceiling,
 \%) and mean $1-(1-c_i)^{16}$ (any@16 ceiling, \%). For $z_\mathrm{MCF}=1$ the value is the
-Haar floor, as labelled. The draw@1 ceiling does not bound LJ-picked@1. An oracle diagnostic
+Haar floor, as labeled. The draw@1 ceiling does not bound LJ-picked@1. An oracle diagnostic
 using experimental truth.}
 \label{tab:si_diagb}
 \centering
@@ -618,7 +619,7 @@ Table~5 of the main text gives seed-mean picked@1 by stratum. Tables~\ref{tab:si
 correctly in each seed ($k$, s0 / s1 / s2), the Wilson 95\% interval of each seed's rate, and the
 ensemble count and its Wilson interval. The random floor's $k$ is fractional because RANDOM is
 scored as its exact expectation. Levels with $n<30$ are marked ``too small to interpret''. Each
-$z_\mathrm{MCF}$ level carries MCF's diagnostic-(b) ceiling under the primary matcher, labelled
+$z_\mathrm{MCF}$ level carries MCF's diagnostic-(b) ceiling under the primary matcher, labeled
 oracle and approximate; as above, this draw@1 ceiling does not bound LJ-picked@1. The FF$^\ast$
 truth label is reported for the H2 pair only (OURS, OURS-N2 and iii-s). The sensitivity strata
 (Table~\ref{tab:si_strata_sens}) repeat the three handedness strata. A conformer is chiral
@@ -706,7 +707,7 @@ structure prediction driver uses one conformer and one handedness for all copies
 is the lowest-RMSD homochiral approximant found: the true lattice and centroids, with each copy
 made by an improper operation replaced by the lowest-RMSD proper rotation onto its mirror image
 found by element-blocked ICP. A multi-start search gives no global-optimality certificate, and
-minimising per-molecule RMSD does not optimise the matcher's criterion, so a non-match shows
+minimizing per-molecule RMSD does not optimize the matcher's criterion, so a non-match shows
 that this approximant fails, not that every homochiral cell would. The protocol fixed 16 starts (the four sign-diagonal rotations and twelve
 seeded random rotations); amendment A2 added the best automorphism rotation as a 17th start,
 and the 16-start column is reported beside it. The extra start lowered the optimum for
@@ -799,7 +800,7 @@ step & crystals \\
 DEV-TEST holds \svNDev{} crystals that were used during development (disclosures (a)--(e),
 Section~\ref{si:disclosures}). Every arm that ran on TEST-B ran on it with the same frozen
 configuration, and its rows form a secondary continuity record. Every table in this section is
-labelled ``used during development, not confirmatory''; none carries a test, and the frozen
+labeled ``used during development, not confirmatory''; none carries a test, and the frozen
 report computes no hypothesis family on DEV-TEST. The OURS and OURS-N2 rows reuse the draws
 stored during development, re-matched from their rotations.
 % src: results/n3/n3_results.json sets.devtest.{role,families}; tasks/n3_protocol.md:332-334 (Section 2.5)
@@ -860,7 +861,7 @@ arm & ensemble & picked@1 & ensemble picked@1 & any@16 & any, all draws \\
 % src: results/n3/n3_results.json sets.devtest.report.table1.<arm>.{ensemble_*,any_all_pct}
 
 \begin{table}[htbp]
-\caption{\devlabel: ECDF of the picked structure's normalised RMS displacement, in the layout and
+\caption{\devlabel: ECDF of the picked structure's normalized RMS displacement, in the layout and
 with the notes of Table~\ref{tab:si_ecdf}. No tests.}
 \label{tab:si_dev_ecdf}
 \centering
@@ -1072,7 +1073,7 @@ order is VALSEL picked@1, then draw@1, then any@16, and the final tie-break is t
 fixed-draw VAL loss (for MCF-A Stage~1: any-of-10 at stol 1.0, then at stol 0.8, then MCF's
 logged validation loss). The final tie-break decided MCF-R seeds 0 and 1, MCF-R+G seed 1 and all
 three iv-P seeds; in each of those cases the candidates were tied on every VALSEL criterion. For
-the MCF arms the checkpoint labelled ``last'' is the latest-epoch top-3 checkpoint, not
+the MCF arms the checkpoint labeled ``last'' is the latest-epoch top-3 checkpoint, not
 final-epoch weights (Section~\ref{si:mcfckpt}).
 % src: results/n3/n3_selection.json valsel_cell_scores.<grid>.{stage_a,stage_b}.{tie,decided_by}; tasks/n3_protocol.md:251-276,1530-1541
 
@@ -1188,18 +1189,18 @@ none. All \svLJBundles{} LJ bundles of the MCF arms had \svLJDetFail{} determini
 failures and \svLJNonfinite{} non-finite energies.
 % src: tasks/n3_step4_record_2026-10-11.md:767-771; macros in generated/si_numbers.tex
 
-\paragraph{X--H normalisation.} Every FF$^\ast$ evaluation uses a copy of the conformer whose
-C--H, N--H and O--H bonds are moved to the neutron-normalised lengths\cite{allen2010xh} (the
+\paragraph{X--H normalization.} Every FF$^\ast$ evaluation uses a copy of the conformer whose
+C--H, N--H and O--H bonds are moved to the neutron-normalized lengths\cite{allen2010xh} (the
 scored structure keeps
-the experimental hydrogen positions). The protocol asks for the number of normalised bonds per
-set. The step record holds it for the VAL runs: the iii-s VAL search normalised \svXHCH{}
+the experimental hydrogen positions). The protocol asks for the number of normalized bonds per
+set. The step record holds it for the VAL runs: the iii-s VAL search normalized \svXHCH{}
 C--H, \svXHNH{} N--H and \svXHOH{} O--H bonds (\svXHShort{} of them shortened), and the i-E smoke
 run on \svXHIeN{} VAL crystals \svXHIeCH{} C--H bonds. For TEST-B and DEV-TEST the draw bundles
 of the FF$^\ast$ runs record the count per crystal. Summed over each set's conformers, every
-FF$^\ast$ run on a set normalised the same bonds: \svXHSetCH{} C--H, \svXHSetNH{} N--H and
+FF$^\ast$ run on a set normalized the same bonds: \svXHSetCH{} C--H, \svXHSetNH{} N--H and
 \svXHSetOH{} O--H on TEST-B (\svXHSetShort{} shortened), and \svXHSetCHDev{}, \svXHSetNHDev{} and
 \svXHSetOHDev{} on DEV-TEST (\svXHSetShortDev{} shortened). These runs are iii-s, i-E (each
-seed), the FF$^\ast$ truth minimisations and the BASIN minimisations of OURS-N2's draws (each
+seed), the FF$^\ast$ truth minimizations and the BASIN minimizations of OURS-N2's draws (each
 seed). OURS's BASIN picks re-use the i-E minima and call FF$^\ast$ no further, and no other arm
 calls FF$^\ast$, so the counts do not apply to them.
 % src: tasks/n3_step4_record_2026-10-11.md:537-538, 644 (VAL); tasks/n3_protocol.md:696-702
@@ -1247,8 +1248,8 @@ arm & arm-failure crystals & det.\ matcher & list & det.\ energy (per seed) & \t
 % src: results/n3/n3_results.json sets.devtest.report.table1.<arm>
 
 \paragraph{FF$^\ast$ truth anchoring and unconverged references.} Each experimental structure was
-minimised under FF$^\ast$ (UMA s-1p1\cite{wood2025uma}, OMC task; fairchem-core
-\svFairchem\cite{fairchem2026core}; settings \svFFSettings) and labelled anchored (converged and still matching), drifted (converged and no
+minimized under FF$^\ast$ (UMA s-1p1\cite{wood2025uma}, OMC task; fairchem-core
+\svFairchem\cite{fairchem2026core}; settings \svFFSettings) and labeled anchored (converged and still matching), drifted (converged and no
 longer matching) or unresolved (not converged). The VALSEL rate fixed the H2 form (EXACT, since
 anchoring was at least 50\%; VAL alone \svAnchValOnly\%), and the TEST-B and DEV-TEST rates are
 reported as recorded (Table~\ref{tab:si_anchor}). The unconverged TEST-B references, which are
@@ -1256,9 +1257,9 @@ the unresolved crystals, are \svBasinUnconv{} (DEV-TEST: \svBasinUnconvDev).
 % src: results/n3/n3_results.json h2_form, sets.<set>.ff_truth_anchoring, sets.<set>.report.h2_basin_reference
 
 \begin{table}[htbp]
-\caption{FF$^\ast$ truth anchoring: crystals, anchoring rate (\%), labels, minimisations with no
-minimum, and the median drift of the minimised experimental orientation (degrees). The VALSEL row
-fixed the H2 form before any arm's candidate was minimised.}
+\caption{FF$^\ast$ truth anchoring: crystals, anchoring rate (\%), labels, minimizations with no
+minimum, and the median drift of the minimized experimental orientation (degrees). The VALSEL row
+fixed the H2 form before any arm's candidate was minimized.}
 \label{tab:si_anchor}
 \centering
 \footnotesize
@@ -1354,14 +1355,14 @@ split & stol & MCF scorer & MCF reading, ours & own reading & Fig.~3a & $\pm$5 p
 
 \paragraph{Scoring provenance.} Each set was scored once, at step 9, by one Slurm job in one
 environment (\svScoreEnv), running 93 commands: the 92 frozen commands plus one separately
-authorised summary step (step-9 clarification); no job stopped and none restarted
+authorized summary step (step-9 clarification); no job stopped and none restarted
 (Table~\ref{tab:si_prov}).
 % src: tasks/n3_step9_clarification_2026-11-15.md:37,62-63
 % src: results/n3/n3_results.json sets.<set>.provenance, one_scoring_environment
 
 \begin{table}[htbp]
 \caption{Step-9 scoring jobs: Slurm job, node, first and last event (cluster local time),
-commands done of started (92 frozen plus one authorised summary), checksummed output
+commands done of started (92 frozen plus one authorized summary), checksummed output
 files, and stops.}
 \label{tab:si_prov}
 \centering
@@ -1414,7 +1415,7 @@ same on both rows), and i-E's runs made OURS's BASIN picks, which re-use the i-E
 $^{b}$The random floor picks among iii-u's draws, which were timed only together with iii-u's LJ
 evaluations. $^{c}$Timed per set only (batched sampling or one pass over the set); the run
 figure covers it. $^{d}$DEV-TEST: OURS and OURS-N2 reuse stored development draws, whose
-sampling was not timed, and i-E minimises them. $^{e}$CPU training, no GPU: the sum of the
+sampling was not timed, and i-E minimizes them. $^{e}$CPU training, no GPU: the sum of the
 per-epoch wall-clock times in each seed's training history (OURS: \svOursEpochs{} epochs,
 \svTrainOursSeed~h per seed; OURS-N2: \svOursNTwoEpochs{} epochs on \svTrainNTwoProcs{}
 processes, \svTrainNTwoSeed~h per seed). $^{f}$One GPU: for MCF-R and MCF-A the training
@@ -1499,7 +1500,7 @@ the matches it draws reproduce the frozen outcome.
 matches (left) and the first three non-matches (right) in the frozen TEST-B order. Each panel
 shows the $K$ copies of the cell projected along its shortest axis, heavy atoms only: the
 experimental structure (thick grey) and the exact expansion of the picked $R_{\text{asym}}$
-(thin colour). RMS: the primary matcher's \texttt{get\_rms\_dist} (normalised), recomputed for
+(thin color). RMS: the primary matcher's \texttt{get\_rms\_dist} (normalized), recomputed for
 display for matches only; $\Delta\theta$: geodesic angle between the picked and the
 experimental $R_{\text{asym}}$. Generated by \texttt{scripts/fig\_n3\_examples.py}.}
 \label{fig:si_examples}

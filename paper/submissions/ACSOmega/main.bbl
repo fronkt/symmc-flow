@@ -69,6 +69,15 @@ Chen,~R. T.~Q.; Lipman,~Y. Flow Matching on General Geometries. International
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
+\bibitem[Hunnisett \latin{et~al.}(2024)Hunnisett, \latin{et~al.}
+  others]{price2023blindtest7}
+Hunnisett,~L.~M.; others The Seventh Blind Test of Crystal Structure
+  Prediction: Structure Generation Methods. \emph{Acta Crystallographica
+  Section B} \textbf{2024}, \emph{80}\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
 \bibitem[Zeng \latin{et~al.}(2026)Zeng, Sullivan, Egg, Martirossyan,
   H{\"o}llmer, Jin, Hennig, Roitberg, Martiniani, Tadmor, and
   Liu]{zeng2026molcrystalflow}
@@ -155,15 +164,6 @@ Ong,~S.~P.; Richards,~W.~D.; Jain,~A.; Hautier,~G.; Kocher,~M.; Cholia,~S.;
   Genomics (pymatgen): A Robust, Open-Source Python Library for Materials
   Analysis. \emph{Computational Materials Science} \textbf{2013}, \emph{68},
   314--319\relax
-\mciteBstWouldAddEndPuncttrue
-\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
-\EndOfBibitem
-\bibitem[Hunnisett \latin{et~al.}(2024)Hunnisett, \latin{et~al.}
-  others]{price2023blindtest7}
-Hunnisett,~L.~M.; others The Seventh Blind Test of Crystal Structure
-  Prediction: Structure Generation Methods. \emph{Acta Crystallographica
-  Section B} \textbf{2024}, \emph{80}\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax

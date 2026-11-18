@@ -510,7 +510,7 @@ def build():
                    ("MCF-R+G", "red, thick"), ("MCF-R", "red, dashed, thick"), ("iv-P", "orange, thick"),
                    ("iii-u", "gray, thick"), ("i-E", "teal, thick"), ("iii-s", "violet, thick")]
             g = ["\\begin{tikzpicture}\n\\begin{axis}[width=0.78\\linewidth, height=7cm, xmin=0, xmax=1, ymin=0,"
-                 " ymax=100, xlabel={normalised RMS displacement $x$ (\\texttt{get\\_rms\\_dist}, stol 1.0)},"
+                 " ymax=100, xlabel={normalized RMS displacement $x$ (\\texttt{get\\_rms\\_dist}, stol 1.0)},"
                  " ylabel={picked structures with RMS $\\le x$ (\\%)}, legend pos=outer north east,"
                  " legend cell align=left, tick label style={font=\\footnotesize}, label style={font=\\footnotesize},"
                  " legend style={font=\\footnotesize}]\n"]
