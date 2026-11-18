@@ -1,7 +1,7 @@
 % =====================================================================
 %DIF LATEXDIFF DIFFERENCE FILE
-%DIF DEL _old_tmp.tex   Tue Nov 17 23:22:28 2026
-%DIF ADD _new_tmp.tex   Tue Nov 17 23:22:28 2026
+%DIF DEL _old_tmp.tex   Wed Nov 18 00:01:16 2026
+%DIF ADD _new_tmp.tex   Wed Nov 18 00:01:16 2026
 %DIF 2-3c2
 %DIF < % Fully Symmetry-Conditioned Rigid-Body Flow Matching for
 %DIF < % Molecular-Crystal Structure Prediction
@@ -266,9 +266,16 @@ model with it (H2: \nHTwoDelta{} pp \nHTwoCI) was not supported.
 Crystal structure prediction (CSP) seeks the stable periodic packing of a chemical
 system, and generative models have become a fast alternative to large ensembles of
 \DIFdelbegin \DIFdel{density-functional relaxations}\DIFdelend \DIFaddbegin \DIFadd{energy evaluations}\DIFaddend , progressing from crystal diffusion autoencoders\cite{xie2022cdvae}
-to joint equivariant diffusion\cite{jiao2023diffcsp} and Riemannian flow
-matching\cite{miller2024flowmm,lipman2023flowmatching,chen2024riemannian}\DIFdelbegin \DIFdel{, which
-traverses a straight conditional path solvable in tens of steps}\DIFdelend . Rigid-body
+to joint equivariant diffusion\cite{jiao2023diffcsp} and \DIFdelbegin \DIFdel{Riemannian flow
+matching\mbox{%DIFAUXCMD
+\cite{miller2024flowmm,lipman2023flowmatching,chen2024riemannian}}\hskip0pt%DIFAUXCMD
+, which
+traverses a straight conditional path solvable in tens of steps}\DIFdelend \DIFaddbegin \DIFadd{flow
+matching\mbox{%DIFAUXCMD
+\cite{lipman2023flowmatching} }\hskip0pt%DIFAUXCMD
+on Riemannian manifolds\mbox{%DIFAUXCMD
+\cite{chen2024riemannian,miller2024flowmm}}\hskip0pt%DIFAUXCMD
+}\DIFaddend . Rigid-body
 factorization \DIFdelbegin \DIFdel{is especially attractive for }\DIFdelend \DIFaddbegin \DIFadd{suits }\DIFaddend molecular crystals: freezing each molecule's conformer \DIFdelbegin \DIFdel{collapses }\DIFdelend \DIFaddbegin \DIFadd{reduces
 }\DIFaddend dozens of atomic coordinates to a \DIFdelbegin \DIFdel{single pose---a
 lattice$L$}\DIFdelend \DIFaddbegin \DIFadd{lattice}\DIFaddend , a fractional centroid \DIFdelbegin \DIFdel{$c_m\in\mathbb{T}^3$, }\DIFdelend and an orientation \DIFdelbegin \DIFdel{$R_m\in\mathrm{SO}(3)$ per molecule---and supports the short sampling trajectories
@@ -284,9 +291,9 @@ one molecule in the asymmetric unit ($Z'=1$) on a general position, the $K$ mole
 the cell are the images of a single molecule under the $K$ operations $(W_k, t_k)$ of the
 space group. Each copy's centroid and atoms follow from the asymmetric-unit molecule by the
 operation, and an improper operation ($\det W_k=-1$) also mirrors the conformer, so the
-orientation of the asymmetric unit, $R_{\text{asym}}$, fixes all $K$. Classical
-crystal structure prediction already works this way, placing the asymmetric unit in a
-trial space group and generating the cell by symmetry\mbox{%DIFAUXCMD
+orientation of the asymmetric unit, $R_{\text{asym}}$, fixes all $K$. Many classical
+crystal structure prediction methods already work this way, placing the asymmetric unit in
+a trial space group and generating the cell by symmetry\mbox{%DIFAUXCMD
 \cite{price2023blindtest7}}\hskip0pt%DIFAUXCMD
 , but
 current learned }\DIFaddend rigid-body \DIFdelbegin \DIFdel{molecular-crystal flow with the identical
@@ -1381,7 +1388,8 @@ the stored centroids one to one and that expanding the true orientation reproduc
 the experimental structure under StructureMatcher (1,157 removed, nearly all not
 $Z'=1$ general position); removal of crystals sharing a six-letter refcode family
 with the development corpus or a molecular Weisfeiler--Lehman graph
-hash\cite{shervashidze2011wl,hagberg2008networkx} with its 1,987 molecules (22
+hash\cite{shervashidze2011wl} (computed with NetworkX\cite{hagberg2008networkx}) with its
+1,987 molecules (22
 removed); and, after a seeded permutation (seed 20261001), one crystal per refcode
 family (2,448 kept). SEL is the first 300 and TEST-B the next 1,000 (679
 centrosymmetric, 270 Sohncke and 51 other crystals). Both refcode lists were
@@ -1483,7 +1491,8 @@ iii-s, the physics search, expanded the 4,608 orientations of an incremental Hop
 grid (about 15$^\circ$ apart)\cite{yershova2010hopf,gorski2005healpix}, kept the 64 with
 the lowest unrelaxed steric energy, and minimized each over orientation with the
 machine-learned potential UMA s-1p1 (OMC task)\cite{wood2025uma,fairchem2026core}, which
-the MCF authors use for their own rigid-body relaxation (denoted FF*). Minimization used
+the MCF authors use for their own rigid-body relaxation\cite{zeng2026molcrystalflow}
+(denoted FF*). Minimization used
 L-BFGS\cite{liu1989lbfgs}
 (at most 100 energy-and-gradient evaluations; converged when the orientation
 gradient per molecule fell below 0.01~eV\,rad$^{-1}$), minima within 2$^\circ$
@@ -1492,7 +1501,7 @@ the same settings in every job. For FF* evaluations the X--H bonds were set to t
 CSD neutron-normalized lengths (C--H 1.089, N--H 1.015, O--H
 0.993~\AA)\cite{allen2010xh}; the returned orientation was
 applied to the original conformer, so every scored structure keeps the
-experimental hydrogen positions. Because UMA's training set, OMC25, derives from
+experimental hydrogen positions. Because UMA's organic-crystal training data, OMC25, derive from
 CSD molecules\cite{gharakhanyan2026omc25,stuke2020oe62}, H2 is also reported on the TEST-B crystals whose
 refcode family is absent from it.
 % src: tasks/n3_protocol.md:656-726,1378-1386
@@ -1521,9 +1530,10 @@ separates the learned proposal from the energy model.
 The primary matcher was pymatgen's StructureMatcher\cite{ong2013pymatgen} with
 default settings (ltol 0.2, stol 0.3, angle\_tol 5$^\circ$), computed as
 fit(truth, candidate) on the unrelaxed experimental structure and the candidate as
-emitted. Secondary matchers applied MCF's rule (ltol 0.3, angle\_tol 10$^\circ$, no
-scaling, a match whenever an RMS distance is returned) at stol 0.5 and
-0.8\cite{martirossyan2025matching}. One script scored every arm, and no output
+emitted. Secondary matchers applied MCF's rule\cite{zeng2026molcrystalflow} (ltol 0.3,
+angle\_tol 10$^\circ$, no scaling, a match whenever an RMS distance is returned) at stol 0.5
+and 0.8; tolerances this loose are common in generative CSP benchmarks and exceed
+pymatgen's defaults\cite{martirossyan2025matching}. One script scored every arm, and no output
 was matched against the truth before the scoring step. The denominator was always
 the full set: an arm failure counted as a miss, harness crashes were re-run, and
 no crystal was dropped or timed out.
@@ -1617,7 +1627,7 @@ the compute cluster. Exactly the listed runs were made, their outputs were retri
 checksums, the CSD-derived files on the cluster were deleted, and both sets were scored
 once. The results were committed and pushed before they were interpreted. Training of
 the comparators (MCF and iv-P), sampling and FF* jobs ran on NVIDIA A100 nodes of the
-Purdue Anvil cluster\cite{song2022anvil,boerner2023access} in one container image, and
+Purdue Anvil cluster\cite{song2022anvil} in one container image, and
 scoring used the cluster's CPU cores; the OURS and OURS-N2 checkpoints had been trained on
 CPU before the benchmark.
 % src: tasks/n3_protocol.md:1-17,967-1015,1367-1377; results/n3/n3_selection.json:1-4; tasks/n3_step9_clarification_2026-11-15.md:11-27; tasks/n3_step4_record_2026-10-11.md:878-944,1043-1045; git log 8f7e494, 772a36e, f1c713a
@@ -1627,13 +1637,15 @@ CPU before the benchmark.
 \begin{acknowledgement}
 The author thanks the Cambridge Crystallographic Data Centre for access to the Cambridge
 Structural Database under an academic \DIFdelbegin \DIFdel{licence. No external funding
-supported this work . }\DIFdelend \DIFaddbegin \DIFadd{license. This work used Anvil at Purdue University
-through allocation CHE260157 from the Advanced Cyberinfrastructure Coordination Ecosystem:
-Services \& Support (ACCESS) program, which is supported by U.S. National Science
-Foundation grants \#2138259, \#2138286, \#2138307, \#2137603 and
-\#2138296\mbox{%DIFAUXCMD
-\cite{boerner2023access,song2022anvil}}\hskip0pt%DIFAUXCMD
-. }\DIFaddend The author declares no competing financial
+supported this work . }\DIFdelend \DIFaddbegin \DIFadd{license. This work used Anvil\mbox{%DIFAUXCMD
+\cite{song2022anvil}
+}\hskip0pt%DIFAUXCMD
+at Purdue University through allocation CHE260157 from the Advanced Cyberinfrastructure
+Coordination Ecosystem: Services \& Support (ACCESS) program\mbox{%DIFAUXCMD
+\cite{boerner2023access}}\hskip0pt%DIFAUXCMD
+, which
+is supported by U.S. National Science Foundation grants \#2138259, \#2138286, \#2138307,
+\#2137603 and \#2138296. }\DIFaddend The author declares no competing financial
 interest. During \DIFdelbegin \DIFdel{the preparation of this manuscript, }\DIFdelend \DIFaddbegin \DIFadd{this work }\DIFaddend the author used \DIFdelbegin \DIFdel{Claude Opus 4.8 }\DIFdelend \DIFaddbegin \DIFadd{AI models. Claude }\DIFaddend (Anthropic) \DIFdelbegin \DIFdel{for language editing of the text; the author
 reviewed and edited }\DIFdelend \DIFaddbegin \DIFadd{implemented
 analysis and benchmark code under the author's direction and drafted text that the author

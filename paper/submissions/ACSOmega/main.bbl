@@ -44,15 +44,6 @@ Jiao,~R.; Huang,~W.; Lin,~P.; Han,~J.; Chen,~P.; Lu,~Y.; Liu,~Y. Crystal
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Miller \latin{et~al.}(2024)Miller, Chen, Sriram, and
-  Wood]{miller2024flowmm}
-Miller,~B.~K.; Chen,~R. T.~Q.; Sriram,~A.; Wood,~B.~M. {FlowMM}: Generating
-  Materials with Riemannian Flow Matching. International Conference on Machine
-  Learning (ICML). 2024; arXiv:2406.04713\relax
-\mciteBstWouldAddEndPuncttrue
-\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
-\EndOfBibitem
 \bibitem[Lipman \latin{et~al.}(2023)Lipman, Chen, Ben-Hamu, Nickel, and
   Le]{lipman2023flowmatching}
 Lipman,~Y.; Chen,~R. T.~Q.; Ben-Hamu,~H.; Nickel,~M.; Le,~M. Flow Matching for
@@ -69,11 +60,38 @@ Chen,~R. T.~Q.; Lipman,~Y. Flow Matching on General Geometries. International
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Hunnisett \latin{et~al.}(2024)Hunnisett, \latin{et~al.}
-  others]{price2023blindtest7}
-Hunnisett,~L.~M.; others The Seventh Blind Test of Crystal Structure
+\bibitem[Miller \latin{et~al.}(2024)Miller, Chen, Sriram, and
+  Wood]{miller2024flowmm}
+Miller,~B.~K.; Chen,~R. T.~Q.; Sriram,~A.; Wood,~B.~M. {FlowMM}: Generating
+  Materials with Riemannian Flow Matching. International Conference on Machine
+  Learning (ICML). 2024; arXiv:2406.04713\relax
+\mciteBstWouldAddEndPuncttrue
+\mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
+\EndOfBibitem
+\bibitem[Hunnisett \latin{et~al.}(2024)Hunnisett, Nyman, Francia, Abraham,
+  Adjiman, Aitipamula, Alkhidir, Almehairbi, Anelli, Anstine, Anthony, Arnold,
+  Bahrami, Bellucci, Bhardwaj, Bier, Bis, Boese, Bowskill, Bramley,
+  Brandenburg, Braun, Butler, Cadden, Carino, Chan, Chang, Cheng, Clarke,
+  Coles, Cooper, Couch, Cuadrado, Darden, Day, Dietrich, Ding, DiPasquale,
+  Dhokale, van Eijck, Elsegood, Firaha, Fu, Fukuzawa, Glover, Goto, Greenwell,
+  Guo, Harter, Helfferich, Hofmann, Hoja, Hone, Hong, Hutchison, Ikabata,
+  Isayev, Ishaque, Jain, Jin, Jing, Johnson, Jones, Jose, Kabova, Keates,
+  Kelly, Khakimov, Konstantinopoulos, Kuleshova, Li, Lin, List, Liu, Liu, Liu,
+  Liu, Lubach, Marom, Maryewski, Matsui, Mattei, Mayo, Melkumov, Mohamed,
+  Momenzadeh~Abardeh, Muddana, Nakayama, Nayal, Neumann, Nikhar, Obata,
+  O'Connor, Oganov, Okuwaki, Otero-de-la Roza, Pantelides, Parkin, Pickard,
+  Pilia, Pivina, Podeszwa, Price, Price, Price, Probert, Pulido, Ramteke,
+  Rehman, Reutzel-Edens, Rogal, Ross, Rumson, Sadiq, Saeed, Salimi,
+  Salvalaglio, {Sanders de Almada}, Sasikumar, Sekharan, Shang, Shankland,
+  Shinohara, Shi, Shi, Skillman, Song, Strasser, van~de Streek, Sugden, Sun,
+  Szalewicz, Tan, Tan, Tarczynski, Taylor, Tkatchenko, Tom, Tuckerman, Utsumi,
+  Vogt-Maranto, Weatherston, Wilkinson, Willacy, Wojtas, Woollam, Yang,
+  Yonemochi, Yue, Zeng, Zhang, Zhou, Zhou, Zubatyuk, and
+  Cole]{price2023blindtest7}
+Hunnisett,~L.~M. \latin{et~al.}  The Seventh Blind Test of Crystal Structure
   Prediction: Structure Generation Methods. \emph{Acta Crystallographica
-  Section B} \textbf{2024}, \emph{80}\relax
+  Section B} \textbf{2024}, \emph{80}, 517--547\relax
 \mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
@@ -107,24 +125,25 @@ Jiao,~R.; Huang,~W.; Liu,~Y.; Zhao,~D.; Liu,~Y. Space Group Constrained Crystal
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Kelvinius \latin{et~al.}(2025)Kelvinius, Andersson, Parackal, Qian,
-  Armiento, and Lindsten]{wyckoffdiff2025}
-Kelvinius,~F.~E.; Andersson,~O.~B.; Parackal,~A.~S.; Qian,~D.; Armiento,~R.;
-  Lindsten,~F. {WyckoffDiff}: A Generative Diffusion Model for Crystal
-  Symmetry. \emph{arXiv preprint arXiv:2502.06485} \textbf{2025}, \relax
-\mciteBstWouldAddEndPunctfalse
+\bibitem[Ekstr{\"o}m~Kelvinius \latin{et~al.}(2025)Ekstr{\"o}m~Kelvinius,
+  Andersson, Parackal, Qian, Armiento, and Lindsten]{wyckoffdiff2025}
+Ekstr{\"o}m~Kelvinius,~F.; Andersson,~O.~B.; Parackal,~A.~S.; Qian,~D.;
+  Armiento,~R.; Lindsten,~F. {WyckoffDiff} -- A Generative Diffusion Model for
+  Crystal Symmetry. Proceedings of the 42nd International Conference on Machine
+  Learning (ICML). 2025; pp 15130--15147, arXiv:2502.06485\relax
+\mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{}{\mcitedefaultseppunct}\relax
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
 \bibitem[Levy \latin{et~al.}(2025)Levy, Panigrahi, Kaba, Zhu, Lee, Galkin,
   Miret, and Ravanbakhsh]{symmcd2025}
 Levy,~D.; Panigrahi,~S.~S.; Kaba,~S.-O.; Zhu,~Q.; Lee,~K. L.~K.; Galkin,~M.;
   Miret,~S.; Ravanbakhsh,~S. {SymmCD}: Symmetry-Preserving Crystal Generation
-  with Diffusion Models. \emph{arXiv preprint arXiv:2502.03638} \textbf{2025},
-  \relax
-\mciteBstWouldAddEndPunctfalse
+  with Diffusion Models. International Conference on Learning Representations
+  (ICLR). 2025; arXiv:2502.03638\relax
+\mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{}{\mcitedefaultseppunct}\relax
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
 \bibitem[Puny \latin{et~al.}(2025)Puny, Lipman, and Miller]{puny2025sgfm}
 Puny,~O.; Lipman,~Y.; Miller,~B.~K. Space Group Conditional Flow Matching.
@@ -135,11 +154,11 @@ Puny,~O.; Lipman,~Y.; Miller,~B.~K. Space Group Conditional Flow Matching.
 \EndOfBibitem
 \bibitem[Mu \latin{et~al.}(2026)Mu, He, Zhu, and Yin]{mu2026nextcrystal}
 Mu,~J.; He,~L.; Zhu,~X.; Yin,~S. {NextCrystal}: A Symmetry-Driven Generative
-  Framework for Crystal Structure Prediction. \emph{arXiv preprint
-  arXiv:2602.17176} \textbf{2026}, \relax
-\mciteBstWouldAddEndPunctfalse
+  Framework for Crystal Structure Prediction. \emph{Chinese Physics Letters}
+  \textbf{2026}, \emph{43}, 100802\relax
+\mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{}{\mcitedefaultseppunct}\relax
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
 \bibitem[Cai and Mo(2026)Cai, and Mo]{cai2026sala}
 Cai,~W.; Mo,~F. Symmetry-Aware Flow Matching for End-to-end Molecular Crystal
@@ -319,16 +338,17 @@ Kabsch,~W. A Discussion of the Solution for the Best Rotation to Relate Two
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
 {\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
-\bibitem[Martirossyan \latin{et~al.}(2025)Martirossyan, Egg, Hoellmer, Karypis,
-  Transtrum, Roitberg, Liu, Hennig, Tadmor, and
+\bibitem[Martirossyan \latin{et~al.}(2025)Martirossyan, Egg, H{\"o}llmer,
+  Karypis, Transtrum, Roitberg, Liu, Hennig, Tadmor, and
   Martiniani]{martirossyan2025matching}
-Martirossyan,~M.~M.; Egg,~T.; Hoellmer,~P.; Karypis,~G.; Transtrum,~M.;
+Martirossyan,~M.~M.; Egg,~T.; H{\"o}llmer,~P.; Karypis,~G.; Transtrum,~M.;
   Roitberg,~A.; Liu,~M.; Hennig,~R.~G.; Tadmor,~E.~B.; Martiniani,~S. All That
-  Structure Matches Does Not Glitter. \emph{arXiv preprint arXiv:2509.12178}
-  \textbf{2025}, \relax
-\mciteBstWouldAddEndPunctfalse
+  Structure Matches Does Not Glitter. Advances in Neural Information Processing
+  Systems 38 (NeurIPS 2025), Datasets and Benchmarks Track. 2025; pp
+  44616--44650, arXiv:2509.12178\relax
+\mciteBstWouldAddEndPuncttrue
 \mciteSetBstMidEndSepPunct{\mcitedefaultmidpunct}
-{}{\mcitedefaultseppunct}\relax
+{\mcitedefaultendpunct}{\mcitedefaultseppunct}\relax
 \EndOfBibitem
 \bibitem[Holm(1979)]{holm1979simple}
 Holm,~S. A Simple Sequentially Rejective Multiple Test Procedure.

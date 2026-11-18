@@ -77,8 +77,8 @@ model with it (H2: \nHTwoDelta{} pp \nHTwoCI) was not supported.
 Crystal structure prediction (CSP) seeks the stable periodic packing of a chemical
 system, and generative models have become a fast alternative to large ensembles of
 energy evaluations, progressing from crystal diffusion autoencoders\cite{xie2022cdvae}
-to joint equivariant diffusion\cite{jiao2023diffcsp} and Riemannian flow
-matching\cite{miller2024flowmm,lipman2023flowmatching,chen2024riemannian}. Rigid-body
+to joint equivariant diffusion\cite{jiao2023diffcsp} and flow
+matching\cite{lipman2023flowmatching} on Riemannian manifolds\cite{chen2024riemannian,miller2024flowmm}. Rigid-body
 factorization suits molecular crystals: freezing each molecule's conformer reduces
 dozens of atomic coordinates to a lattice, a fractional centroid and an orientation in
 $\mathrm{SO}(3)$ for every molecule.
@@ -88,9 +88,9 @@ one molecule in the asymmetric unit ($Z'=1$) on a general position, the $K$ mole
 the cell are the images of a single molecule under the $K$ operations $(W_k, t_k)$ of the
 space group. Each copy's centroid and atoms follow from the asymmetric-unit molecule by the
 operation, and an improper operation ($\det W_k=-1$) also mirrors the conformer, so the
-orientation of the asymmetric unit, $R_{\text{asym}}$, fixes all $K$. Classical
-crystal structure prediction already works this way, placing the asymmetric unit in a
-trial space group and generating the cell by symmetry\cite{price2023blindtest7}, but
+orientation of the asymmetric unit, $R_{\text{asym}}$, fixes all $K$. Many classical
+crystal structure prediction methods already work this way, placing the asymmetric unit in
+a trial space group and generating the cell by symmetry\cite{price2023blindtest7}, but
 current learned rigid-body generators do not.
 MolCrystalFlow\cite{zeng2026molcrystalflow} generates an orientation for every molecule
 and imposes no space-group constraint, and MOFFlow\cite{kim2025mofflow} generates the poses
@@ -506,11 +506,11 @@ molecular position must also be generated is untested.
 
 \begin{acknowledgement}
 The author thanks the Cambridge Crystallographic Data Centre for access to the Cambridge
-Structural Database under an academic license. This work used Anvil at Purdue University
-through allocation CHE260157 from the Advanced Cyberinfrastructure Coordination Ecosystem:
-Services \& Support (ACCESS) program, which is supported by U.S. National Science
-Foundation grants \#2138259, \#2138286, \#2138307, \#2137603 and
-\#2138296\cite{boerner2023access,song2022anvil}. The author declares no competing financial
+Structural Database under an academic license. This work used Anvil\cite{song2022anvil}
+at Purdue University through allocation CHE260157 from the Advanced Cyberinfrastructure
+Coordination Ecosystem: Services \& Support (ACCESS) program\cite{boerner2023access}, which
+is supported by U.S. National Science Foundation grants \#2138259, \#2138286, \#2138307,
+\#2137603 and \#2138296. The author declares no competing financial
 interest. During this work the author used AI models. Claude (Anthropic) implemented
 analysis and benchmark code under the author's direction and drafted text that the author
 revised, and Claude and OpenAI models were used to critique drafts of the protocol and the
