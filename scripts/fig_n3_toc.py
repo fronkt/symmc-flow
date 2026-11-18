@@ -1,24 +1,22 @@
-"""Table-of-contents graphic for the ACS Omega resubmission (ACS TOC spec: 3.25 x 1.75 in, sans-serif, white).
+"""Table-of-contents graphic for the ACS Omega resubmission (ACS TOC size: 3.25 x 1.75 in).
+
+v2 (2026-11-17), redrawn after Frank found v1 cluttered and flat: ray-traced PyMOL ball-and-stick renders in the
+STS-report style (outline ray trace mode, CPK colours), no results strip, no symmetry symbols, three short labels.
 
 Left to right:
-  1. given: the LAJKOX cell viewed along b (the Figure 1 crystal, chosen by Figure 1's fixed selection rule), the
-     inversion centres and 2_1 axes the operations put there, and the conformer at c0 NOT yet rotated: drawn in its
-     principal-axis body frame (as the asymmetric-unit glyph of Figure 1(b)), centred where the identity copy sits.
-     Its in-page angle has no physical meaning; it is fixed by a rule (multiples of 5 deg, the angle with the most
-     clearance from the symmetry symbols that stays on the canvas; ties to the smallest |angle|);
-  2. learned: one rotation R_asym (3 numbers), drawn as a rotation arrow on the expansion arrow;
-  3. exact expansion: the four P2_1/c copies in their true orientations (expand(a, R0), as Figure 1(a)), the two
-     improper (det W_k = -1) copies hatched;
-  4. result strip: picked@1 on TEST-B, read from results/n3/n3_results.json -> sets.testB.report.table1:
-     this model = OURS picked1_mean_pct; retrained learned baselines = max over MCF-R, MCF-R+G, iv-P of
-     picked1_mean_pct, shown as an upper bound rounded UP to one decimal; physics search = iii-s picked1_mean_pct.
-     Bars are drawn to scale on a 0-100% track.
+  1. the asymmetric-unit molecule of LAJKOX (the Figure 1 crystal, chosen by Figure 1's fixed selection rule) in
+     its true orientation, inside a 3-D rotation arrow: the one quantity the model learns, R_asym;
+  2. an arrow: exact space-group expansion (P2_1/c, four operations);
+  3. the cell with the four copies made by expand(a, R0) (as Figure 1(a)). Carbon atoms carry the copy's class:
+     teal = proper operation (identity, 2_1 screw: a rotated copy), amber = improper operation (inversion,
+     c-glide, det W_k = -1: a mirror image); N, O, H keep CPK colours. The drawn cell is the lattice's unit cell
+     with its origin moved by -c/4, so that every copy's centroid lies inside the box (any lattice translate of
+     the cell is a unit cell); the copies are unchanged.
 
-Molecule rendering, selection, split check, CIF symmetry check and expand oracle are imported from
-scripts/fig_n3_worked_example.py, so the drawing matches Figure 1. check_layout() asserts that no text box overlaps
-another text, an atom, a symmetry symbol, a bar or the arrows, and that all text is on the canvas. The PNG is opaque
-RGB at 600 dpi (1950 x 1050 px); the PDF is vector at exactly 3.25 x 1.75 in. No coordinates are written to any
-file; the outputs are rendered images only.
+Selection, split check, CIF symmetry check and expand oracle are imported from scripts/fig_n3_worked_example.py.
+The scene goes to the PyMOL process on stdin (scripts/toc_pymol_render.py, PyMOL venv); no coordinates are
+written to any file, only rendered images. Outputs: PNG opaque RGB at 600 dpi (1950 x 1050 px) and a PDF of
+exactly 3.25 x 1.75 in (vector text, embedded renders).
 
     python scripts/fig_n3_toc.py
 writes paper/submissions/ACSOmega/figures/fig_n3_toc.{pdf,png}
@@ -26,81 +24,105 @@ writes paper/submissions/ACSOmega/figures/fig_n3_toc.{pdf,png}
 from __future__ import annotations
 
 import json
-import math
 import os
+import subprocess
 import sys
+import tempfile
 import warnings
 
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import numpy as np
-from matplotlib.patches import FancyArrowPatch, Polygon, Rectangle
-from matplotlib.path import Path
+import matplotlib.image as mpimg  # noqa: E402
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+from matplotlib.patches import Circle, FancyArrowPatch  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "scripts"))
-import fig_n3_worked_example as F  # noqa: E402  (sets the shared rcParams: Arial, mathtext regular, fonttype 42)
+import fig_n3_worked_example as F  # noqa: E402  (shared rcParams: Arial, mathtext regular, fonttype 42)
 
-OUT = F.OUT
-RESULTS = os.path.join(REPO, "results", "n3", "n3_results.json")
-W_IN, H_IN = 3.25, 1.75          # ACS TOC graphic, exact
-DPI = 600
-BASELINES = ("MCF-R", "MCF-R+G", "iv-P")
-GREY = "#444444"
+plt.rcParams.update({"mathtext.fontset": "custom", "mathtext.rm": "Arial", "mathtext.it": "Arial:italic",
+                     "mathtext.bf": "Arial:bold"})   # math labels in Arial too: one embedded typeface
+OUT = os.environ.get("TOC_OUT", F.OUT)        # TOC_OUT: draft directory while iterating
+PYMOL_PY = os.environ.get("PYMOL_PY", r"C:\Users\frank\.venvs\pymol\Scripts\python.exe")
+RENDER = os.path.join(REPO, "scripts", "toc_pymol_render.py")
+NO_WINDOW = 0x08000000
 
-
-def results():
-    """(label, value_pct, shown_text, colour, json key) for the three bars; values only from the JSON."""
-    with open(RESULTS, encoding="utf-8") as f:
-        t = json.load(f)["sets"]["testB"]["report"]
-    n, t1 = t["n"], t["table1"]
-    ours = t1["OURS"]["picked1_mean_pct"]
-    base = {k: t1[k]["picked1_mean_pct"] for k in BASELINES}
-    bmax = max(base.values())
-    bound = math.ceil(round(bmax * 10, 9)) / 10          # upper bound at one decimal: rounded up, never down
-    phys = t1["iii-s"]["picked1_mean_pct"]
-    rows = [
-        ("this model", ours, f"{ours:.1f}%", "#0072B2", "OURS.picked1_mean_pct"),
-        ("retrained learned baselines", bmax, f"≤{bound:.1f}%", "#8C8C8C",
-         "max(" + ", ".join(f"{k}.picked1_mean_pct" for k in BASELINES) + ")"),
-        ("physics search", phys, f"{phys:.1f}%", "#4D4D4D", "iii-s.picked1_mean_pct"),
-    ]
-    return n, rows, base
+W_IN, H_IN, DPI = 3.25, 1.75, 600
+PROPER, IMPROPER = "#2A9D8F", "#E9A23B"      # carbon colour by operation class (teal / amber: clear of N blue, O red)
+CPK = {1: "#FFFFFF", 6: "#909090", 7: "#3050F8", 8: "#FF0D0D"}
+SYM = {1: "H", 6: "C", 7: "N", 8: "O"}
+BALL = {1: 0.21, 6: 0.40, 7: 0.40, 8: 0.40}
+STICK = 0.15
+INK = "#222222"
 
 
-def rotation_glyph(ax, c, r, col, lw):
-    """Circular arrow (about 300 degrees, counter-clockwise) centred at c, radius r in data units."""
-    th = np.radians(np.linspace(115, 405, 80))
-    P = np.c_[c[0] + r * np.cos(th), c[1] + r * np.sin(th)]
-    path = Path(P, [Path.MOVETO] + [Path.LINETO] * (len(P) - 1))
-    ax.add_patch(FancyArrowPatch(path=path, arrowstyle="-|>", mutation_scale=7.5, lw=lw, color=col, zorder=20,
-                                 shrinkA=0, shrinkB=0, capstyle="round", joinstyle="round"))
+def rgb(h):
+    return [float(v) for v in matplotlib.colors.to_rgb(h)]
 
 
-def check_layout(fig, ax, discs, boxes, edge=0.02):
-    """Assert every text box is inside the canvas (edge in inches), overlaps no other text, no atom / symbol disc
-    (x, y, r) and no bar / arrow box (x0, y0, x1, y1). All in inches (the axes spans the canvas in inch units)."""
-    fig.canvas.draw()
-    rend = fig.canvas.get_renderer()
-    inv = ax.transData.inverted()
-    tb = []
-    for t in ax.texts:
-        e = t.get_window_extent(rend)
-        (x0, y0), (x1, y1) = inv.transform([[e.x0, e.y0], [e.x1, e.y1]])
-        tb.append((" ".join(t.get_text().split()), (x0, y0, x1, y1)))
-    hit = lambda b, c: not (b[2] <= c[0] or c[2] <= b[0] or b[3] <= c[1] or c[3] <= b[1])
-    for i, (s1, b) in enumerate(tb):
-        assert b[0] >= edge and b[1] >= edge and b[2] <= W_IN - edge and b[3] <= H_IN - edge, f"clipped: {s1} {b}"
-        for s2, c in tb[i + 1:]:
-            assert not hit(b, c), f"text overlap: {s1!r} / {s2!r}"
-        for c in boxes:
-            assert not hit(b, c), f"text {s1!r} overlaps box {c}"
-        for (dx, dy, r) in discs:
-            qx, qy = min(max(dx, b[0]), b[2]), min(max(dy, b[1]), b[3])
-            assert (qx - dx) ** 2 + (qy - dy) ** 2 >= r * r, f"text {s1!r} overlaps a disc at ({dx:.2f}, {dy:.2f})"
-    return min(min(b[0], b[1], W_IN - b[2], H_IN - b[3]) for _, b in tb)
+def run_pymol(scene, png):
+    res = subprocess.run([PYMOL_PY, RENDER, png], input=json.dumps(scene), capture_output=True, text=True,
+                         creationflags=NO_WINDOW)
+    if res.returncode != 0 or not os.path.exists(png):
+        raise RuntimeError(f"PyMOL render failed\n{res.stdout[-2000:]}\n{res.stderr[-2000:]}")
+
+
+def frame(L, yaw, pitch):
+    """Camera basis (right, up, toward viewer) for the view along b, turned by yaw about up, then pitch about right."""
+    bh = L[1] / np.linalg.norm(L[1])
+    e1 = L[0] - (L[0] @ bh) * bh
+    e1 /= np.linalg.norm(e1)
+    e2 = np.cross(e1, bh)
+    B = np.stack([e1, e2, -bh])                # rows: right, up, toward viewer (right-handed)
+    cy, sy, cp, sp = np.cos(yaw), np.sin(yaw), np.cos(pitch), np.sin(pitch)
+    Ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
+    Rx = np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
+    return Rx @ Ry @ B
+
+
+def molecule_atoms(P, Zs, carbon):
+    return [{"el": SYM[int(z)], "p": p.tolist(), "r": BALL[int(z)],
+             "rgb": rgb(carbon if int(z) == 6 else CPK[int(z)])} for p, z in zip(P, Zs)]
+
+
+def window_for(pts, pad, aspect):
+    lo, hi = pts.min(0) - pad, pts.max(0) + pad
+    w, h = hi[0] - lo[0], hi[1] - lo[1]
+    if w / h < aspect:
+        d = (aspect * h - w) / 2
+        lo[0], hi[0] = lo[0] - d, hi[0] + d
+    else:
+        d = (w / aspect - h) / 2
+        lo[1], hi[1] = lo[1] - d, hi[1] + d
+    return [float(lo[0]), float(hi[0]), float(lo[1]), float(hi[1])]
+
+
+def rotation_arrow(u, v, radius, start_deg, sweep_deg, r, col, n=120):
+    """3-D circular arrow r(cos th u + sin th v) about the origin (camera frame), as CGO cylinders, joint spheres
+    and a cone head. u, v orthonormal; tilting v out of the page makes the ring pass behind and in front."""
+    th = np.radians(start_deg + np.linspace(0, sweep_deg, n))
+    pts = radius * (np.cos(th)[:, None] * u + np.sin(th)[:, None] * v)
+    head = 8.0 * r                              # cone length
+    tang = pts[-1] - pts[-2]
+    tang /= np.linalg.norm(tang)
+    cyl = [{"a": pts[i].tolist(), "b": pts[i + 1].tolist(), "r": r, "rgb": rgb(col)} for i in range(n - 1)]
+    sph = [{"p": q.tolist(), "r": r, "rgb": rgb(col)} for q in pts[1:-1]] + [{"p": pts[0].tolist(), "r": r,
+                                                                             "rgb": rgb(col)}]
+    cone = [{"a": pts[-1].tolist(), "b": (pts[-1] + head * tang).tolist(), "r": 3.0 * r, "rgb": rgb(col)}]
+    return cyl, sph, cone, pts
+
+
+ARC_START = float(os.environ.get("TOC_ARC_START", 115))   # deg; where the ring's tail starts (head = +290)
+
+
+def _clears(s, t, a, cosb, margin, n=720):
+    """Every atom (s, t) lies at least `margin` inside the ellipse with semi-axes a (along s) and a*cosb (along t)."""
+    th = np.linspace(0, 2 * np.pi, n, endpoint=False)
+    E = np.stack([a * np.cos(th), a * cosb * np.sin(th)], 1)
+    D = np.hypot(s[:, None] - E[None, :, 0], t[:, None] - E[None, :, 1]).min(1)
+    return bool((D >= margin).all())
 
 
 def main():
@@ -112,7 +134,7 @@ def main():
     # ---------------- crystal: Figure 1's selection, split, CIF symmetry and oracle checks, unchanged
     idx, a, train, mrmsd, n_cand = F.select()
     ref = a["refcode"]
-    split = F.confirm_split(a, train)
+    F.confirm_split(a, train)
     _, _, cif_ops = F.cif_symmetry(ref)
     F.check_ops_against_cif(a, cif_ops)
     assert F.oracle(a), "expand(a, R0) does not reproduce the experimental structure"
@@ -121,155 +143,110 @@ def main():
     L = L.double().numpy()
     X = (cent.double().numpy() @ L)[:, None, :] + np.einsum("kij,kaj->kai", orient.double().numpy(),
                                                             local.double().numpy())
-    Zs = Z[0].numpy()
-    heavy = Zs > 1
-    remap = {int(i): n for n, i in enumerate(np.nonzero(heavy)[0])}
-    bonds = [(remap[i], remap[j]) for i, j in graph(a["local"].double().numpy(), Zs).edges() if heavy[i] and heavy[j]]
-    Zh = Zs[heavy]
-    W, t = a["W"].numpy(), a["t"].numpy()
+    Zs = Z[0].numpy().astype(int)
+    bonds = [[int(i), int(j)] for i, j in graph(a["local"].double().numpy(), Zs).edges()]
+    W = a["W"].numpy()
     kinds = [F.op_kind(w) for w in W]
     dets = [int(round(np.linalg.det(w))) for w in W]
     k_id = kinds.index("1")
 
-    # projection along b exactly as Figure 1(a)
-    bh = L[1] / np.linalg.norm(L[1])
-    e1 = L[0] - (L[0] @ bh) * bh
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(e1, bh)
-    proj = lambda P: np.stack([P @ e1, P @ e2], -1)
-    near = lambda P: -(P @ bh)
-    Xh = X[:, heavy]
-    C2 = proj(np.array([[0, 0, 0], [1, 0, 0], [1, 0, 1], [0, 0, 1]], float) @ L)
-    allP = proj(Xh.reshape(-1, 3))
-    allN = near(Xh.reshape(-1, 3))
-    nmin, nmax = allN.min(), allN.max()
+    # copies whose centroid lies outside the shifted cell [0,1) x [0,1) x [-1/4, 3/4) move by a lattice vector
+    fc = cent.double().numpy()
+    shift = np.floor(fc - np.array([0.0, 0.0, -0.25]))
+    X = X - (shift @ L)[:, None, :]
+    fc2 = fc - shift
+    assert ((fc2 >= [0, 0, -0.25]) & (fc2 < [1, 1, 0.75])).all()
 
-    # ---------------- figure in inch units (one axes over the whole canvas)
+    B = frame(L, yaw=np.radians(-18), pitch=np.radians(14))
+    cam = lambda P: np.asarray(P) @ B.T                       # noqa: E731
+
+    # ---------------- right: the cell with four copies
+    o = np.array([0.0, 0.0, -0.25]) @ L
+    corners = np.array([[i, j, k] for i in (0, 1) for j in (0, 1) for k in (0, 1)], float)
+    Cc = cam(o + corners @ L)
+    edges = [(p, q) for p in range(8) for q in range(p + 1, 8) if np.abs(corners[p] - corners[q]).sum() == 1]
+    atoms, bnd = [], []
+    for k in range(len(X)):
+        base = len(atoms)
+        atoms += molecule_atoms(cam(X[k]), Zs, PROPER if dets[k] > 0 else IMPROPER)
+        bnd += [[base + i, base + j] for i, j in bonds]
+    cell_cyl = [{"a": Cc[p].tolist(), "b": Cc[q].tolist(), "r": 0.06, "rgb": rgb("#6b6b6b")} for p, q in edges]
+    pts = np.vstack([np.array([at["p"] for at in atoms])[:, :2], Cc[:, :2]])
+    RX_IN, RY_IN = 1.74, 1.24                   # size of the cell render on the page
+    winR = window_for(pts, 0.6, RX_IN / RY_IN)
+    sceneR = {"atoms": atoms, "bonds": bnd, "stick_r": STICK, "cyl": cell_cyl, "window": winR,
+              "res_x": int(RX_IN * DPI), "res_y": int(RY_IN * DPI), "outline": True, "gain": 0.09,
+              "fog_start": 0.55}
+
+    # ---------------- left: the asymmetric-unit molecule inside a rotation arrow
+    P0 = cam(X[k_id])
+    c0 = P0.mean(0)
+    P0 = P0 - c0
+    # ring: an ellipse on the page along the molecule's long axis d, tilted out of the page about d by TILT, sized
+    # so the projected ellipse clears every atom by MARGIN
+    TILT, MARGIN = np.radians(38), 0.75
+    ev, evec = np.linalg.eigh(np.cov(P0[:, :2].T))
+    d = evec[:, -1]
+    nrm = np.array([-d[1], d[0]])
+    s, t = P0[:, :2] @ d, P0[:, :2] @ nrm
+    rad = 1.0
+    while np.any((s / (rad + 1e-9)) ** 2 + (t / (rad * np.cos(TILT))) ** 2 > 1.0) or \
+            np.min(np.hypot(s, t) - 0) < 0 or not _clears(s, t, rad, np.cos(TILT), MARGIN):
+        rad += 0.05
+    u = np.array([d[0], d[1], 0.0])
+    v = np.array([nrm[0] * np.cos(TILT), nrm[1] * np.cos(TILT), np.sin(TILT)])
+    cyl, sph, cone, arc = rotation_arrow(u, v, rad, start_deg=ARC_START, sweep_deg=290, r=0.12, col=INK)
+    LX_IN, LY_IN = 0.90, 1.16
+    winL = window_for(np.vstack([P0[:, :2], arc[:, :2]]), 0.7, LX_IN / LY_IN)
+    sceneL = {"atoms": molecule_atoms(P0, Zs, PROPER), "bonds": bonds, "stick_r": STICK, "cyl": cyl, "sph": sph,
+              "cone": cone, "window": winL, "res_x": int(LX_IN * DPI), "res_y": int(LY_IN * DPI),
+              "outline": True, "gain": 0.09, "fog": False}
+
+    with tempfile.TemporaryDirectory() as td:
+        pngL, pngR = os.path.join(td, "left.png"), os.path.join(td, "right.png")
+        run_pymol(sceneL, pngL)
+        run_pymol(sceneR, pngR)
+        imL, imR = mpimg.imread(pngL), mpimg.imread(pngR)
+
+    # ---------------- compose
     fig = plt.figure(figsize=(W_IN, H_IN))
-    fig.patch.set_facecolor("white")
-    ax = fig.add_axes([0, 0, 1, 1])
-    ax.set_xlim(0, W_IN)
-    ax.set_ylim(0, H_IN)
-    ax.axis("off")
+    bg = fig.add_axes([0, 0, 1, 1])
+    bg.set_xlim(0, W_IN)
+    bg.set_ylim(0, H_IN)
+    bg.axis("off")
+    yL = 0.40                                   # bottom of the renders (room for the labels below)
+    axL = fig.add_axes([0.02 / W_IN, yL / H_IN, LX_IN / W_IN, LY_IN / H_IN])
+    axL.imshow(imL, interpolation="none")
+    axL.axis("off")
+    xR = W_IN - RX_IN - 0.02
+    axR = fig.add_axes([xR / W_IN, (yL - 0.06) / H_IN, RX_IN / W_IN, RY_IN / H_IN])
+    axR.imshow(imR, interpolation="none")
+    axR.axis("off")
 
-    # scale: the expanded drawing (cell + all copies) fills a panel box; panels 1 and 3 share box, scale and
-    # placement, so the two cells sit at the same height and size
-    lo3 = np.minimum(allP.min(0), C2.min(0))
-    hi3 = np.maximum(allP.max(0), C2.max(0))
-    BOX_W, BOX_H, MARGIN = 1.20, 0.98, 0.06                             # MARGIN: atom centres to canvas edge
-    s = min(BOX_W / (hi3[0] - lo3[0]), BOX_H / (hi3[1] - lo3[1]))       # in per A
-    Y_STRIP = 0.44                                                       # top of the result strip
-    Y_CAP = Y_STRIP + 0.13                                               # caption block centre (2 lines)
-    y_mid = H_IN - MARGIN - 0.5 * s * (hi3[1] - lo3[1])                  # drawing centre height
-    x1c, x3c = MARGIN + 0.5 * BOX_W, W_IN - MARGIN - 0.5 * BOX_W
-
-    def place(P, centre, lo, hi):
-        return np.asarray(centre) + s * (P - 0.5 * (lo + hi))
-
-    R_AT, LW, PAD = 0.30 * s, 0.55, 3.0
-    discs, boxes = [], []                                              # obstacles for check_layout
-
-    def cell(centre, lo, hi):
-        ax.add_patch(Polygon(place(C2, centre, lo, hi), closed=True, fill=False, edgecolor=GREY, lw=0.5, zorder=1.5))
-
-    def copy(k, centre, lo, hi, zr):
-        col, _ = F.OPS[kinds[k]]
-        P2 = place(proj(Xh[k]), centre, lo, hi)
-        discs.extend((x, y, R_AT + PAD / 144.0) for x, y in P2)
-        F.halo(ax, P2, col, dets[k] < 0, 1.0 + 0.01 * zr, pad_pt=PAD)
-        F.draw_molecule(ax, P2, (near(Xh[k]) - nmin) / (nmax - nmin), Zh, bonds, col, 2 + 2 * zr, r=R_AT, lw=LW)
-
-    # (1) given: the cell, the conformer at c0 NOT yet rotated (principal-axis body frame, as the asymmetric-unit
-    # glyph of Figure 1(b); its orientation is what is learned), and the symmetry elements of the operations
-    lo1, hi1 = lo3, hi3
-    c1 = (x1c, y_mid)
-    cell(c1, lo1, hi1)
-    sym = {kd: [place(proj((np.array([x, 0.0, z]) @ L)[None]), c1, lo1, hi1)[0] for x, z in F.special_points(W, t, kd)]
-           for kd in ("-1", "2")}
-    lh = a["local"].double().numpy()[heavy]
-    cl = lh - lh.mean(0)
-    Vt = np.linalg.svd(cl, full_matrices=False)[2]
-    G = cl @ Vt.T
-    centre_id = place(proj(Xh[k_id]).mean(0)[None], c1, lo1, hi1)[0]  # where the identity copy sits
-    halo_in = PAD / 72.0
-    best = None
-    for deg in sorted(range(-90, 91, 5), key=abs):     # in-page angle of the body frame: a presentation choice,
-        th = np.radians(deg)                           # the most clearance from the symmetry symbols on canvas
-        Pg = centre_id + s * G[:, :2] @ np.array([[np.cos(th), np.sin(th)], [-np.sin(th), np.cos(th)]])
-        if Pg[:, 1].max() + R_AT + halo_in > H_IN - 0.01 or Pg[:, 0].min() - R_AT - halo_in < 0.01:
-            continue
-        clear = min(np.linalg.norm(Pg - q, axis=1).min() for q in sym["-1"] + sym["2"])
-        if best is None or clear > best[0] + 1e-9:
-            best = (clear, deg, Pg)
-    clear1, deg1, Pg = best
-    col_id = F.OPS["1"][0]
-    discs.extend((x, y, R_AT + PAD / 144.0) for x, y in Pg)
-    discs.extend((x, y, 0.03) for x, y in sym["-1"] + sym["2"])
-    F.halo(ax, Pg, col_id, False, 1.0, pad_pt=PAD)
-    F.draw_molecule(ax, Pg, (G[:, 2] - G[:, 2].min()) / np.ptp(G[:, 2]), Zh, bonds, col_id, 2, r=R_AT, lw=LW)
-    for p in sym["-1"]:
-        F.inv_symbol(ax, p, 0.016, 40)
-    for p in sym["2"]:
-        F.screw_symbol(ax, p, 0.026, 40)
-
-    # (3) exact expansion: all copies, far copies first, improper copies hatched
-    c3 = (x3c, y_mid)
-    cell(c3, lo3, hi3)
-    for zr, k in enumerate(np.argsort([near(Xh[k]).mean() for k in range(len(Xh))])):
-        copy(k, c3, lo3, hi3, zr)
-
-    # (2) learned: R_asym, a rotation arrow riding on the expansion arrow
-    xa0 = x1c + 0.5 * s * (hi1[0] - lo1[0]) + 0.05
-    xa1 = x3c - 0.5 * s * (hi3[0] - lo3[0]) - 0.05
-    xm = 0.5 * (xa0 + xa1)
-    ya = place(C2, c3, lo3, hi3)[:, 1].mean()                           # arrow at the cells' mid-height
-    ax.add_patch(FancyArrowPatch((xa0, ya), (xa1, ya), arrowstyle="-|>", mutation_scale=8, lw=1.0,
-                                 color=GREY, shrinkA=0, shrinkB=0, zorder=5))
-    rotation_glyph(ax, (xm, ya + 0.16), 0.09, "black", 0.9)
-    boxes += [(xa0, ya - 0.03, xa1, ya + 0.03), (xm - 0.11, ya + 0.05, xm + 0.11, ya + 0.27)]
-
-    # captions
-    cap = dict(fontsize=7.0, ha="center", va="center", color="black", linespacing=1.05)
-    ax.text(x1c, Y_CAP, "lattice, operations,\n$c_0$ given", **cap)
-    ax.text(xm, ya - 0.15, "learned: $R_{asym}$\n(3 numbers)", **cap)
-    ax.text(x3c, Y_CAP, "exact expansion:\n4 copies, 2 mirrored", **cap)
-
-    # ---------------- (4) result strip
-    n, rows, base = results()
-    x_lab, x_bar0, x_bar1, x_val = 1.30, 1.36, 2.84, 2.89
-    row_h, bar_h = 0.105, 0.054
-    y0 = Y_STRIP - 0.155
-    ax.text(x_bar0, Y_STRIP - 0.045, f"structures reproduced ({n} test crystals)", fontsize=6.5, ha="left",
-            va="center", color=GREY)
-    for i, (lab, v, txt, col, _) in enumerate(rows):
-        y = y0 - i * row_h
-        ax.text(x_lab, y, lab, fontsize=7.0, ha="right", va="center")
-        boxes.append((x_bar0, y - bar_h / 2, x_bar1, y + bar_h / 2))
-        ax.add_patch(Rectangle((x_bar0, y - bar_h / 2), x_bar1 - x_bar0, bar_h, facecolor="#EEEEEE",
-                               edgecolor="none", zorder=1))
-        ax.add_patch(Rectangle((x_bar0, y - bar_h / 2), (x_bar1 - x_bar0) * v / 100.0, bar_h, facecolor=col,
-                               edgecolor="none", zorder=2))
-        ax.text(x_val, y, txt, fontsize=7.0, ha="left", va="center", color=col if i == 0 else "black",
-                fontweight="bold" if i == 0 else "normal")
-
-    text_margin = check_layout(fig, ax, discs, boxes)
+    fs = 7.2
+    cxL = 0.02 + LX_IN / 2
+    bg.text(cxL, 0.27, "learn one rotation", ha="center", va="center", fontsize=fs, color=INK)
+    bg.text(cxL, 0.12, "$R_{\\mathrm{asym}}$", ha="center", va="center", fontsize=fs + 0.5, color=INK)
+    x0, x1, ya = 0.02 + LX_IN + 0.02, xR + 0.06, yL + 0.55
+    bg.add_patch(FancyArrowPatch((x0, ya), (x1, ya), arrowstyle="-|>", mutation_scale=9, lw=1.3, color=INK))
+    bg.text((x0 + x1) / 2, ya + 0.09, "exact\nexpansion", ha="center", va="bottom", fontsize=fs, color=INK,
+            linespacing=1.1)
+    bg.text((x0 + x1) / 2, ya - 0.10, "$\\mathit{P}2_1/\\mathit{c}$", ha="center", va="top", fontsize=fs, color=INK)
+    cxR = xR + RX_IN / 2
+    for x, col, txt in ((cxR - 0.62, PROPER, "rotated copy"), (cxR + 0.22, IMPROPER, "mirror image")):
+        bg.add_patch(Circle((x, 0.16), 0.045, facecolor=col, edgecolor=INK, lw=0.5))
+        bg.text(x + 0.08, 0.16, txt, ha="left", va="center", fontsize=fs, color=INK)
 
     os.makedirs(OUT, exist_ok=True)
-    for ext in ("pdf", "png"):
-        p = os.path.join(OUT, f"fig_n3_toc.{ext}")
-        fig.savefig(p, dpi=DPI, facecolor="white")
-        if ext == "png":                                   # opaque RGB, no alpha channel
-            from PIL import Image
-            im = Image.open(p)
-            assert im.getchannel("A").getextrema() == (255, 255)
-            im.convert("RGB").save(p, dpi=(DPI, DPI))
-        print("wrote", os.path.relpath(p, REPO))
-    print(f"layout: no text overlaps or clipping; smallest text-to-edge margin {text_margin:.3f} in")
-    print(f"crystal: {ref} (TRAIN index {idx}); {split}; oracle ok; figure {W_IN} x {H_IN} in at {DPI} dpi")
-    print(f"panel 1 body-frame in-page angle {deg1} deg, clearance to symmetry symbols {clear1:.3f} in")
-    print(f"TEST-B n = {n}; table1 picked1_mean_pct: " + ", ".join(f"{k} {v}" for k, v in base.items()))
-    for lab, v, txt, _, key in rows:
-        print(f"  {lab}: {key} = {v} -> '{txt}'")
+    pdf, png = os.path.join(OUT, "fig_n3_toc.pdf"), os.path.join(OUT, "fig_n3_toc.png")
+    fig.savefig(pdf, dpi=DPI)
+    fig.savefig(png, dpi=DPI, facecolor="white")
+    plt.close(fig)
+    from PIL import Image
+    im = Image.open(png).convert("RGB")
+    im.save(png)
+    assert im.size == (int(W_IN * DPI), int(H_IN * DPI)), im.size
+    print(f"{ref}: copies {kinds} det {dets}; wrote {pdf} and {png} {im.size}")
 
 
 if __name__ == "__main__":
