@@ -187,6 +187,78 @@ def reference_docx(path):
         if name in [s.name for s in d.styles]:
             d.styles[name].font.size = Pt(size)
             d.styles[name].font.bold = True
+    for name in ("Image Caption", "Table Caption", "Caption"):     # ACS: upright captions, bold label only
+        if name in [s.name for s in d.styles]:
+            d.styles[name].font.italic = False
+            d.styles[name].font.size = Pt(12)
+    if "Compact" in [s.name for s in d.styles]:                    # table cells (and tight lists)
+        d.styles["Compact"].font.size = Pt(10)
+        d.styles["Compact"].paragraph_format.line_spacing_rule = WD_LINE_SPACING.SINGLE
+    d.save(path)
+
+
+def landscape_tables(path, labels=("Table 3.", "Table 4.", "Table 5.")):
+    """Put each wide table (sidewaystable in the PDF) with its caption on its own landscape page."""
+    import copy
+
+    import docx
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    d = docx.Document(path)
+    body = d.element.body
+    base = body.find(qn("w:sectPr"))
+    if base is None or base.find(qn("w:pgSz")) is None:
+        # pandoc writes no page setup; make Word's default explicit (US Letter, 1 in margins) for the last section
+        if base is None:
+            base = OxmlElement("w:sectPr")
+            body.append(base)
+        pg = OxmlElement("w:pgSz")
+        pg.set(qn("w:w"), "12240")
+        pg.set(qn("w:h"), "15840")
+        mar = OxmlElement("w:pgMar")
+        for k, v in (("top", "1440"), ("right", "1440"), ("bottom", "1440"), ("left", "1440"),
+                     ("header", "720"), ("footer", "720"), ("gutter", "0")):
+            mar.set(qn("w:" + k), v)
+        base.append(pg)
+        base.append(mar)
+
+    def sect(landscape):
+        s = copy.deepcopy(base)
+        pg = s.find(qn("w:pgSz"))
+        w, h = int(pg.get(qn("w:w"))), int(pg.get(qn("w:h")))
+        pg.set(qn("w:w"), str(max(w, h) if landscape else min(w, h)))
+        pg.set(qn("w:h"), str(min(w, h) if landscape else max(w, h)))
+        if landscape:
+            pg.set(qn("w:orient"), "landscape")
+        elif pg.get(qn("w:orient")) is not None:
+            del pg.attrib[qn("w:orient")]
+        return s
+
+    def end_section_at(p, landscape):
+        ppr = p.find(qn("w:pPr"))
+        if ppr is None:
+            ppr = OxmlElement("w:pPr")
+            p.insert(0, ppr)
+        if ppr.find(qn("w:sectPr")) is None:
+            ppr.append(sect(landscape))
+
+    done = 0
+    for p in list(body.iterchildren(qn("w:p"))):
+        text = "".join(t.text or "" for t in p.iter(qn("w:t")))
+        if not text.startswith(labels):
+            continue
+        prev = p.getprevious()
+        if prev is not None and prev.tag == qn("w:p"):
+            end_section_at(prev, landscape=False)        # the portrait text before ends here
+        tbl = p.getnext()
+        while tbl is not None and tbl.tag != qn("w:tbl"):
+            tbl = tbl.getnext()
+        assert tbl is not None, text[:20]
+        after = OxmlElement("w:p")
+        tbl.addnext(after)
+        end_section_at(after, landscape=True)            # caption + table form a landscape section
+        done += 1
+    assert done == len(labels), f"landscape: found {done} of {len(labels)} wide tables"
     d.save(path)
 
 
@@ -223,6 +295,7 @@ def main():
                         "--bibliography", os.path.join(PAPER, "references.bib"), "--csl", a.csl,
                         "--reference-doc", ref, "--resource-path", PAPER, "--number-sections"],
                        check=True, cwd=PAPER)
+    landscape_tables(OUT)
     print("wrote", OUT)
 
 

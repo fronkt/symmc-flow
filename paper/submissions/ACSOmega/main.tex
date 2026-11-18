@@ -13,7 +13,9 @@
 % =====================================================================
 \documentclass[journal=acsodf,manuscript=article]{achemso}
 
-\usepackage{amsmath,amssymb}
+\usepackage{amsmath}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath} % Times text and math (ACS house style); newtxmath supplies the amssymb symbols
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
@@ -176,13 +178,17 @@ $R_{\text{asym}}$ obtains them exactly from the operations.
 \begin{figure}
 \centering
 \IfFileExists{figures/fig_n3_worked_example.pdf}{\includegraphics[width=\linewidth,height=0.72\textheight,keepaspectratio]{fig_n3_worked_example}}{\TODO{figure: worked example}}
-\caption{Worked example: training crystal LAJKOX ($P2_1/c$). (a) The cell viewed along $b$,
-with the copies colored by the operation that generates each; the hatched copies come from
-improper operations ($\det W_k=-1$) and are mirror images. (b) Exact expansion
-(eq~\ref{eq:expand}): copy $k$ has centroid $c_k=W_kc_0+t_k$ and atoms placed by
-$C_kR_{\text{asym}}$ about it, so one predicted rotation gives every copy; for an improper
-operation $C_k$ includes the reflection, and the copy is the mirror image. Glyphs show each
-copy's conformer up to a proper rotation; H atoms are omitted.}
+\caption{Worked example: training crystal LAJKOX ($P2_1/c$, $K=4$). (a) The four copies that
+exact expansion (eq~\ref{eq:expand}) builds from the asymmetric-unit molecule, which is the
+identity copy. Copy $k$ has centroid $c_k=W_kc_0+t_k$ and atoms placed by
+$C_kR_{\text{asym}}$ about it, so one rotation, $R_{\text{asym}}$, fixes every copy; each
+operation is given in the crystal's CSD setting. Copies made by proper operations
+($\det W_k=+1$; teal carbon atoms) are rotated images of the asymmetric-unit molecule, and
+copies made by improper operations ($\det W_k=-1$; amber carbon atoms) are its mirror images,
+because $C_k$ then includes a reflection. (b) The same copies in the unit cell, each tagged
+with its operation, seen obliquely from near the $b$ axis; every tile in (a) is drawn from
+this viewpoint. The cell is outlined with its origin shifted by $-c/4$ so that every copy's
+centroid lies inside it. N, O and H atoms are shown in standard colors.}
 \label{fig:worked}
 \end{figure}
 
@@ -505,7 +511,9 @@ molecular position must also be generated is untested.
 \IfFileExists{sections/methods.tex}{\input{sections/methods.tex}}{\section{Methods}\TODO{sections/methods.tex}}
 
 \begin{acknowledgement}
-The author thanks the Cambridge Crystallographic Data Centre for access to the Cambridge
+The author thanks Xiaoming Wang (Purdue University) for his support of this research and
+for the research assistantship. The author thanks the Cambridge Crystallographic Data
+Centre for access to the Cambridge
 Structural Database under an academic license. This work used Anvil\cite{song2022anvil}
 at Purdue University through allocation CHE260157 from the Advanced Cyberinfrastructure
 Coordination Ecosystem: Services \& Support (ACCESS) program\cite{boerner2023access}, which

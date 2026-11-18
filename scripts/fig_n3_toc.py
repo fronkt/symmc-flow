@@ -23,9 +23,7 @@ writes paper/submissions/ACSOmega/figures/fig_n3_toc.{pdf,png}
 """
 from __future__ import annotations
 
-import json
 import os
-import subprocess
 import sys
 import tempfile
 import warnings
@@ -40,63 +38,12 @@ from matplotlib.patches import Circle, FancyArrowPatch  # noqa: E402
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, "scripts"))
-import fig_n3_worked_example as F  # noqa: E402  (shared rcParams: Arial, mathtext regular, fonttype 42)
+import n3_render as NR  # noqa: E402  (shared look with Figure 1: renderer, colours, camera, Arial)
+from n3_render import INK, IMPROPER, PROPER, STICK, molecule_atoms, rgb, run_pymol, window_for  # noqa: E402
 
-plt.rcParams.update({"mathtext.fontset": "custom", "mathtext.rm": "Arial", "mathtext.it": "Arial:italic",
-                     "mathtext.bf": "Arial:bold"})   # math labels in Arial too: one embedded typeface
-OUT = os.environ.get("TOC_OUT", F.OUT)        # TOC_OUT: draft directory while iterating
-PYMOL_PY = os.environ.get("PYMOL_PY", r"C:\Users\frank\.venvs\pymol\Scripts\python.exe")
-RENDER = os.path.join(REPO, "scripts", "toc_pymol_render.py")
-NO_WINDOW = 0x08000000
-
+plt.rcParams.update(NR.RC)
+OUT = os.environ.get("TOC_OUT", os.path.join(REPO, "paper", "submissions", "ACSOmega", "figures"))
 W_IN, H_IN, DPI = 3.25, 1.75, 600
-PROPER, IMPROPER = "#2A9D8F", "#E9A23B"      # carbon colour by operation class (teal / amber: clear of N blue, O red)
-CPK = {1: "#FFFFFF", 6: "#909090", 7: "#3050F8", 8: "#FF0D0D"}
-SYM = {1: "H", 6: "C", 7: "N", 8: "O"}
-BALL = {1: 0.21, 6: 0.40, 7: 0.40, 8: 0.40}
-STICK = 0.15
-INK = "#222222"
-
-
-def rgb(h):
-    return [float(v) for v in matplotlib.colors.to_rgb(h)]
-
-
-def run_pymol(scene, png):
-    res = subprocess.run([PYMOL_PY, RENDER, png], input=json.dumps(scene), capture_output=True, text=True,
-                         creationflags=NO_WINDOW)
-    if res.returncode != 0 or not os.path.exists(png):
-        raise RuntimeError(f"PyMOL render failed\n{res.stdout[-2000:]}\n{res.stderr[-2000:]}")
-
-
-def frame(L, yaw, pitch):
-    """Camera basis (right, up, toward viewer) for the view along b, turned by yaw about up, then pitch about right."""
-    bh = L[1] / np.linalg.norm(L[1])
-    e1 = L[0] - (L[0] @ bh) * bh
-    e1 /= np.linalg.norm(e1)
-    e2 = np.cross(e1, bh)
-    B = np.stack([e1, e2, -bh])                # rows: right, up, toward viewer (right-handed)
-    cy, sy, cp, sp = np.cos(yaw), np.sin(yaw), np.cos(pitch), np.sin(pitch)
-    Ry = np.array([[cy, 0, sy], [0, 1, 0], [-sy, 0, cy]])
-    Rx = np.array([[1, 0, 0], [0, cp, -sp], [0, sp, cp]])
-    return Rx @ Ry @ B
-
-
-def molecule_atoms(P, Zs, carbon):
-    return [{"el": SYM[int(z)], "p": p.tolist(), "r": BALL[int(z)],
-             "rgb": rgb(carbon if int(z) == 6 else CPK[int(z)])} for p, z in zip(P, Zs)]
-
-
-def window_for(pts, pad, aspect):
-    lo, hi = pts.min(0) - pad, pts.max(0) + pad
-    w, h = hi[0] - lo[0], hi[1] - lo[1]
-    if w / h < aspect:
-        d = (aspect * h - w) / 2
-        lo[0], hi[0] = lo[0] - d, hi[0] + d
-    else:
-        d = (w / aspect - h) / 2
-        lo[1], hi[1] = lo[1] - d, hi[1] + d
-    return [float(lo[0]), float(hi[0]), float(lo[1]), float(hi[1])]
 
 
 def rotation_arrow(u, v, radius, start_deg, sweep_deg, r, col, n=120):
@@ -128,49 +75,21 @@ def _clears(s, t, a, cosb, margin, n=720):
 def main():
     warnings.filterwarnings("ignore")
     sys.stdout.reconfigure(encoding="utf-8")
-    from g2_asym_baselines import expand
-    from n3_chirality import graph
 
-    # ---------------- crystal: Figure 1's selection, split, CIF symmetry and oracle checks, unchanged
-    idx, a, train, mrmsd, n_cand = F.select()
-    ref = a["refcode"]
-    F.confirm_split(a, train)
-    _, _, cif_ops = F.cif_symmetry(ref)
-    F.check_ops_against_cif(a, cif_ops)
-    assert F.oracle(a), "expand(a, R0) does not reproduce the experimental structure"
-
-    L, cent, orient, local, Z, am, mm = expand(a, a["R0"])
-    L = L.double().numpy()
-    X = (cent.double().numpy() @ L)[:, None, :] + np.einsum("kij,kaj->kai", orient.double().numpy(),
-                                                            local.double().numpy())
-    Zs = Z[0].numpy().astype(int)
-    bonds = [[int(i), int(j)] for i, j in graph(a["local"].double().numpy(), Zs).edges()]
-    W = a["W"].numpy()
-    kinds = [F.op_kind(w) for w in W]
-    dets = [int(round(np.linalg.det(w))) for w in W]
+    # ---------------- crystal: Figure 1's selection, split, CIF symmetry and oracle checks (n3_render.crystal)
+    cr = NR.crystal()
+    ref, L, X, Zs, bonds, kinds, dets = (cr[k] for k in ("ref", "L", "X", "Zs", "bonds", "kinds", "dets"))
     k_id = kinds.index("1")
-
-    # copies whose centroid lies outside the shifted cell [0,1) x [0,1) x [-1/4, 3/4) move by a lattice vector
-    fc = cent.double().numpy()
-    shift = np.floor(fc - np.array([0.0, 0.0, -0.25]))
-    X = X - (shift @ L)[:, None, :]
-    fc2 = fc - shift
-    assert ((fc2 >= [0, 0, -0.25]) & (fc2 < [1, 1, 0.75])).all()
-
-    B = frame(L, yaw=np.radians(-18), pitch=np.radians(14))
+    B = NR.frame(L)
     cam = lambda P: np.asarray(P) @ B.T                       # noqa: E731
 
     # ---------------- right: the cell with four copies
-    o = np.array([0.0, 0.0, -0.25]) @ L
-    corners = np.array([[i, j, k] for i in (0, 1) for j in (0, 1) for k in (0, 1)], float)
-    Cc = cam(o + corners @ L)
-    edges = [(p, q) for p in range(8) for q in range(p + 1, 8) if np.abs(corners[p] - corners[q]).sum() == 1]
     atoms, bnd = [], []
     for k in range(len(X)):
         base = len(atoms)
         atoms += molecule_atoms(cam(X[k]), Zs, PROPER if dets[k] > 0 else IMPROPER)
         bnd += [[base + i, base + j] for i, j in bonds]
-    cell_cyl = [{"a": Cc[p].tolist(), "b": Cc[q].tolist(), "r": 0.06, "rgb": rgb("#6b6b6b")} for p, q in edges]
+    cell_cyl, Cc = NR.cell_edges(L, cam)
     pts = np.vstack([np.array([at["p"] for at in atoms])[:, :2], Cc[:, :2]])
     RX_IN, RY_IN = 1.74, 1.24                   # size of the cell render on the page
     winR = window_for(pts, 0.6, RX_IN / RY_IN)
